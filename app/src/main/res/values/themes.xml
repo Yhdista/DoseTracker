@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.DoseTracker" parent="Theme.MaterialComponents.Light" />
+</resources>

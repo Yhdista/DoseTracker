@@ -1,0 +1,208 @@
+package com.yhdista.dosetracker
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Medication
+import androidx.compose.material.icons.rounded.Today
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.navigationsuite.ExperimentalMaterial3AdaptiveNavigationSuiteApi
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
+import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.NavDisplay
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.yhdista.dosetracker.ui.navigation.Destination
+import com.yhdista.dosetracker.ui.theme.DoseTrackerTheme
+import com.yhdista.dosetracker.ui.today.TodayScreen
+import com.yhdista.dosetracker.ui.catalog.MedicationCatalogScreen
+import com.yhdista.dosetracker.ui.dose.AddDoseScreen
+import com.yhdista.dosetracker.ui.history.HistoryScreen
+import dagger.hilt.android.AndroidEntryPoint
+
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            DoseTrackerTheme {
+                DoseTrackerAppMain()
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3AdaptiveApi::class, ExperimentalMaterial3AdaptiveNavigationSuiteApi::class,
+    ExperimentalPermissionsApi::class
+)
+@Composable
+fun DoseTrackerAppMain() {
+    if (android.os.Build.VERSION.SDK_INT >= 33) {
+        val notificationPermissionState = rememberPermissionState(
+            android.Manifest.permission.POST_NOTIFICATIONS
+        )
+        LaunchedEffect(Unit) {
+            if (!notificationPermissionState.status.isGranted) {
+                notificationPermissionState.launchPermissionRequest()
+            }
+        }
+    }
+
+    val backstack = rememberNavBackStack(Destination.Today)
+    val listDetailStrategy = rememberListDetailSceneStrategy<NavKey>()
+
+    NavigationSuiteScaffold(
+        navigationSuiteItems = {
+            item(
+                selected = backstack.last() is Destination.Today,
+                onClick = { 
+                    if (backstack.last() !is Destination.Today) {
+                        backstack.clear()
+                        backstack.add(Destination.Today)
+                    }
+                },
+                icon = { Icon(Icons.Rounded.Today, contentDescription = "Today") },
+                label = { Text("Today") }
+            )
+            item(
+                selected = backstack.last() is Destination.Medications,
+                onClick = { 
+                    if (backstack.last() !is Destination.Medications) {
+                        backstack.clear()
+                        backstack.add(Destination.Medications)
+                    }
+                },
+                icon = { Icon(Icons.Rounded.Medication, contentDescription = "Medications") },
+                label = { Text("Meds") }
+            )
+            item(
+                selected = backstack.last() is Destination.History,
+                onClick = { 
+                    if (backstack.last() !is Destination.History) {
+                        backstack.clear()
+                        backstack.add(Destination.History)
+                    }
+                },
+                icon = { Icon(Icons.Rounded.History, contentDescription = "History") },
+                label = { Text("History") }
+            )
+        }
+    ) {
+        NavDisplay(
+            backStack = backstack,
+            modifier = Modifier.fillMaxSize(),
+            sceneStrategy = listDetailStrategy
+        ) { key ->
+            when (key) {
+                is Destination.Today -> {
+                    NavEntry(
+                        key = key,
+                        metadata = ListDetailSceneStrategy.listPane()
+                    ) {
+                        TodayScreen(
+                            viewModel = viewModel(),
+                            onNavigateToDetail = { id ->
+                                backstack.add(Destination.MedicationDetail(id))
+                            }
+                        )
+                    }
+                }
+                is Destination.Medications -> {
+                    NavEntry(
+                        key = key,
+                        metadata = ListDetailSceneStrategy.listPane()
+                    ) {
+                        MedicationCatalogScreen(
+                            viewModel = viewModel(),
+                            onMedicationClick = { id ->
+                                backstack.add(Destination.AddDose(id))
+                            }
+                        )
+                    }
+                }
+                is Destination.History -> {
+                    NavEntry(
+                        key = key,
+                        metadata = ListDetailSceneStrategy.listPane()
+                    ) {
+                        HistoryScreen(
+                            viewModel = viewModel()
+                        )
+                    }
+                }
+                is Destination.AddDose -> {
+                    NavEntry(
+                        key = key,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        AddDoseScreen(
+                            viewModel = viewModel(),
+                            onBack = { backstack.removeAt(backstack.lastIndex) }
+                        )
+                    }
+                }
+                is Destination.MedicationDetail -> {
+                    NavEntry(
+                        key = key,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        MedicationDetailPlaceholder(key.id) {
+                            backstack.removeAt(backstack.lastIndex)
+                        }
+                    }
+                }
+                else -> {
+                    NavEntry(key = key) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Screen for $key")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MedicationDetailPlaceholder(id: Long, onBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            androidx.compose.material3.TopAppBar(
+                title = { Text("Medication $id") },
+                navigationIcon = {
+                    androidx.compose.material3.IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Details for Medication $id")
+        }
+    }
+}
