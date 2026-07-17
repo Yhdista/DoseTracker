@@ -14,10 +14,15 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddDoseScreen(
+    medicationId: Long,
     viewModel: AddDoseViewModel,
     onBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+
+    LaunchedEffect(medicationId) {
+        viewModel.setMedicationId(medicationId)
+    }
 
     LaunchedEffect(state.isSuccess) {
         if (state.isSuccess) {

@@ -27,9 +27,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -114,12 +116,17 @@ fun DoseTrackerAppMain() {
         NavDisplay(
             backStack = backstack,
             modifier = Modifier.fillMaxSize(),
-            sceneStrategy = listDetailStrategy
+            sceneStrategies = listOf(listDetailStrategy),
+            entryDecorators = listOf(
+                rememberSaveableStateHolderNavEntryDecorator(),
+                rememberViewModelStoreNavEntryDecorator()
+            )
         ) { key ->
-            when (key) {
+            val destination = key as Destination
+            when (destination) {
                 is Destination.Today -> {
                     NavEntry(
-                        key = key,
+                        key = destination,
                         metadata = ListDetailSceneStrategy.listPane()
                     ) {
                         TodayScreen(
@@ -132,7 +139,7 @@ fun DoseTrackerAppMain() {
                 }
                 is Destination.Medications -> {
                     NavEntry(
-                        key = key,
+                        key = destination,
                         metadata = ListDetailSceneStrategy.listPane()
                     ) {
                         MedicationCatalogScreen(
@@ -145,7 +152,7 @@ fun DoseTrackerAppMain() {
                 }
                 is Destination.History -> {
                     NavEntry(
-                        key = key,
+                        key = destination,
                         metadata = ListDetailSceneStrategy.listPane()
                     ) {
                         HistoryScreen(
@@ -155,10 +162,11 @@ fun DoseTrackerAppMain() {
                 }
                 is Destination.AddDose -> {
                     NavEntry(
-                        key = key,
+                        key = destination,
                         metadata = ListDetailSceneStrategy.detailPane()
                     ) {
                         AddDoseScreen(
+                            medicationId = destination.medicationId,
                             viewModel = viewModel(),
                             onBack = { backstack.removeAt(backstack.lastIndex) }
                         )
@@ -166,18 +174,18 @@ fun DoseTrackerAppMain() {
                 }
                 is Destination.MedicationDetail -> {
                     NavEntry(
-                        key = key,
+                        key = destination,
                         metadata = ListDetailSceneStrategy.detailPane()
                     ) {
-                        MedicationDetailPlaceholder(key.id) {
+                        MedicationDetailPlaceholder(destination.id) {
                             backstack.removeAt(backstack.lastIndex)
                         }
                     }
                 }
                 else -> {
-                    NavEntry(key = key) {
+                    NavEntry(key = destination) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Screen for $key")
+                            Text("Screen for $destination")
                         }
                     }
                 }
