@@ -1,10 +1,32 @@
+import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.devtools.ksp)
     alias(libs.plugins.jetbrains.kotlin.plugin.serialization)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.firebase.appdistribution)
 }
+
+// google-services plugin hard-fails the build if google-services.json is missing,
+// so it's only applied once that file is dropped in (see README note in distribute task).
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
+// Release notes: -Pnotes param, else last git commit message.
+val finalReleaseNotes: Provider<String> =
+    providers
+        .gradleProperty("notes")
+        .orElse(
+            providers
+                .exec {
+                    commandLine("git", "log", "-1", "--pretty=%B")
+                    isIgnoreExitValue = true
+                }.standardOutput.asText
+                .map { it.trim().ifEmpty { "Manual build" } },
+        )
 
 android {
     namespace = "com.yhdista.dosetracker"
@@ -24,6 +46,17 @@ android {
         release {
             optimization {
                 enable = false
+            }
+        }
+        debug {
+            firebaseAppDistribution {
+                artifactType = "APK"
+                releaseNotes = finalReleaseNotes.get()
+                groups = "testers"
+                val keyFile = project.file("firebase-key.json")
+                if (keyFile.exists()) {
+                    serviceCredentialsFile = keyFile.absolutePath
+                }
             }
         }
     }
@@ -94,4 +127,13 @@ dependencies {
     "ksp"(libs.moshi.kotlin.codegen)
     "ksp"(libs.hilt.compiler)
     "ksp"(libs.androidx.hilt.work.compiler)
+}
+
+// Shortcut task for distribution
+// Usage: ./gradlew distribute -Pnotes="My notes"
+tasks.register("distribute") {
+    group = "distribution"
+    description = "Builds debug APK and uploads it to Firebase App Distribution."
+    dependsOn("assembleDebug")
+    finalizedBy("appDistributionUploadDebug")
 }
