@@ -2,17 +2,17 @@ package com.yhdista.dosetracker.data.local
 
 import androidx.room.TypeConverter
 import com.yhdista.dosetracker.domain.model.DoseStatus
-import java.time.Instant
+import kotlinx.datetime.Instant
 
 class Converters {
     @TypeConverter
     fun fromTimestamp(value: Long?): Instant? {
-        return value?.let { Instant.ofEpochMilli(it) }
+        return value?.let { Instant.fromEpochMilliseconds(it) }
     }
 
     @TypeConverter
     fun dateToTimestamp(date: Instant?): Long? {
-        return date?.toEpochMilli()
+        return date?.toEpochMilliseconds()
     }
 
     @TypeConverter

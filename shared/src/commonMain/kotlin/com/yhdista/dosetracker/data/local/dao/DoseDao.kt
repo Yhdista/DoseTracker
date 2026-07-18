@@ -13,29 +13,29 @@ data class DoseWithMedication(
 interface DoseDao {
     @Transaction
     @Query("""
-        SELECT doses.*, medications.name as medicationName 
-        FROM doses 
-        INNER JOIN medications ON doses.medicationId = medications.id 
-        WHERE medicationId = :medicationId 
+        SELECT doses.*, medications.name as medicationName
+        FROM doses
+        INNER JOIN medications ON doses.medicationId = medications.id
+        WHERE medicationId = :medicationId
         ORDER BY timestamp DESC
     """)
     fun getDosesForMedication(medicationId: Long): Flow<List<DoseWithMedication>>
 
     @Transaction
     @Query("""
-        SELECT doses.*, medications.name as medicationName 
-        FROM doses 
-        INNER JOIN medications ON doses.medicationId = medications.id 
-        WHERE timestamp >= :startTime AND timestamp <= :endTime 
+        SELECT doses.*, medications.name as medicationName
+        FROM doses
+        INNER JOIN medications ON doses.medicationId = medications.id
+        WHERE timestamp >= :startTime AND timestamp <= :endTime
         ORDER BY timestamp ASC
     """)
     fun getDosesInTimeRange(startTime: Long, endTime: Long): Flow<List<DoseWithMedication>>
 
     @Transaction
     @Query("""
-        SELECT doses.*, medications.name as medicationName 
-        FROM doses 
-        INNER JOIN medications ON doses.medicationId = medications.id 
+        SELECT doses.*, medications.name as medicationName
+        FROM doses
+        INNER JOIN medications ON doses.medicationId = medications.id
         ORDER BY timestamp DESC
     """)
     fun getAllDoses(): Flow<List<DoseWithMedication>>

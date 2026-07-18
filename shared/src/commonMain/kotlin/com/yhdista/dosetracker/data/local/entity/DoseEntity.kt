@@ -5,7 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.yhdista.dosetracker.domain.model.DoseStatus
-import java.time.Instant
+import kotlinx.datetime.Instant
 
 @Entity(
     tableName = "doses",
