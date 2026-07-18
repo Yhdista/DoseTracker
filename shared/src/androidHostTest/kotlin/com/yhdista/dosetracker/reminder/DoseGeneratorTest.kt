@@ -85,14 +85,14 @@ class DoseGeneratorTest {
     fun `does not duplicate a dose that already exists for this schedule and time`() = runTest {
         val schedule = ReminderSchedule(
             id = 1, medicationId = 10, minutesOfDay = 480,
-            daysOfWeek = WeekDays.toBitmask(setOf(today.dayOfWeek))
+            daysOfWeek = WeekDays.toBitmask(setOf(farFutureDate.dayOfWeek))
         )
-        val expectedInstant = today.atTime(8, 0).toInstant(TimeZone.currentSystemDefault())
+        val expectedInstant = farFutureDate.atTime(8, 0).toInstant(TimeZone.currentSystemDefault())
         val existing = Dose(id = 5, medicationId = 10, scheduleId = 1, timestamp = expectedInstant, amount = 100.0, unit = "mg", status = DoseStatus.TAKEN)
         whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
         whenever(repository.getDoseForSchedule(1, expectedInstant)).thenReturn(existing)
 
-        generator.runForDate(today)
+        generator.runForDate(farFutureDate)
 
         verify(repository, never()).insertDose(any())
         verify(scheduler, never()).scheduleReminder(any(), any())
