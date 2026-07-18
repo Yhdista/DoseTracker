@@ -37,7 +37,7 @@ shared/
       data/mapper/DoseMapper.kt, data/mapper/MedicationMapper.kt
       data/repository/MedicationRepositoryImpl.kt
       reminder/DoseReminderScheduler.kt
-      ui/theme/Color.kt, ui/theme/Type.kt
+      ui/theme/Color.kt, ui/theme/Type.kt, ui/theme/Theme.kt (expect)
       ui/navigation/Destinations.kt
       ui/catalog/MedicationCatalogScreen.kt, ui/catalog/MedicationCatalogViewModel.kt
       ui/dose/AddDoseScreen.kt, ui/dose/AddDoseViewModel.kt
@@ -47,7 +47,7 @@ shared/
     androidMain/kotlin/com/yhdista/dosetracker/
       data/local/DatabaseBuilder.android.kt
       di/DataModule.kt
-      ui/theme/Theme.kt
+      ui/theme/Theme.android.kt (actual)
       ui/app/NotificationPermission.android.kt
     commonMain/kotlin/com/yhdista/dosetracker/ui/app/NotificationPermission.kt (expect)
     androidHostTest/kotlin/com/yhdista/dosetracker/ui/today/TodayViewModelTest.kt
@@ -1145,13 +1145,14 @@ git commit -m "feat: add Koin data module in :shared, remove Hilt DI modules"
 **Files:**
 - Create: `shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/theme/Color.kt`
 - Create: `shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/theme/Type.kt`
-- Create: `shared/src/androidMain/kotlin/com/yhdista/dosetracker/ui/theme/Theme.kt`
+- Create: `shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/theme/Theme.kt` (`expect fun DoseTrackerTheme`)
+- Create: `shared/src/androidMain/kotlin/com/yhdista/dosetracker/ui/theme/Theme.android.kt` (`actual fun DoseTrackerTheme`)
 - Delete: the three equivalent files under `app/src/main/java/com/yhdista/dosetracker/ui/theme/`
 
 **Interfaces:**
 - Produces: `Purple80`/`PurpleGrey80`/`Pink80`/`Purple40`/`PurpleGrey40`/`Pink40` (`Color`), `Typography` (Material3 `Typography`), `@Composable fun DoseTrackerTheme(darkTheme: Boolean, dynamicColor: Boolean, content: @Composable () -> Unit)`.
 
-`Theme.kt` stays in `androidMain` (not commonMain) for this phase: dynamic color (`dynamicDarkColorScheme`/`dynamicLightColorScheme`) and `LocalContext` are Android-only APIs with no cross-platform equivalent. Splitting it into `expect`/`actual` is deferred to the phase that actually adds an iOS/Desktop target — there is nothing to make `expect` against yet.
+**Note (retroactively corrected — discovered during Task 10, not the original Task 7 design):** the original design kept `Theme.kt` entirely in `androidMain`, reasoning that dynamic color has no cross-platform equivalent yet and there was nothing to make `expect` against. That turned out to be wrong: Task 10's `TodayScreen.kt` needs `DoseTrackerTheme` from its commonMain `@Preview` function, and commonMain cannot see an androidMain-only declaration. The fix is an `expect`/`actual` split — dynamic color logic still lives only in the androidMain `actual`, nothing about the runtime behavior changes, but the function *signature* (with its default parameter values) must be declared as `expect` in commonMain so commonMain callers can resolve it. `actual` declarations cannot repeat default parameter values (a Kotlin restriction), so the defaults live only on the `expect` side.
 
 - [ ] **Step 1: Move `Color.kt` (unchanged, pure Compose Multiplatform)**
 
@@ -1192,13 +1193,32 @@ val Typography = Typography(
 )
 ```
 
-- [ ] **Step 3: Move `Theme.kt` into `:shared`'s `androidMain` (unchanged content)**
+- [ ] **Step 3: Create the commonMain `expect` declaration**
+
+`shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/theme/Theme.kt`:
+
+```kotlin
+package com.yhdista.dosetracker.ui.theme
+
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
+
+@Composable
+expect fun DoseTrackerTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    dynamicColor: Boolean = true,
+    content: @Composable () -> Unit
+)
+```
+
+- [ ] **Step 3b: Create the androidMain `actual` implementation**
+
+`shared/src/androidMain/kotlin/com/yhdista/dosetracker/ui/theme/Theme.android.kt`:
 
 ```kotlin
 package com.yhdista.dosetracker.ui.theme
 
 import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -1220,9 +1240,9 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun DoseTrackerTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+actual fun DoseTrackerTheme(
+    darkTheme: Boolean,
+    dynamicColor: Boolean,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -1880,6 +1900,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.yhdista.dosetracker.core.Data
+import kotlinx.datetime.format
 import kotlinx.datetime.format.char
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1995,6 +2016,7 @@ import com.yhdista.dosetracker.core.Data
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.format
 import kotlinx.datetime.format.char
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -2098,6 +2120,7 @@ import com.yhdista.dosetracker.ui.theme.DoseTrackerTheme
 import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.format
 import kotlinx.datetime.format.char
 import androidx.compose.ui.tooling.preview.Preview
 
@@ -2292,6 +2315,7 @@ package com.yhdista.dosetracker.ui.app
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.History
@@ -2482,13 +2506,19 @@ fun MedicationDetailPlaceholder(id: Long, onBack: () -> Unit) {
 
 Delete `app/src/main/java/com/yhdista/dosetracker/ui/catalog/MedicationCatalogScreen.kt`, `ui/dose/AddDoseScreen.kt`, `ui/history/HistoryScreen.kt`, `ui/today/TodayScreen.kt`.
 
-- [ ] **Step 8: Add the Compose Multiplatform preview dependency**
+- [ ] **Step 8: Add the Compose Multiplatform preview and adaptive-navigation dependencies**
 
 In `shared/build.gradle.kts`, add to `commonMain.dependencies`:
 
 ```kotlin
             implementation(compose.preview)
+            implementation(libs.androidx.compose.adaptive)
+            implementation(libs.androidx.compose.adaptive.layout)
+            implementation(libs.androidx.compose.adaptive.navigation3)
+            implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
 ```
+
+(The four `adaptive` entries were missing from the original design — `DoseTrackerAppMain.kt`'s `NavigationSuiteScaffold`/`ListDetailSceneStrategy` need them and commonMain doesn't inherit them from anywhere else. Found during Task 10 implementation via a real "unresolved reference" compiler error; these four catalog entries already existed and were already used the same way by `:app`'s old `MainActivity.kt`, just never added to `:shared`.)
 
 - [ ] **Step 9: Verify `:shared` compiles**
 
