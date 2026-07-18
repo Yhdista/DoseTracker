@@ -1326,6 +1326,8 @@ git commit -m "refactor: move navigation destinations to :shared"
 - Consumes: `MedicationRepository` (Task 5), `Data`, `Dose`, `Medication`, `DoseStatus`.
 - Produces: same four `ViewModel` classes and their `State`/`Event` types, now plain classes (no `@HiltViewModel`), plus `val viewModelModule: Module` that Task 11 includes in `startKoin { }`.
 
+**Note on `Clock` (discovered during implementation):** `kotlinx-datetime` 0.8.0 removed `kotlinx.datetime.Clock` in favor of `kotlin.time.Clock` (the Kotlin 2.1+ stdlib's own consolidated Clock, same ecosystem move that made `kotlinx.datetime.Instant` a deprecated typealias for `kotlin.time.Instant`). `import kotlinx.datetime.Clock` does not expose a usable `System` member and fails with "Unresolved reference 'System'" — every `Clock.System` usage below (and in Tasks 10 and 13) imports `kotlin.time.Clock` instead. `LocalDateTime`/`LocalDate`/`TimeZone`/`toLocalDateTime`/`toInstant`/`todayIn` are unaffected and stay as `kotlinx.datetime.*` — they already target `kotlin.time.Instant` under the hood, so they work the same with `kotlin.time.Clock.System` as a receiver.
+
 - [ ] **Step 1: Move `MedicationCatalogViewModel.kt`, drop Hilt**
 
 ```kotlin
@@ -1420,7 +1422,7 @@ import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
@@ -1571,7 +1573,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 
@@ -2094,7 +2096,7 @@ import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.ui.theme.DoseTrackerTheme
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.format.char
@@ -2807,7 +2809,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
