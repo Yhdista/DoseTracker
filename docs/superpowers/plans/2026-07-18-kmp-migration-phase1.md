@@ -50,7 +50,7 @@ shared/
       ui/theme/Theme.kt
       ui/app/NotificationPermission.android.kt
     commonMain/kotlin/com/yhdista/dosetracker/ui/app/NotificationPermission.kt (expect)
-    androidUnitTest/kotlin/com/yhdista/dosetracker/ui/today/TodayViewModelTest.kt
+    androidHostTest/kotlin/com/yhdista/dosetracker/ui/today/TodayViewModelTest.kt
 ```
 
 Modified `:app`:
@@ -80,7 +80,9 @@ app/
 - Create: `shared/src/commonMain/kotlin/com/yhdista/dosetracker/placeholder/Placeholder.kt` (deleted again in Task 2 — just proves the module compiles)
 
 **Interfaces:**
-- Produces: a `:shared` Gradle module other tasks add files to, with `kotlin.multiplatform`, `android.library`, `org.jetbrains.compose`, `org.jetbrains.kotlin.plugin.compose`, `com.google.devtools.ksp` plugins applied, and `androidTarget()` configured.
+- Produces: a `:shared` Gradle module other tasks add files to, with `kotlin.multiplatform`, `com.android.kotlin.multiplatform.library`, `org.jetbrains.compose`, `org.jetbrains.kotlin.plugin.compose`, `com.google.devtools.ksp` plugins applied, and an Android target configured via the `kotlin { android { } }` block.
+
+**Note on plugin choice (discovered during implementation, not in the original design):** AGP 9.0+ no longer allows `com.android.library` to be applied together with `org.jetbrains.kotlin.multiplatform` in the same module — it throws `IllegalStateException: The 'com.android.library' ... plugin is not compatible with the 'org.jetbrains.kotlin.multiplatform' plugin since AGP 9.0`, recommending the dedicated `com.android.kotlin.multiplatform.library` plugin instead. That plugin requires Compose Multiplatform 1.9.3+ (this plan uses 1.11.1, the current stable release compatible with Kotlin 2.4.10) and has a different DSL: Android configuration moves from a separate top-level `android { }` block into an `android { }` block *nested inside* `kotlin { }`, there is no `androidTarget { }` call (the nested `android { }` block both declares and configures the target), build types/product flavors are not supported (single-variant only — fine for this project, which will only ever ship one Android variant of `:shared`), and the JVM unit test source set is named `androidHostTest` (not `androidUnitTest`) and must be explicitly opted into via `withHostTestBuilder {}.configure {}`. The steps below reflect this corrected setup.
 
 - [ ] **Step 1: Add version catalog entries**
 
@@ -88,27 +90,28 @@ In `gradle/libs.versions.toml`, add to `[versions]` (after `hiltWork = "1.4.0"`)
 
 ```toml
 kotlinxDatetime = "0.8.0"
-koinBom = "4.1.0"
-composeMultiplatform = "1.9.0"
+koin = "4.1.0"
+composeMultiplatform = "1.11.1"
 ```
 
 Add to `[libraries]` (after `hilt-compiler = ...`):
 
 ```toml
 kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlinxDatetime" }
-koin-bom = { group = "io.insert-koin", name = "koin-bom", version.ref = "koinBom" }
-koin-core = { group = "io.insert-koin", name = "koin-core" }
-koin-android = { group = "io.insert-koin", name = "koin-android" }
-koin-androidx-workmanager = { group = "io.insert-koin", name = "koin-androidx-workmanager" }
-koin-compose = { group = "io.insert-koin", name = "koin-compose" }
-koin-compose-viewmodel = { group = "io.insert-koin", name = "koin-compose-viewmodel" }
+koin-core = { group = "io.insert-koin", name = "koin-core", version.ref = "koin" }
+koin-android = { group = "io.insert-koin", name = "koin-android", version.ref = "koin" }
+koin-androidx-workmanager = { group = "io.insert-koin", name = "koin-androidx-workmanager", version.ref = "koin" }
+koin-compose = { group = "io.insert-koin", name = "koin-compose", version.ref = "koin" }
+koin-compose-viewmodel = { group = "io.insert-koin", name = "koin-compose-viewmodel", version.ref = "koin" }
 ```
+
+(No `koin-bom` — Koin's BOM can't be applied inside the Kotlin Multiplatform `sourceSets { commonMain.dependencies { } }` DSL, since `platform()` isn't available on that receiver. Pinning each Koin artifact directly to the same `koin` version is simpler and equivalent here.)
 
 Add to `[plugins]` (after `hilt = ...`):
 
 ```toml
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-android-library = { id = "com.android.library", version.ref = "agp" }
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 jetbrains-compose = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 ```
 
@@ -118,7 +121,7 @@ In `build.gradle.kts` (root), add to the `plugins { }` block:
 
 ```kotlin
     alias(libs.plugins.kotlin.multiplatform) apply false
-    alias(libs.plugins.android.library) apply false
+    alias(libs.plugins.android.kotlin.multiplatform.library) apply false
     alias(libs.plugins.jetbrains.compose) apply false
 ```
 
@@ -144,7 +147,7 @@ include(":shared")
 ```kotlin
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.android.library)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.jetbrains.compose)
     alias(libs.plugins.google.devtools.ksp)
@@ -152,10 +155,20 @@ plugins {
 }
 
 kotlin {
-    androidTarget {
+    android {
+        namespace = "com.yhdista.dosetracker.shared"
+        compileSdk = 37
+        minSdk = 28
+
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
+
+        androidResources {
+            enable = true
+        }
+
+        withHostTestBuilder {}.configure {}
     }
 
     sourceSets {
@@ -175,7 +188,6 @@ kotlin {
             implementation(libs.androidx.navigation3.ui)
             implementation(libs.androidx.lifecycle.viewmodel.navigation3)
             implementation(libs.androidx.room.runtime)
-            implementation(platform(libs.koin.bom))
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
@@ -187,7 +199,7 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlinx.coroutines.test)
         }
-        val androidUnitTest by getting {
+        getByName("androidHostTest") {
             dependencies {
                 implementation(libs.junit)
                 implementation(libs.mockito.kotlin)
@@ -196,25 +208,12 @@ kotlin {
     }
 }
 
-android {
-    namespace = "com.yhdista.dosetracker.shared"
-    compileSdk = 37
-    defaultConfig {
-        minSdk = 28
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    buildFeatures {
-        compose = true
-    }
-}
-
 dependencies {
     add("kspAndroid", libs.androidx.room.compiler)
 }
 ```
+
+Note: `compose.runtime`/`compose.foundation`/`compose.material3`/`compose.materialIconsExtended`/`compose.ui`/`compose.components.resources` print Gradle deprecation warnings on this Compose Multiplatform version ("Specify dependency directly") — they still work and are not build errors; leave them as-is unless a later Compose Multiplatform bump forces a change.
 
 - [ ] **Step 5: Create a placeholder file so the module has source to compile**
 
@@ -228,7 +227,7 @@ internal const val PLACEHOLDER = true
 
 - [ ] **Step 6: Verify the module builds**
 
-Run: `./gradlew :shared:assembleDebug`
+Run: `./gradlew :shared:assemble`
 Expected: `BUILD SUCCESSFUL`
 
 - [ ] **Step 7: Commit**
@@ -400,7 +399,7 @@ interface MedicationRepository {
 
 Delete `app/src/main/java/com/yhdista/dosetracker/domain/model/Dose.kt`, `Medication.kt`, `app/src/main/java/com/yhdista/dosetracker/domain/repository/MedicationRepository.kt`.
 
-Run: `./gradlew :shared:compileDebugKotlinAndroid`
+Run: `./gradlew :shared:assemble`
 Expected: `BUILD SUCCESSFUL` (nothing in `:shared` references these yet outside itself, so this just validates the new files compile standalone).
 
 - [ ] **Step 5: Commit**
@@ -782,7 +781,7 @@ Delete `app/src/main/java/com/yhdista/dosetracker/data/local/AppDatabase.kt`, `C
 
 - [ ] **Step 12: Verify the Room KSP setup compiles**
 
-Run: `./gradlew :shared:assembleDebug`
+Run: `./gradlew :shared:assemble`
 Expected: `BUILD SUCCESSFUL`. This is the highest-risk step in the whole plan (Room's multiplatform constructor/driver API). If it fails, the compiler error will point at the exact mismatched signature (most likely `SQLiteConnection.execSQL` or `Room.databaseBuilder<AppDatabase>` overload) — fix the signature to match the installed Room 2.8.4 API and re-run.
 
 - [ ] **Step 13: Commit**
@@ -1068,7 +1067,7 @@ Delete `app/src/main/java/com/yhdista/dosetracker/data/repository/MedicationRepo
 
 - [ ] **Step 5: Verify `:shared` compiles**
 
-Run: `./gradlew :shared:assembleDebug`
+Run: `./gradlew :shared:assemble`
 Expected: `BUILD SUCCESSFUL`
 
 - [ ] **Step 6: Commit**
@@ -1127,7 +1126,7 @@ Delete `app/src/main/java/com/yhdista/dosetracker/di/DatabaseModule.kt` and `app
 
 - [ ] **Step 3: Verify `:shared` compiles**
 
-Run: `./gradlew :shared:assembleDebug`
+Run: `./gradlew :shared:assemble`
 Expected: `BUILD SUCCESSFUL` (Koin's `module { }` DSL type-checks even though nothing calls `startKoin` yet).
 
 - [ ] **Step 4: Commit**
@@ -1248,7 +1247,7 @@ Delete `app/src/main/java/com/yhdista/dosetracker/ui/theme/Color.kt`, `Theme.kt`
 
 - [ ] **Step 5: Verify `:shared` compiles**
 
-Run: `./gradlew :shared:assembleDebug`
+Run: `./gradlew :shared:assemble`
 Expected: `BUILD SUCCESSFUL`
 
 - [ ] **Step 6: Commit**
@@ -1299,7 +1298,7 @@ sealed interface Destination : NavKey {
 
 Delete `app/src/main/java/com/yhdista/dosetracker/ui/navigation/Destinations.kt`.
 
-Run: `./gradlew :shared:assembleDebug`
+Run: `./gradlew :shared:assemble`
 Expected: `BUILD SUCCESSFUL`
 
 - [ ] **Step 3: Commit**
@@ -1653,7 +1652,7 @@ Delete `app/src/main/java/com/yhdista/dosetracker/ui/catalog/MedicationCatalogVi
 
 - [ ] **Step 7: Verify `:shared` compiles**
 
-Run: `./gradlew :shared:assembleDebug`
+Run: `./gradlew :shared:assemble`
 Expected: `BUILD SUCCESSFUL`
 
 - [ ] **Step 8: Commit**
@@ -2490,7 +2489,7 @@ In `shared/build.gradle.kts`, add to `commonMain.dependencies`:
 
 - [ ] **Step 9: Verify `:shared` compiles**
 
-Run: `./gradlew :shared:assembleDebug`
+Run: `./gradlew :shared:assemble`
 Expected: `BUILD SUCCESSFUL`
 
 - [ ] **Step 10: Commit**
@@ -2739,7 +2738,6 @@ and:
 Add, alongside the existing `implementation(project(":shared"))`:
 
 ```kotlin
-    implementation(platform(libs.koin.bom))
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.workmanager)
 ```
@@ -2782,7 +2780,7 @@ git commit -m "chore: remove Hilt entirely, now fully on Koin"
 ### Task 13: Tests + full verification pass
 
 **Files:**
-- Create: `shared/src/androidUnitTest/kotlin/com/yhdista/dosetracker/ui/today/TodayViewModelTest.kt`
+- Create: `shared/src/androidHostTest/kotlin/com/yhdista/dosetracker/ui/today/TodayViewModelTest.kt`
 - Delete: `app/src/test/java/com/yhdista/dosetracker/ui/today/TodayViewModelTest.kt`
 - Keep unchanged: `app/src/test/java/com/yhdista/dosetracker/ExampleUnitTest.kt`, `app/src/androidTest/java/com/yhdista/dosetracker/ExampleInstrumentedTest.kt`
 
@@ -2857,7 +2855,7 @@ Delete `app/src/test/java/com/yhdista/dosetracker/ui/today/TodayViewModelTest.kt
 
 - [ ] **Step 2: Run the moved test**
 
-Run: `./gradlew :shared:testDebugUnitTest --tests "com.yhdista.dosetracker.ui.today.TodayViewModelTest"`
+Run: `./gradlew :shared:testAndroidHostTest --tests "com.yhdista.dosetracker.ui.today.TodayViewModelTest"`
 Expected: `BUILD SUCCESSFUL`, 1 test passed.
 
 - [ ] **Step 3: Run the remaining `:app` tests**

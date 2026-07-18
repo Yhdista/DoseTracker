@@ -24,4 +24,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "DoseTracker"
 include(":app")
+include(":shared")
  
