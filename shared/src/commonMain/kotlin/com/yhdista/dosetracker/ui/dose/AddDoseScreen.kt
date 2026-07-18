@@ -100,7 +100,7 @@ fun AddDoseScreen(
 }
 
 private val dateTimeDisplayFormat = kotlinx.datetime.LocalDateTime.Format {
-    year(); char('-'); monthNumber(); char('-'); dayOfMonth()
+    year(); char('-'); monthNumber(); char('-'); day()
     char(' ')
     hour(); char(':'); minute()
 }

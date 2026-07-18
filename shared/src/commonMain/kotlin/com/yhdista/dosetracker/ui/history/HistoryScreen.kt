@@ -64,7 +64,7 @@ fun HistoryScreen(
 }
 
 private val historyTimeFormat = LocalDateTime.Format {
-    year(); char('-'); monthNumber(); char('-'); dayOfMonth()
+    year(); char('-'); monthNumber(); char('-'); day()
     char(' ')
     hour(); char(':'); minute()
 }

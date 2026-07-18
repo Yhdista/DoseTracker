@@ -155,13 +155,6 @@ fun DoseTrackerAppMain() {
                         }
                     }
                 }
-                else -> {
-                    NavEntry(key = destination) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Screen for $destination")
-                        }
-                    }
-                }
             }
         }
     }
