@@ -11,8 +11,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.yhdista.dosetracker.core.Data
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.format.char
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,14 +63,19 @@ fun HistoryScreen(
     }
 }
 
+private val historyTimeFormat = LocalDateTime.Format {
+    year(); char('-'); monthNumber(); char('-'); dayOfMonth()
+    char(' ')
+    hour(); char(':'); minute()
+}
+
 @Composable
 fun HistoryItem(item: DoseWithMedication) {
-    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-    val timeStr = item.dose.timestamp.atZone(ZoneId.systemDefault()).format(formatter)
-    
+    val timeStr = item.dose.timestamp.toLocalDateTime(TimeZone.currentSystemDefault()).format(historyTimeFormat)
+
     ListItem(
         headlineContent = { Text(item.medication?.name ?: "Unknown Medication") },
-        supportingContent = { 
+        supportingContent = {
             val amountStr = item.dose.amount?.toString() ?: item.medication?.dosage?.toString() ?: ""
             val unitStr = item.dose.unit ?: item.medication?.unit ?: ""
             Text("$amountStr $unitStr at $timeStr")

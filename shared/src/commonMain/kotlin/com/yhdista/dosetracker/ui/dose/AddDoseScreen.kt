@@ -9,7 +9,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.yhdista.dosetracker.core.Data
-import java.time.format.DateTimeFormatter
+import kotlinx.datetime.format
+import kotlinx.datetime.format.char
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,11 +76,10 @@ fun AddDoseScreen(
                     )
 
                     Text(
-                        text = "Time: ${state.time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))}",
+                        text = "Time: ${state.time.format(dateTimeDisplayFormat)}",
                         style = MaterialTheme.typography.bodyLarge
                     )
-                    
-                    // Simple button for now, could add a time picker
+
                     Button(
                         onClick = { viewModel.onEvent(AddDoseEvent.SaveDose) },
                         modifier = Modifier.fillMaxWidth()
@@ -97,4 +97,10 @@ fun AddDoseScreen(
             }
         }
     }
+}
+
+private val dateTimeDisplayFormat = kotlinx.datetime.LocalDateTime.Format {
+    year(); char('-'); monthNumber(); char('-'); dayOfMonth()
+    char(' ')
+    hour(); char(':'); minute()
 }

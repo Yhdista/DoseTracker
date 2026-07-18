@@ -1,7 +1,6 @@
 package com.yhdista.dosetracker.ui.theme
 
 import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -23,9 +22,9 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun DoseTrackerTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+actual fun DoseTrackerTheme(
+    darkTheme: Boolean,
+    dynamicColor: Boolean,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

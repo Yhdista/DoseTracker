@@ -13,16 +13,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.ui.theme.DoseTrackerTheme
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import kotlin.time.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.format.char
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun TodayScreen(
@@ -90,23 +92,24 @@ fun TodayContent(
     }
 }
 
+private val timeOnlyFormat = kotlinx.datetime.LocalDateTime.Format {
+    hour(); char(':'); minute()
+}
+
 @Composable
 fun DoseItem(
     dose: Dose,
     onClick: () -> Unit,
     onToggleStatus: () -> Unit
 ) {
-    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-        .withZone(ZoneId.systemDefault())
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = if (dose.status == DoseStatus.TAKEN) 
-                MaterialTheme.colorScheme.surfaceVariant 
-            else 
+            containerColor = if (dose.status == DoseStatus.TAKEN)
+                MaterialTheme.colorScheme.surfaceVariant
+            else
                 MaterialTheme.colorScheme.surface
         )
     ) {
@@ -123,22 +126,22 @@ fun DoseItem(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "Scheduled at ${timeFormatter.format(dose.timestamp)}",
+                    text = "Scheduled at ${dose.timestamp.toLocalDateTime(TimeZone.currentSystemDefault()).format(timeOnlyFormat)}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
+
             IconButton(onClick = onToggleStatus) {
                 Icon(
-                    imageVector = if (dose.status == DoseStatus.TAKEN) 
-                        Icons.Rounded.CheckCircle 
-                    else 
+                    imageVector = if (dose.status == DoseStatus.TAKEN)
+                        Icons.Rounded.CheckCircle
+                    else
                         Icons.Rounded.RadioButtonUnchecked,
                     contentDescription = "Toggle Status",
-                    tint = if (dose.status == DoseStatus.TAKEN) 
-                        MaterialTheme.colorScheme.primary 
-                    else 
+                    tint = if (dose.status == DoseStatus.TAKEN)
+                        MaterialTheme.colorScheme.primary
+                    else
                         MaterialTheme.colorScheme.outline
                 )
             }
@@ -146,15 +149,15 @@ fun DoseItem(
     }
 }
 
-@Preview(showBackground = true)
+@Preview
 @Composable
 fun TodayContentPreview() {
     DoseTrackerTheme {
         TodayContent(
             state = TodayState(
                 doses = Data.Success(listOf(
-                    Dose(id = 1, medicationId = 1, timestamp = Instant.now(), status = DoseStatus.PENDING),
-                    Dose(id = 2, medicationId = 2, timestamp = Instant.now(), status = DoseStatus.TAKEN)
+                    Dose(id = 1, medicationId = 1, timestamp = Clock.System.now(), status = DoseStatus.PENDING),
+                    Dose(id = 2, medicationId = 2, timestamp = Clock.System.now(), status = DoseStatus.TAKEN)
                 ))
             ),
             onEvent = {},
