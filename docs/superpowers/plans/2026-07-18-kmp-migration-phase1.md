@@ -37,7 +37,6 @@ shared/
       data/mapper/DoseMapper.kt, data/mapper/MedicationMapper.kt
       data/repository/MedicationRepositoryImpl.kt
       reminder/DoseReminderScheduler.kt
-      di/DataModule.kt
       ui/theme/Color.kt, ui/theme/Type.kt
       ui/navigation/Destinations.kt
       ui/catalog/MedicationCatalogScreen.kt, ui/catalog/MedicationCatalogViewModel.kt
@@ -47,6 +46,7 @@ shared/
       ui/app/DoseTrackerAppMain.kt
     androidMain/kotlin/com/yhdista/dosetracker/
       data/local/DatabaseBuilder.android.kt
+      di/DataModule.kt
       ui/theme/Theme.kt
       ui/app/NotificationPermission.android.kt
     commonMain/kotlin/com/yhdista/dosetracker/ui/app/NotificationPermission.kt (expect)
@@ -1084,7 +1084,7 @@ git commit -m "refactor: introduce DoseReminderScheduler interface, move Medicat
 ### Task 6: Koin modules (data layer) + delete Hilt DI files
 
 **Files:**
-- Create: `shared/src/commonMain/kotlin/com/yhdista/dosetracker/di/DataModule.kt`
+- Create: `shared/src/androidMain/kotlin/com/yhdista/dosetracker/di/DataModule.kt` (androidMain, not commonMain — it imports `android.content.Context` and the androidMain-only `getDatabaseBuilder`, neither of which commonMain can see)
 - Delete: `app/src/main/java/com/yhdista/dosetracker/di/DatabaseModule.kt`
 - Delete: `app/src/main/java/com/yhdista/dosetracker/di/RepositoryModule.kt`
 
