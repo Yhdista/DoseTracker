@@ -842,6 +842,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.atTime
 import kotlinx.datetime.LocalTime
+import kotlinx.datetime.toInstant
 
 class MedicationRepositoryImpl(
     private val medicationDao: MedicationDao,
