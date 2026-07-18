@@ -9,7 +9,5 @@ data class MedicationEntity(
     val id: Long = 0,
     val name: String,
     val dosage: Double,
-    val unit: String,
-    val frequency: String,
-    val reminderTime: String? = null
+    val unit: String
 )

@@ -3,35 +3,35 @@ package com.yhdista.dosetracker.data.repository
 import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.data.local.dao.DoseDao
 import com.yhdista.dosetracker.data.local.dao.MedicationDao
+import com.yhdista.dosetracker.data.local.dao.ReminderScheduleDao
 import com.yhdista.dosetracker.data.mapper.toDomain
 import com.yhdista.dosetracker.data.mapper.toEntity
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.Medication
+import com.yhdista.dosetracker.domain.model.ReminderSchedule
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
-import com.yhdista.dosetracker.reminder.DoseReminderScheduler
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.atTime
-import kotlinx.datetime.LocalTime
 import kotlinx.datetime.toInstant
 
 class MedicationRepositoryImpl(
     private val medicationDao: MedicationDao,
     private val doseDao: DoseDao,
-    private val reminderScheduler: DoseReminderScheduler
+    private val scheduleDao: ReminderScheduleDao
 ) : MedicationRepository {
 
     override fun getMedications(): Flow<Data<List<Medication>>> {
         return medicationDao.getAllMedications()
-            .map { entities ->
-                val medications = entities.map { it.toDomain() }
-                Data.Success(medications) as Data<List<Medication>>
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Medication>> }
             .onStart { emit(Data.Loading) }
             .catch { e -> emit(Data.Error("Failed to fetch medications", e)) }
     }
@@ -39,23 +39,20 @@ class MedicationRepositoryImpl(
     override fun getMedicationById(id: Long): Flow<Data<Medication>> {
         return medicationDao.getMedicationById(id)
             .map { entity ->
-                if (entity != null) {
-                    Data.Success(entity.toDomain()) as Data<Medication>
-                } else {
-                    Data.Error("Medication not found")
-                }
+                if (entity != null) Data.Success(entity.toDomain()) as Data<Medication>
+                else Data.Error("Medication not found")
             }
             .onStart { emit(Data.Loading) }
             .catch { e -> emit(Data.Error("Failed to fetch medication", e)) }
     }
 
+    override suspend fun getMedicationOnce(id: Long): Medication? {
+        return medicationDao.getMedicationById(id).first()?.toDomain()
+    }
+
     override suspend fun insertMedication(medication: Medication): Data<Long> {
         return try {
-            val id = medicationDao.insertMedication(medication.toEntity())
-            if (medication.reminderTime != null) {
-                reminderScheduler.scheduleReminder(medication.copy(id = id))
-            }
-            Data.Success(id)
+            Data.Success(medicationDao.insertMedication(medication.toEntity()))
         } catch (e: Exception) {
             Data.Error("Failed to insert medication", e)
         }
@@ -64,11 +61,6 @@ class MedicationRepositoryImpl(
     override suspend fun updateMedication(medication: Medication): Data<Unit> {
         return try {
             medicationDao.updateMedication(medication.toEntity())
-            if (medication.reminderTime != null) {
-                reminderScheduler.scheduleReminder(medication)
-            } else {
-                reminderScheduler.cancelReminder(medication.id)
-            }
             Data.Success(Unit)
         } catch (e: Exception) {
             Data.Error("Failed to update medication", e)
@@ -78,19 +70,22 @@ class MedicationRepositoryImpl(
     override suspend fun deleteMedication(medication: Medication): Data<Unit> {
         return try {
             medicationDao.deleteMedication(medication.toEntity())
-            reminderScheduler.cancelReminder(medication.id)
             Data.Success(Unit)
         } catch (e: Exception) {
             Data.Error("Failed to delete medication", e)
         }
     }
 
+    override fun searchMedications(query: String): Flow<Data<List<Medication>>> {
+        return medicationDao.searchMedications(query)
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Medication>> }
+            .onStart { emit(Data.Loading) }
+            .catch { e -> emit(Data.Error("Failed to search medications", e)) }
+    }
+
     override fun getDosesForMedication(medicationId: Long): Flow<Data<List<Dose>>> {
         return doseDao.getDosesForMedication(medicationId)
-            .map { entities ->
-                val doses = entities.map { it.toDomain() }
-                Data.Success(doses) as Data<List<Dose>>
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Dose>> }
             .onStart { emit(Data.Loading) }
             .catch { e -> emit(Data.Error("Failed to fetch doses", e)) }
     }
@@ -101,28 +96,29 @@ class MedicationRepositoryImpl(
         val endOfDay = date.atTime(LocalTime(23, 59, 59, 999_000_000)).toInstant(zone).toEpochMilliseconds()
 
         return doseDao.getDosesInTimeRange(startOfDay, endOfDay)
-            .map { entities ->
-                val doses = entities.map { it.toDomain() }
-                Data.Success(doses) as Data<List<Dose>>
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Dose>> }
             .onStart { emit(Data.Loading) }
             .catch { e -> emit(Data.Error("Failed to fetch doses for date", e)) }
     }
 
     override fun getAllDoses(): Flow<Data<List<Dose>>> {
         return doseDao.getAllDoses()
-            .map { entities ->
-                val doses = entities.map { it.toDomain() }
-                Data.Success(doses) as Data<List<Dose>>
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Dose>> }
             .onStart { emit(Data.Loading) }
             .catch { e -> emit(Data.Error("Failed to fetch all doses", e)) }
     }
 
+    override suspend fun getDoseOnce(id: Long): Dose? {
+        return doseDao.getDoseWithMedicationById(id)?.toDomain()
+    }
+
+    override suspend fun getDoseForSchedule(scheduleId: Long, timestamp: Instant): Dose? {
+        return doseDao.getDoseForSchedule(scheduleId, timestamp)?.toDomain()
+    }
+
     override suspend fun insertDose(dose: Dose): Data<Long> {
         return try {
-            val id = doseDao.insertDose(dose.toEntity())
-            Data.Success(id)
+            Data.Success(doseDao.insertDose(dose.toEntity()))
         } catch (e: Exception) {
             Data.Error("Failed to insert dose", e)
         }
@@ -137,13 +133,35 @@ class MedicationRepositoryImpl(
         }
     }
 
-    override fun searchMedications(query: String): Flow<Data<List<Medication>>> {
-        return medicationDao.searchMedications(query)
-            .map { entities ->
-                val medications = entities.map { it.toDomain() }
-                Data.Success(medications) as Data<List<Medication>>
-            }
+    override fun getSchedulesForMedication(medicationId: Long): Flow<Data<List<ReminderSchedule>>> {
+        return scheduleDao.getSchedulesForMedication(medicationId)
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<ReminderSchedule>> }
             .onStart { emit(Data.Loading) }
-            .catch { e -> emit(Data.Error("Failed to search medications", e)) }
+            .catch { e -> emit(Data.Error("Failed to fetch schedules", e)) }
+    }
+
+    override suspend fun getEnabledSchedules(): Data<List<ReminderSchedule>> {
+        return try {
+            Data.Success(scheduleDao.getAllEnabledSchedules().map { it.toDomain() })
+        } catch (e: Exception) {
+            Data.Error("Failed to fetch schedules", e)
+        }
+    }
+
+    override suspend fun insertSchedule(schedule: ReminderSchedule): Data<Long> {
+        return try {
+            Data.Success(scheduleDao.insertSchedule(schedule.toEntity()))
+        } catch (e: Exception) {
+            Data.Error("Failed to insert schedule", e)
+        }
+    }
+
+    override suspend fun deleteSchedule(schedule: ReminderSchedule): Data<Unit> {
+        return try {
+            scheduleDao.deleteSchedule(schedule.toEntity())
+            Data.Success(Unit)
+        } catch (e: Exception) {
+            Data.Error("Failed to delete schedule", e)
+        }
     }
 }

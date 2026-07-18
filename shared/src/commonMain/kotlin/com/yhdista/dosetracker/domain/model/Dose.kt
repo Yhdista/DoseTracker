@@ -5,7 +5,8 @@ import kotlinx.datetime.Instant
 data class Dose(
     val id: Long = 0,
     val medicationId: Long,
-    val medicationName: String = "", // Added medication name
+    val scheduleId: Long? = null,
+    val medicationName: String = "",
     val timestamp: Instant,
     val amount: Double? = null,
     val unit: String? = null,

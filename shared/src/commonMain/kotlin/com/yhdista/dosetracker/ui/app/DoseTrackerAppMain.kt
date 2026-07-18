@@ -119,6 +119,9 @@ fun DoseTrackerAppMain() {
                             viewModel = koinViewModel<MedicationCatalogViewModel>(),
                             onMedicationClick = { id ->
                                 backstack.add(Destination.AddDose(id))
+                            },
+                            onManageRemindersClick = { id ->
+                                backstack.add(Destination.MedicationDetail(id))
                             }
                         )
                     }

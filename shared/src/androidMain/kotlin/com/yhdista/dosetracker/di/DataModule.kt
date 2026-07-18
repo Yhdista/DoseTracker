@@ -13,11 +13,12 @@ val dataModule = module {
     }
     single { get<com.yhdista.dosetracker.data.local.AppDatabase>().medicationDao() }
     single { get<com.yhdista.dosetracker.data.local.AppDatabase>().doseDao() }
+    single { get<com.yhdista.dosetracker.data.local.AppDatabase>().reminderScheduleDao() }
     single<MedicationRepository> {
         MedicationRepositoryImpl(
             medicationDao = get(),
             doseDao = get(),
-            reminderScheduler = get()
+            scheduleDao = get()
         )
     }
 }

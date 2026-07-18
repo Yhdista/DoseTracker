@@ -39,21 +39,21 @@ class NotificationHelper(
         }
     }
 
-    fun showNotification(medicationName: String, dosage: String, medicationId: Long) {
+    fun showNotification(doseId: Long, medicationName: String, dosage: String) {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            putExtra("medicationId", medicationId)
+            putExtra("doseId", doseId)
         }
-        
+
         val pendingIntent = PendingIntent.getActivity(
             context,
-            medicationId.toInt(),
+            doseId.toInt(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground) // Use a proper icon if available
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Medication Reminder")
             .setContentText("It's time to take your $medicationName ($dosage)")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -61,6 +61,6 @@ class NotificationHelper(
             .setContentIntent(pendingIntent)
             .build()
 
-        notificationManager.notify(medicationId.toInt(), notification)
+        notificationManager.notify(doseId.toInt(), notification)
     }
 }

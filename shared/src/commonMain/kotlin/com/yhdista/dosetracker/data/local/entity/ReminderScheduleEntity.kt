@@ -4,11 +4,9 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.yhdista.dosetracker.domain.model.DoseStatus
-import kotlinx.datetime.Instant
 
 @Entity(
-    tableName = "doses",
+    tableName = "reminder_schedules",
     foreignKeys = [
         ForeignKey(
             entity = MedicationEntity::class,
@@ -17,16 +15,13 @@ import kotlinx.datetime.Instant
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["medicationId"]), Index(value = ["scheduleId", "timestamp"], unique = true)]
+    indices = [Index(value = ["medicationId"])]
 )
-data class DoseEntity(
+data class ReminderScheduleEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val medicationId: Long,
-    // No FK to reminder_schedules: deleting a schedule must not cascade-delete dose history.
-    val scheduleId: Long?,
-    val timestamp: Instant,
-    val amount: Double?,
-    val unit: String?,
-    val status: DoseStatus
+    val minutesOfDay: Int,
+    val daysOfWeek: Int,
+    val enabled: Boolean = true
 )

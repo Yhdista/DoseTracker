@@ -5,72 +5,37 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import com.yhdista.dosetracker.domain.model.Medication
-import java.time.LocalTime
-import java.time.ZoneId
-import java.time.ZonedDateTime
+import kotlinx.datetime.Instant
 
 class ReminderScheduler(
     private val context: Context
 ) : DoseReminderScheduler {
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-    override fun scheduleReminder(medication: Medication) {
-        val reminderTimeStr = medication.reminderTime ?: return
-        val time = try {
-            LocalTime.parse(reminderTimeStr)
-        } catch (_: Exception) {
-            return
-        }
-
-        val now = ZonedDateTime.now(ZoneId.systemDefault())
-        var scheduledTime = now.withHour(time.hour).withMinute(time.minute).withSecond(0).withNano(0)
-
-        if (scheduledTime.isBefore(now)) {
-            scheduledTime = scheduledTime.plusDays(1)
-        }
-
+    override fun scheduleReminder(doseId: Long, at: Instant) {
         val intent = Intent(context, ReminderReceiver::class.java).apply {
-            putExtra("medicationId", medication.id)
-            putExtra("medicationName", medication.name)
-            putExtra("dosage", "${medication.dosage} ${medication.unit}")
+            putExtra("doseId", doseId)
         }
-
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            medication.id.toInt(),
+            doseId.toInt(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val triggerAtMillis = at.toEpochMilliseconds()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (alarmManager.canScheduleExactAlarms()) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    scheduledTime.toInstant().toEpochMilli(),
-                    pendingIntent
-                )
-            } else {
-                alarmManager.setAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    scheduledTime.toInstant().toEpochMilli(),
-                    pendingIntent
-                )
-            }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
         } else {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                scheduledTime.toInstant().toEpochMilli(),
-                pendingIntent
-            )
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
         }
     }
 
-    override fun cancelReminder(medicationId: Long) {
+    override fun cancelReminder(doseId: Long) {
         val intent = Intent(context, ReminderReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            medicationId.toInt(),
+            doseId.toInt(),
             intent,
             PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
         )

@@ -8,6 +8,7 @@ fun DoseEntity.toDomain(medicationName: String = ""): Dose {
     return Dose(
         id = id,
         medicationId = medicationId,
+        scheduleId = scheduleId,
         medicationName = medicationName,
         timestamp = timestamp,
         amount = amount,
@@ -24,6 +25,7 @@ fun Dose.toEntity(): DoseEntity {
     return DoseEntity(
         id = id,
         medicationId = medicationId,
+        scheduleId = scheduleId,
         timestamp = timestamp,
         amount = amount,
         unit = unit,

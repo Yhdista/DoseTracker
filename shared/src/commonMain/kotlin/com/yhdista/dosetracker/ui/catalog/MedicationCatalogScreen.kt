@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +20,8 @@ import com.yhdista.dosetracker.domain.model.Medication
 @Composable
 fun MedicationCatalogScreen(
     viewModel: MedicationCatalogViewModel,
-    onMedicationClick: (Long) -> Unit
+    onMedicationClick: (Long) -> Unit,
+    onManageRemindersClick: (Long) -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
@@ -50,8 +52,8 @@ fun MedicationCatalogScreen(
             if (showAddDialog) {
                 AddMedicationDialog(
                     onDismiss = { showAddDialog = false },
-                    onConfirm = { name, dosage, unit, frequency ->
-                        viewModel.onEvent(CatalogEvent.AddMedication(name, dosage, unit, frequency))
+                    onConfirm = { name, dosage, unit ->
+                        viewModel.onEvent(CatalogEvent.AddMedication(name, dosage, unit))
                         showAddDialog = false
                     }
                 )
@@ -79,7 +81,8 @@ fun MedicationCatalogScreen(
                             items(medications) { medication ->
                                 MedicationItem(
                                     medication = medication,
-                                    onClick = { onMedicationClick(medication.id) }
+                                    onClick = { onMedicationClick(medication.id) },
+                                    onManageReminders = { onManageRemindersClick(medication.id) }
                                 )
                                 HorizontalDivider()
                             }
@@ -94,12 +97,11 @@ fun MedicationCatalogScreen(
 @Composable
 fun AddMedicationDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String, String) -> Unit
+    onConfirm: (String, String, String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var dosage by remember { mutableStateOf("") }
     var unit by remember { mutableStateOf("mg") }
-    var frequency by remember { mutableStateOf("Daily") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -124,17 +126,11 @@ fun AddMedicationDialog(
                     label = { Text("Unit (e.g., mg, ml)") },
                     modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
-                    value = frequency,
-                    onValueChange = { frequency = it },
-                    label = { Text("Frequency (e.g., Daily)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(name, dosage, unit, frequency) },
+                onClick = { onConfirm(name, dosage, unit) },
                 enabled = name.isNotBlank() && dosage.isNotBlank()
             ) {
                 Text("Add")
@@ -168,11 +164,17 @@ fun SearchBar(
 @Composable
 fun MedicationItem(
     medication: Medication,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onManageReminders: () -> Unit
 ) {
     ListItem(
         headlineContent = { Text(medication.name) },
-        supportingContent = { Text("${medication.dosage} ${medication.unit} - ${medication.frequency}") },
+        supportingContent = { Text("${medication.dosage} ${medication.unit}") },
+        trailingContent = {
+            IconButton(onClick = onManageReminders) {
+                Icon(Icons.Rounded.Schedule, contentDescription = "Manage reminders")
+            }
+        },
         modifier = Modifier.clickable(onClick = onClick)
     )
 }

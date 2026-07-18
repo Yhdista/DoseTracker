@@ -3,6 +3,7 @@ package com.yhdista.dosetracker.data.local.dao
 import androidx.room.*
 import com.yhdista.dosetracker.data.local.entity.DoseEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.Instant
 
 data class DoseWithMedication(
     @Embedded val dose: DoseEntity,
@@ -48,4 +49,16 @@ interface DoseDao {
 
     @Delete
     suspend fun deleteDose(dose: DoseEntity)
+
+    @Transaction
+    @Query("""
+        SELECT doses.*, medications.name as medicationName
+        FROM doses
+        INNER JOIN medications ON doses.medicationId = medications.id
+        WHERE doses.id = :id
+    """)
+    suspend fun getDoseWithMedicationById(id: Long): DoseWithMedication?
+
+    @Query("SELECT * FROM doses WHERE scheduleId = :scheduleId AND timestamp = :timestamp LIMIT 1")
+    suspend fun getDoseForSchedule(scheduleId: Long, timestamp: Instant): DoseEntity?
 }

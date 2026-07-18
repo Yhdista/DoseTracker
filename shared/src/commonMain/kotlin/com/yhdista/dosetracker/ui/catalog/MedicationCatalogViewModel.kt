@@ -19,8 +19,7 @@ sealed interface CatalogEvent {
     data class AddMedication(
         val name: String,
         val dosage: String,
-        val unit: String,
-        val frequency: String
+        val unit: String
     ) : CatalogEvent
 }
 
@@ -64,8 +63,7 @@ class MedicationCatalogViewModel(
                 Medication(
                     name = event.name,
                     dosage = dosageValue,
-                    unit = event.unit,
-                    frequency = event.frequency
+                    unit = event.unit
                 )
             )
         }

@@ -1,8 +1,8 @@
 package com.yhdista.dosetracker.reminder
 
-import com.yhdista.dosetracker.domain.model.Medication
+import kotlinx.datetime.Instant
 
 interface DoseReminderScheduler {
-    fun scheduleReminder(medication: Medication)
-    fun cancelReminder(medicationId: Long)
+    fun scheduleReminder(doseId: Long, at: Instant)
+    fun cancelReminder(doseId: Long)
 }

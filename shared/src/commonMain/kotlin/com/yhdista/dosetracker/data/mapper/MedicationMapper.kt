@@ -8,9 +8,7 @@ fun MedicationEntity.toDomain(): Medication {
         id = id,
         name = name,
         dosage = dosage,
-        unit = unit,
-        frequency = frequency,
-        reminderTime = reminderTime
+        unit = unit
     )
 }
 
@@ -19,8 +17,6 @@ fun Medication.toEntity(): MedicationEntity {
         id = id,
         name = name,
         dosage = dosage,
-        unit = unit,
-        frequency = frequency,
-        reminderTime = reminderTime
+        unit = unit
     )
 }
