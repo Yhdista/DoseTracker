@@ -650,6 +650,7 @@ abstract class AppDatabase : RoomDatabase() {
     }
 }
 
+@Suppress("KotlinNoActualForExpect")
 expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {
     override fun initialize(): AppDatabase
 }
@@ -702,7 +703,7 @@ fun getDatabaseBuilder(context: Context): RoomDatabase.Builder<AppDatabase> {
 In `shared/build.gradle.kts`, add to `commonMain.dependencies`:
 
 ```kotlin
-            implementation("androidx.sqlite:sqlite-bundled:2.6.1")
+            implementation("androidx.sqlite:sqlite-bundled:2.7.0")
 ```
 
 - [ ] **Step 10: Move the mappers (unchanged logic, same package)**
