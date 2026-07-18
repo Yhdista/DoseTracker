@@ -1,31 +1,28 @@
 package com.yhdista.dosetracker
 
 import android.app.Application
-import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
-import dagger.hilt.EntryPoint
-import dagger.hilt.EntryPoints
-import dagger.hilt.InstallIn
-import dagger.hilt.android.HiltAndroidApp
-import dagger.hilt.components.SingletonComponent
-import javax.inject.Inject
+import com.yhdista.dosetracker.di.appModule
+import com.yhdista.dosetracker.di.dataModule
+import com.yhdista.dosetracker.di.viewModelModule
+import org.koin.android.ext.koin.androidContext
+import org.koin.androidx.workmanager.factory.KoinWorkerFactory
+import org.koin.androidx.workmanager.koin.workManagerFactory
+import org.koin.core.context.startKoin
 
-@HiltAndroidApp
 class DoseTrackerApp : Application(), Configuration.Provider {
 
-    @Inject
-    lateinit var workerFactory: HiltWorkerFactory
+    override fun onCreate() {
+        super.onCreate()
+        startKoin {
+            androidContext(this@DoseTrackerApp)
+            workManagerFactory()
+            modules(appModule, dataModule, viewModelModule)
+        }
+    }
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
-            .setWorkerFactory(
-                EntryPoints.get(this, HiltWorkerFactoryEntryPoint::class.java).workerFactory()
-            )
+            .setWorkerFactory(KoinWorkerFactory())
             .build()
-
-    @EntryPoint
-    @InstallIn(SingletonComponent::class)
-    interface HiltWorkerFactoryEntryPoint {
-        fun workerFactory(): HiltWorkerFactory
-    }
 }

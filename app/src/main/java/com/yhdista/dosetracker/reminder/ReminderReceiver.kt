@@ -3,21 +3,17 @@ package com.yhdista.dosetracker.reminder
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+import org.koin.core.context.GlobalContext
 
-@AndroidEntryPoint
 class ReminderReceiver : BroadcastReceiver() {
-
-    @Inject
-    lateinit var notificationHelper: NotificationHelper
 
     override fun onReceive(context: Context, intent: Intent) {
         val medicationName = intent.getStringExtra("medicationName") ?: return
         val dosage = intent.getStringExtra("dosage") ?: ""
         val medicationId = intent.getLongOf("medicationId", -1L)
-        
+
         if (medicationId != -1L) {
+            val notificationHelper = GlobalContext.get().get<NotificationHelper>()
             notificationHelper.showNotification(medicationName, dosage, medicationId)
         }
     }
