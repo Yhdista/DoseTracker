@@ -2537,6 +2537,7 @@ git commit -m "refactor: move screens and app navigation host to :shared, kotlin
 ### Task 11: `:app` shell rewrite — Koin startup, slim MainActivity, Koin WorkManager
 
 **Files:**
+- Modify: `app/build.gradle.kts` (Koin android/workmanager deps — needed now, not Task 12, since this task is the first thing in `:app` to actually reference Koin)
 - Modify: `app/src/main/java/com/yhdista/dosetracker/DoseTrackerApp.kt`
 - Modify: `app/src/main/java/com/yhdista/dosetracker/MainActivity.kt`
 - Create: `app/src/main/java/com/yhdista/dosetracker/di/AppModule.kt`
@@ -2546,6 +2547,17 @@ git commit -m "refactor: move screens and app navigation host to :shared, kotlin
 **Interfaces:**
 - Consumes: `dataModule`, `viewModelModule` (`:shared`, Tasks 6 and 9), `DoseTrackerAppMain`, `DoseTrackerTheme` (`:shared`, Task 10/7), `ReminderScheduler`, `NotificationHelper`.
 - Produces: a working Koin dependency graph reachable from `MainActivity`, `ReminderReceiver`, and `RescheduleWorker`.
+
+- [ ] **Step 0: Add Koin android/workmanager deps to `:app`**
+
+In `app/build.gradle.kts`'s `dependencies { }` block, add (alongside the existing `implementation(project(":shared"))`):
+
+```kotlin
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.workmanager)
+```
+
+(Originally planned for Task 12, but `:app` needs these now — this task is the first one to actually write Koin-consuming code in `:app`.)
 
 - [ ] **Step 1: Create the app-side Koin module (binds `DoseReminderScheduler` + `NotificationHelper`)**
 
@@ -2564,11 +2576,7 @@ val appModule = module {
 }
 ```
 
-**Note on import paths (verify before trusting):** the exact package paths for `workManagerFactory`, `KoinWorkerFactory`, and the `worker { }` DSL function below are best-effort based on Koin's official WorkManager docs and examples, which don't spell out full import paths verbatim. The `worker { params -> ... }` lambda body (both `Context` and `WorkerParameters` resolved via `params.get()`, not `androidContext()`) IS directly confirmed from an official example. If any of the three imports below don't resolve once `koin-androidx-workmanager` is on the classpath, don't guess repeatedly — inspect the actual resolved jar to find the real package structure, e.g.:
-```
-find ~/.gradle -name "koin-androidx-workmanager*.jar" | head -1 | xargs -I{} unzip -l {}
-```
-and adjust the import to match what's actually in the jar. This is faster and more reliable than trying alternate guesses one at a time.
+**Note on import paths (confirmed by direct jar inspection):** `workManagerFactory` (`org.koin.androidx.workmanager.koin.workManagerFactory`) and `worker { }` (`org.koin.androidx.workmanager.dsl.worker`) are correct as given below. `KoinWorkerFactory` is `org.koin.androidx.workmanager.factory.KoinWorkerFactory` — note `androidx`, not `android` (an earlier draft of this plan had `org.koin.android.workmanager.factory.KoinWorkerFactory`, which is wrong; confirmed against `koin-androidx-workmanager-4.1.0.aar`'s actual `classes.jar` via `javap`). The `worker { params -> ... }` lambda body (both `Context` and `WorkerParameters` resolved via `params.get()`, not `androidContext()`) is also directly confirmed from Koin's official example.
 
 - [ ] **Step 2: Rewrite `DoseTrackerApp.kt` — `startKoin` instead of Hilt, Koin WorkManager factory**
 
@@ -2581,7 +2589,7 @@ import com.yhdista.dosetracker.di.appModule
 import com.yhdista.dosetracker.di.dataModule
 import com.yhdista.dosetracker.di.viewModelModule
 import org.koin.android.ext.koin.androidContext
-import org.koin.android.workmanager.factory.KoinWorkerFactory
+import org.koin.androidx.workmanager.factory.KoinWorkerFactory
 import org.koin.androidx.workmanager.koin.workManagerFactory
 import org.koin.core.context.startKoin
 
@@ -2724,7 +2732,7 @@ and inside the `module { }` block, add:
 - [ ] **Step 7: Verify the full app builds**
 
 Run: `./gradlew :app:assembleDebug`
-Expected: `BUILD SUCCESSFUL`. This is the second highest-risk step (Koin's WorkManager DSL — `koin-androidx-workmanager` package/import names have shifted across Koin versions; if `worker { }` or `KoinWorkerFactory` aren't found at the paths above, check the installed `koin-androidx-workmanager` artifact's actual package via `./gradlew :app:dependencies --configuration debugRuntimeClasspath | grep koin` and adjust the imports).
+Expected: `BUILD SUCCESSFUL` — confirmed achievable with the corrected `KoinWorkerFactory` import path above.
 
 - [ ] **Step 8: Commit**
 
@@ -2741,6 +2749,7 @@ git commit -m "refactor: rewrite :app shell to use Koin instead of Hilt"
 - Modify: `app/build.gradle.kts`
 - Modify: `gradle/libs.versions.toml`
 - Modify: `build.gradle.kts` (root)
+- Modify: `app/src/main/java/com/yhdista/dosetracker/reminder/NotificationHelper.kt` (drop leftover Hilt annotations — see Step 2b)
 
 **Interfaces:**
 - Consumes: nothing new — this is pure removal now that Tasks 1–11 replaced every Hilt usage.
@@ -2773,14 +2782,36 @@ and:
     "ksp"(libs.androidx.hilt.work.compiler)
 ```
 
-Add, alongside the existing `implementation(project(":shared"))`:
-
-```kotlin
-    implementation(libs.koin.android)
-    implementation(libs.koin.androidx.workmanager)
-```
+(`libs.koin.android` and `libs.koin.androidx.workmanager` are already present — Task 11 added them, since `:app` needed them immediately to write Koin-consuming code. Nothing more to add here.)
 
 Keep `libs.retrofit`, `libs.okhttp`, `libs.logging.interceptor`, `libs.play.services.location`, the camera libs, and `libs.accompanist.permissions` (still used by `:shared`'s androidMain, Task 10) — none of these are Hilt/Room/Moshi-related.
+
+- [ ] **Step 2b: Remove leftover Hilt annotations from `NotificationHelper.kt`**
+
+This file was never moved (it stays Android-only in `:app` forever), but it still has Hilt annotations that would fail to compile once the Hilt dependency is gone in Step 6 below (`dagger.hilt.android.qualifiers.ApplicationContext`, `javax.inject.Inject`, `javax.inject.Singleton` all come from Hilt/Dagger dependencies being removed). Koin already calls its constructor directly (`NotificationHelper(androidContext())`, Task 11), so these annotations are unused dead weight, not load-bearing.
+
+In `app/src/main/java/com/yhdista/dosetracker/reminder/NotificationHelper.kt`, change:
+
+```kotlin
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class NotificationHelper @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+```
+
+to:
+
+```kotlin
+class NotificationHelper(
+    private val context: Context
+) {
+```
+
+(Delete the three Hilt/javax.inject imports and the `@Singleton`/`@Inject`/`@ApplicationContext` annotations; everything else in the file is unchanged.)
 
 - [ ] **Step 3: Add the `koin-androidx-workmanager` catalog entry** (if not already present from Task 1 — confirm it's there)
 
@@ -2809,7 +2840,7 @@ Expected: `BUILD SUCCESSFUL`, zero references to `dagger`/`hilt` remain anywhere
 - [ ] **Step 7: Commit**
 
 ```bash
-git add app/build.gradle.kts gradle/libs.versions.toml build.gradle.kts
+git add app/build.gradle.kts gradle/libs.versions.toml build.gradle.kts app/src/main/java/com/yhdista/dosetracker/reminder/NotificationHelper.kt
 git commit -m "chore: remove Hilt entirely, now fully on Koin"
 ```
 
