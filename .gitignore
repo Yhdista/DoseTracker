@@ -17,3 +17,6 @@ local.properties
 # Firebase App Distribution
 app/google-services.json
 app/firebase-key.json
+
+# Git worktrees
+.worktrees/
