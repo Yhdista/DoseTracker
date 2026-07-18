@@ -8,17 +8,22 @@ import com.yhdista.dosetracker.data.mapper.toEntity
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
-import com.yhdista.dosetracker.reminder.ReminderScheduler
+import com.yhdista.dosetracker.reminder.DoseReminderScheduler
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
-import javax.inject.Inject
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.atTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.toInstant
 
-class MedicationRepositoryImpl @Inject constructor(
+class MedicationRepositoryImpl(
     private val medicationDao: MedicationDao,
     private val doseDao: DoseDao,
-    private val reminderScheduler: ReminderScheduler
+    private val reminderScheduler: DoseReminderScheduler
 ) : MedicationRepository {
 
     override fun getMedications(): Flow<Data<List<Medication>>> {
@@ -90,9 +95,10 @@ class MedicationRepositoryImpl @Inject constructor(
             .catch { e -> emit(Data.Error("Failed to fetch doses", e)) }
     }
 
-    override fun getDosesForDate(date: java.time.LocalDate): Flow<Data<List<Dose>>> {
-        val startOfDay = date.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-        val endOfDay = date.atTime(java.time.LocalTime.MAX).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+    override fun getDosesForDate(date: LocalDate): Flow<Data<List<Dose>>> {
+        val zone = TimeZone.currentSystemDefault()
+        val startOfDay = date.atStartOfDayIn(zone).toEpochMilliseconds()
+        val endOfDay = date.atTime(LocalTime(23, 59, 59, 999_000_000)).toInstant(zone).toEpochMilliseconds()
 
         return doseDao.getDosesInTimeRange(startOfDay, endOfDay)
             .map { entities ->

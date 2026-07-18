@@ -6,20 +6,16 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import com.yhdista.dosetracker.domain.model.Medication
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class ReminderScheduler @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+class ReminderScheduler(
+    private val context: Context
+) : DoseReminderScheduler {
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-    fun scheduleReminder(medication: Medication) {
+    override fun scheduleReminder(medication: Medication) {
         val reminderTimeStr = medication.reminderTime ?: return
         val time = try {
             LocalTime.parse(reminderTimeStr)
@@ -55,7 +51,6 @@ class ReminderScheduler @Inject constructor(
                     pendingIntent
                 )
             } else {
-                // Fallback to inexact if permission not granted
                 alarmManager.setAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
                     scheduledTime.toInstant().toEpochMilli(),
@@ -71,7 +66,7 @@ class ReminderScheduler @Inject constructor(
         }
     }
 
-    fun cancelReminder(medicationId: Long) {
+    override fun cancelReminder(medicationId: Long) {
         val intent = Intent(context, ReminderReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
