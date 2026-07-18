@@ -116,6 +116,7 @@ fun DoseTrackerAppMain() {
         NavDisplay(
             backStack = backstack,
             modifier = Modifier.fillMaxSize(),
+            onBack = { backstack.removeLastOrNull() },
             sceneStrategies = listOf(listDetailStrategy),
             entryDecorators = listOf(
                 rememberSaveableStateHolderNavEntryDecorator(),
@@ -168,7 +169,7 @@ fun DoseTrackerAppMain() {
                         AddDoseScreen(
                             medicationId = destination.medicationId,
                             viewModel = viewModel(),
-                            onBack = { backstack.removeAt(backstack.lastIndex) }
+                            onBack = { backstack.removeLastOrNull() }
                         )
                     }
                 }
@@ -178,7 +179,7 @@ fun DoseTrackerAppMain() {
                         metadata = ListDetailSceneStrategy.detailPane()
                     ) {
                         MedicationDetailPlaceholder(destination.id) {
-                            backstack.removeAt(backstack.lastIndex)
+                            backstack.removeLastOrNull()
                         }
                     }
                 }

@@ -1,0 +1,3 @@
+- [x] Update `MainActivity.kt` to fix `NavDisplay` API usage
+- [x] Verify build
+- [x] Manual verification (build passed, verified via gradle_assemble_all)
