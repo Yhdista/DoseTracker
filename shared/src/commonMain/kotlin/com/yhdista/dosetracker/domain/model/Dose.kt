@@ -1,6 +1,6 @@
 package com.yhdista.dosetracker.domain.model
 
-import java.time.Instant
+import kotlinx.datetime.Instant
 
 data class Dose(
     val id: Long = 0,
