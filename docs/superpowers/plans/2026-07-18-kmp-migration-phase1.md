@@ -2099,7 +2099,7 @@ import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.format.char
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun TodayScreen(
@@ -2242,7 +2242,7 @@ fun TodayContentPreview() {
 }
 ```
 
-Note: `@Preview(showBackground = true)` becomes plain `@Preview` — Compose Multiplatform's common `@Preview` annotation (`org.jetbrains.compose.ui.tooling.preview.Preview`) does not accept `showBackground` in this phase; drop the parameter.
+Note: `@Preview(showBackground = true)` becomes plain `@Preview` from `androidx.compose.ui.tooling.preview.Preview` — as of Compose Multiplatform 1.10+ this is the single unified preview annotation usable directly in commonMain (the old `org.jetbrains.compose.ui.tooling.preview.Preview` is deprecated); it does not accept `showBackground` in this phase, drop the parameter.
 
 - [ ] **Step 5: Create the `NotificationPermission` expect/actual pair**
 
