@@ -78,6 +78,7 @@ class DoseGeneratorTest {
         generator.runForDate(today)
 
         verify(repository, never()).insertDose(any())
+        verify(repository, never()).getDoseForSchedule(any(), any())
     }
 
     @Test
@@ -94,6 +95,7 @@ class DoseGeneratorTest {
         generator.runForDate(today)
 
         verify(repository, never()).insertDose(any())
+        verify(scheduler, never()).scheduleReminder(any(), any())
     }
 
     @Test
