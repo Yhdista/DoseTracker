@@ -2564,6 +2564,12 @@ val appModule = module {
 }
 ```
 
+**Note on import paths (verify before trusting):** the exact package paths for `workManagerFactory`, `KoinWorkerFactory`, and the `worker { }` DSL function below are best-effort based on Koin's official WorkManager docs and examples, which don't spell out full import paths verbatim. The `worker { params -> ... }` lambda body (both `Context` and `WorkerParameters` resolved via `params.get()`, not `androidContext()`) IS directly confirmed from an official example. If any of the three imports below don't resolve once `koin-androidx-workmanager` is on the classpath, don't guess repeatedly — inspect the actual resolved jar to find the real package structure, e.g.:
+```
+find ~/.gradle -name "koin-androidx-workmanager*.jar" | head -1 | xargs -I{} unzip -l {}
+```
+and adjust the import to match what's actually in the jar. This is faster and more reliable than trying alternate guesses one at a time.
+
 - [ ] **Step 2: Rewrite `DoseTrackerApp.kt` — `startKoin` instead of Hilt, Koin WorkManager factory**
 
 ```kotlin
@@ -2699,7 +2705,6 @@ class RescheduleWorker(
 In `app/src/main/java/com/yhdista/dosetracker/di/AppModule.kt` (Step 1's file), add:
 
 ```kotlin
-import androidx.work.WorkerParameters
 import org.koin.androidx.workmanager.dsl.worker
 ```
 
@@ -2708,8 +2713,8 @@ and inside the `module { }` block, add:
 ```kotlin
     worker { params ->
         com.yhdista.dosetracker.reminder.RescheduleWorker(
-            androidContext(),
-            params.get<WorkerParameters>(),
+            params.get(),
+            params.get(),
             get(),
             get()
         )
