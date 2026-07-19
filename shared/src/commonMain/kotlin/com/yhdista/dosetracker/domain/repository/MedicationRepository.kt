@@ -20,6 +20,7 @@ interface MedicationRepository {
     fun getDosesForMedication(medicationId: Long): Flow<Data<List<Dose>>>
     fun getDosesForDate(date: LocalDate): Flow<Data<List<Dose>>>
     fun getDosesInWeek(weekStart: LocalDate): Flow<Data<List<Dose>>>
+    fun getDosesForMedicationInRange(medicationId: Long, start: LocalDate, endExclusive: LocalDate): Flow<Data<List<Dose>>>
     fun getAllDoses(): Flow<Data<List<Dose>>>
     suspend fun getDoseOnce(id: Long): Dose?
     fun getDoseById(id: Long): Flow<Data<Dose>>

@@ -37,6 +37,17 @@ interface DoseDao {
         SELECT doses.*, medications.name as medicationName
         FROM doses
         INNER JOIN medications ON doses.medicationId = medications.id
+        WHERE doses.medicationId = :medicationId
+          AND timestamp >= :startTime AND timestamp <= :endTime
+        ORDER BY timestamp ASC
+    """)
+    fun getDosesForMedicationInTimeRange(medicationId: Long, startTime: Long, endTime: Long): Flow<List<DoseWithMedication>>
+
+    @Transaction
+    @Query("""
+        SELECT doses.*, medications.name as medicationName
+        FROM doses
+        INNER JOIN medications ON doses.medicationId = medications.id
         ORDER BY timestamp DESC
     """)
     fun getAllDoses(): Flow<List<DoseWithMedication>>

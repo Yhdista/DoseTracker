@@ -5,6 +5,7 @@ import com.yhdista.dosetracker.ui.confirm.ConfirmDoseViewModel
 import com.yhdista.dosetracker.ui.dose.AddDoseViewModel
 import com.yhdista.dosetracker.ui.history.HistoryViewModel
 import com.yhdista.dosetracker.ui.medicationdetail.MedicationDetailViewModel
+import com.yhdista.dosetracker.ui.report.MedicationReportViewModel
 import com.yhdista.dosetracker.ui.report.ReportViewModel
 import com.yhdista.dosetracker.ui.today.TodayViewModel
 import org.koin.core.module.dsl.viewModel
@@ -18,4 +19,5 @@ val viewModelModule = module {
     viewModel { MedicationDetailViewModel(get(), get(), get(), get()) }
     viewModel { ConfirmDoseViewModel(get(), get()) }
     viewModel { ReportViewModel(get()) }
+    viewModel { MedicationReportViewModel(get(), get()) }
 }
