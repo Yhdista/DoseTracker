@@ -21,6 +21,7 @@ interface MedicationRepository {
     fun getDosesForDate(date: LocalDate): Flow<Data<List<Dose>>>
     fun getAllDoses(): Flow<Data<List<Dose>>>
     suspend fun getDoseOnce(id: Long): Dose?
+    fun getDoseById(id: Long): Flow<Data<Dose>>
     suspend fun getDoseForSchedule(scheduleId: Long, timestamp: Instant): Dose?
     suspend fun insertDose(dose: Dose): Data<Long>
     suspend fun updateDose(dose: Dose): Data<Unit>

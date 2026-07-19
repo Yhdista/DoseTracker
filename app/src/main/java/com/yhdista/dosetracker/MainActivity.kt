@@ -11,9 +11,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val doseId = intent.getLongExtra("doseId", -1L).takeIf { it != -1L }
         setContent {
             DoseTrackerTheme {
-                DoseTrackerAppMain()
+                DoseTrackerAppMain(initialConfirmDoseId = doseId)
             }
         }
     }

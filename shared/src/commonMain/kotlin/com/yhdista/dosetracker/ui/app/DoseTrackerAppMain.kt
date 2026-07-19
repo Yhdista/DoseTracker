@@ -1,6 +1,7 @@
 package com.yhdista.dosetracker.ui.app
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Medication
@@ -23,6 +24,8 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.yhdista.dosetracker.ui.catalog.MedicationCatalogScreen
 import com.yhdista.dosetracker.ui.catalog.MedicationCatalogViewModel
+import com.yhdista.dosetracker.ui.confirm.ConfirmDoseScreen
+import com.yhdista.dosetracker.ui.confirm.ConfirmDoseViewModel
 import com.yhdista.dosetracker.ui.dose.AddDoseScreen
 import com.yhdista.dosetracker.ui.dose.AddDoseViewModel
 import com.yhdista.dosetracker.ui.history.HistoryScreen
@@ -36,11 +39,15 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class, ExperimentalMaterial3AdaptiveNavigationSuiteApi::class)
 @Composable
-fun DoseTrackerAppMain() {
+fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
     RequestNotificationPermissionEffect()
 
     val backstack = rememberNavBackStack(Destination.Today)
     val listDetailStrategy = rememberListDetailSceneStrategy<NavKey>()
+
+    LaunchedEffect(initialConfirmDoseId) {
+        initialConfirmDoseId?.let { backstack.add(Destination.ConfirmDose(it)) }
+    }
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
@@ -98,8 +105,8 @@ fun DoseTrackerAppMain() {
                     ) {
                         TodayScreen(
                             viewModel = koinViewModel<TodayViewModel>(),
-                            onNavigateToDetail = { id ->
-                                backstack.add(Destination.MedicationDetail(id))
+                            onNavigateToConfirm = { doseId ->
+                                backstack.add(Destination.ConfirmDose(doseId))
                             }
                         )
                     }
@@ -150,6 +157,18 @@ fun DoseTrackerAppMain() {
                         MedicationDetailScreen(
                             medicationId = destination.id,
                             viewModel = koinViewModel<MedicationDetailViewModel>(),
+                            onBack = { backstack.removeLastOrNull() }
+                        )
+                    }
+                }
+                is Destination.ConfirmDose -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        ConfirmDoseScreen(
+                            doseId = destination.doseId,
+                            viewModel = koinViewModel<ConfirmDoseViewModel>(),
                             onBack = { backstack.removeLastOrNull() }
                         )
                     }

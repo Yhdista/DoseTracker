@@ -1,6 +1,7 @@
 package com.yhdista.dosetracker.di
 
 import com.yhdista.dosetracker.ui.catalog.MedicationCatalogViewModel
+import com.yhdista.dosetracker.ui.confirm.ConfirmDoseViewModel
 import com.yhdista.dosetracker.ui.dose.AddDoseViewModel
 import com.yhdista.dosetracker.ui.history.HistoryViewModel
 import com.yhdista.dosetracker.ui.medicationdetail.MedicationDetailViewModel
@@ -14,4 +15,5 @@ val viewModelModule = module {
     viewModel { HistoryViewModel(get()) }
     viewModel { TodayViewModel(get(), get()) }
     viewModel { MedicationDetailViewModel(get(), get(), get(), get()) }
+    viewModel { ConfirmDoseViewModel(get(), get()) }
 }

@@ -112,6 +112,16 @@ class MedicationRepositoryImpl(
         return doseDao.getDoseWithMedicationById(id)?.toDomain()
     }
 
+    override fun getDoseById(id: Long): Flow<Data<Dose>> {
+        return doseDao.getDoseWithMedicationByIdFlow(id)
+            .map { entity ->
+                if (entity != null) Data.Success(entity.toDomain()) as Data<Dose>
+                else Data.Error("Dose not found")
+            }
+            .onStart { emit(Data.Loading) }
+            .catch { e -> emit(Data.Error("Failed to fetch dose", e)) }
+    }
+
     override suspend fun getDoseForSchedule(scheduleId: Long, timestamp: Instant): Dose? {
         return doseDao.getDoseForSchedule(scheduleId, timestamp)?.toDomain()
     }

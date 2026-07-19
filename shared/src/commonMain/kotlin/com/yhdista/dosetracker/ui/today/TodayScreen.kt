@@ -29,14 +29,14 @@ import androidx.compose.ui.tooling.preview.Preview
 @Composable
 fun TodayScreen(
     viewModel: TodayViewModel,
-    onNavigateToDetail: (Long) -> Unit
+    onNavigateToConfirm: (Long) -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     TodayContent(
         state = state,
         onEvent = viewModel::onEvent,
-        onNavigateToDetail = onNavigateToDetail
+        onNavigateToConfirm = onNavigateToConfirm
     )
 }
 
@@ -45,7 +45,7 @@ fun TodayScreen(
 fun TodayContent(
     state: TodayState,
     onEvent: (TodayEvent) -> Unit,
-    onNavigateToDetail: (Long) -> Unit
+    onNavigateToConfirm: (Long) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -81,7 +81,7 @@ fun TodayContent(
                         items(doses.data, key = { it.id }) { dose ->
                             DoseItem(
                                 dose = dose,
-                                onClick = { onNavigateToDetail(dose.medicationId) },
+                                onClick = { onNavigateToConfirm(dose.id) },
                                 onToggleStatus = { onEvent(TodayEvent.ToggleDoseStatus(dose)) }
                             )
                         }
@@ -161,7 +161,7 @@ fun TodayContentPreview() {
                 ))
             ),
             onEvent = {},
-            onNavigateToDetail = {}
+            onNavigateToConfirm = {}
         )
     }
 }
