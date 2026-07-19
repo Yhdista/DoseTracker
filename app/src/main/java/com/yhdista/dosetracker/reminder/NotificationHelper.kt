@@ -40,15 +40,14 @@ class NotificationHelper(
     }
 
     fun showNotification(doseId: Long, medicationName: String, dosage: String) {
-        val intent = Intent(context, MainActivity::class.java).apply {
+        val contentIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             putExtra("doseId", doseId)
         }
-
-        val pendingIntent = PendingIntent.getActivity(
+        val contentPendingIntent = PendingIntent.getActivity(
             context,
             doseId.toInt(),
-            intent,
+            contentIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -58,10 +57,26 @@ class NotificationHelper(
             .setContentText("It's time to take your $medicationName ($dosage)")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
+            .setContentIntent(contentPendingIntent)
+            .addAction(0, "Taken", doseActionIntent(doseId, DoseActionReceiver.ACTION_TAKEN))
+            .addAction(0, "Skip", doseActionIntent(doseId, DoseActionReceiver.ACTION_SKIPPED))
+            .addAction(0, "Snooze", doseActionIntent(doseId, DoseActionReceiver.ACTION_SNOOZE))
             .build()
 
         notificationManager.notify(doseId.toInt(), notification)
+    }
+
+    private fun doseActionIntent(doseId: Long, action: String): PendingIntent {
+        val intent = Intent(context, DoseActionReceiver::class.java).apply {
+            this.action = action
+            putExtra("doseId", doseId)
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            (doseId.toString() + action).hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
     }
 
     fun cancelNotification(doseId: Long) {

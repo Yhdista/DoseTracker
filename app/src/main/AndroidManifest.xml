@@ -39,6 +39,10 @@
             android:exported="false" />
 
         <receiver
+            android:name=".reminder.DoseActionReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".reminder.RescheduleReceiver"
             android:exported="true">
             <intent-filter>
