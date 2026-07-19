@@ -1,6 +1,9 @@
 package com.yhdista.dosetracker.data.local
 
 import androidx.room.TypeConverter
+import com.yhdista.dosetracker.domain.model.CycleCompleteAction
+import com.yhdista.dosetracker.domain.model.CycleStatus
+import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import kotlinx.datetime.Instant
 
@@ -24,4 +27,22 @@ class Converters {
     fun toDoseStatus(value: String): DoseStatus {
         return DoseStatus.valueOf(value)
     }
+
+    @TypeConverter
+    fun fromCycleType(value: CycleType): String = value.name
+
+    @TypeConverter
+    fun toCycleType(value: String): CycleType = CycleType.valueOf(value)
+
+    @TypeConverter
+    fun fromCycleStatus(value: CycleStatus): String = value.name
+
+    @TypeConverter
+    fun toCycleStatus(value: String): CycleStatus = CycleStatus.valueOf(value)
+
+    @TypeConverter
+    fun fromCycleCompleteAction(value: CycleCompleteAction): String = value.name
+
+    @TypeConverter
+    fun toCycleCompleteAction(value: String): CycleCompleteAction = CycleCompleteAction.valueOf(value)
 }

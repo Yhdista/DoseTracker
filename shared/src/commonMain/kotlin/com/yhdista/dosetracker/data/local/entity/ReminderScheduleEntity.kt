@@ -13,9 +13,15 @@ import androidx.room.PrimaryKey
             parentColumns = ["id"],
             childColumns = ["medicationId"],
             onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = CycleWeekEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["cycleWeekId"],
+            onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["medicationId"])]
+    indices = [Index(value = ["medicationId"]), Index(value = ["cycleWeekId"])]
 )
 data class ReminderScheduleEntity(
     @PrimaryKey(autoGenerate = true)
@@ -28,5 +34,6 @@ data class ReminderScheduleEntity(
     val intervalDays: Int = 1,
     val startDate: String? = null,
     val timeType: String = "EXACT",
-    val dayPeriod: String? = null
+    val dayPeriod: String? = null,
+    val cycleWeekId: Long? = null
 )

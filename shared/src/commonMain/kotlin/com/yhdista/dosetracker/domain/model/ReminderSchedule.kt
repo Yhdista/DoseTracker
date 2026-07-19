@@ -12,5 +12,6 @@ data class ReminderSchedule(
     val intervalDays: Int = 1,
     val startDate: LocalDate? = null,
     val timeType: String = "EXACT",
-    val dayPeriod: String? = null
+    val dayPeriod: String? = null,
+    val cycleWeekId: Long? = null
 )

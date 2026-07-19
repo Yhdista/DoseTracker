@@ -7,18 +7,24 @@ import androidx.room.RoomDatabaseConstructor
 import androidx.room.TypeConverters
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
+import com.yhdista.dosetracker.data.local.dao.CycleDao
 import com.yhdista.dosetracker.data.local.dao.DoseDao
 import com.yhdista.dosetracker.data.local.dao.MedicationDao
 import com.yhdista.dosetracker.data.local.dao.ReminderScheduleDao
 import com.yhdista.dosetracker.data.local.dao.PeriodTimeDao
+import com.yhdista.dosetracker.data.local.entity.CycleEntity
+import com.yhdista.dosetracker.data.local.entity.CycleWeekEntity
 import com.yhdista.dosetracker.data.local.entity.DoseEntity
 import com.yhdista.dosetracker.data.local.entity.MedicationEntity
 import com.yhdista.dosetracker.data.local.entity.ReminderScheduleEntity
 import com.yhdista.dosetracker.data.local.entity.PeriodTimeEntity
 
 @Database(
-    entities = [MedicationEntity::class, DoseEntity::class, ReminderScheduleEntity::class, PeriodTimeEntity::class],
-    version = 4,
+    entities = [
+        MedicationEntity::class, DoseEntity::class, ReminderScheduleEntity::class,
+        PeriodTimeEntity::class, CycleEntity::class, CycleWeekEntity::class
+    ],
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -28,6 +34,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun doseDao(): DoseDao
     abstract fun reminderScheduleDao(): ReminderScheduleDao
     abstract fun periodTimeDao(): PeriodTimeDao
+    abstract fun cycleDao(): CycleDao
 
     companion object {
         const val DATABASE_NAME = "dosetracker_db"

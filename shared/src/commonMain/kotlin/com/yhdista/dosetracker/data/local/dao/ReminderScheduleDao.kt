@@ -9,6 +9,9 @@ interface ReminderScheduleDao {
     @Query("SELECT * FROM reminder_schedules WHERE medicationId = :medicationId")
     fun getSchedulesForMedication(medicationId: Long): Flow<List<ReminderScheduleEntity>>
 
+    @Query("SELECT * FROM reminder_schedules WHERE cycleWeekId = :cycleWeekId")
+    fun getSchedulesForCycleWeek(cycleWeekId: Long): Flow<List<ReminderScheduleEntity>>
+
     @Query("SELECT * FROM reminder_schedules WHERE enabled = 1")
     suspend fun getAllEnabledSchedules(): List<ReminderScheduleEntity>
 

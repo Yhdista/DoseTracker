@@ -28,5 +28,7 @@ data class DoseEntity(
     val timestamp: Instant,
     val amount: Double?,
     val unit: String?,
-    val status: DoseStatus
+    val status: DoseStatus,
+    // No FK to cycles either, for the same reason: dose history must survive cycle deletion.
+    val cycleId: Long? = null
 )
