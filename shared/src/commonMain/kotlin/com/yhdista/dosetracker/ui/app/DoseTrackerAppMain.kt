@@ -133,10 +133,10 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                         MedicationCatalogScreen(
                             viewModel = koinViewModel<MedicationCatalogViewModel>(),
                             onMedicationClick = { id ->
-                                backstack.add(Destination.AddDose(id))
+                                backstack.add(Destination.MedicationDetail(id))
                             },
                             onManageRemindersClick = { id ->
-                                backstack.add(Destination.MedicationDetail(id))
+                                backstack.add(Destination.AddDose(id))
                             }
                         )
                     }
@@ -191,7 +191,11 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                         ConfirmDoseScreen(
                             doseId = destination.doseId,
                             viewModel = koinViewModel<ConfirmDoseViewModel>(),
-                            onBack = { backstack.removeLastOrNull() }
+                            onBack = { backstack.removeLastOrNull() },
+                            onNavigateToMedicationDetail = { medicationId ->
+                                backstack.removeLastOrNull()
+                                backstack.add(Destination.MedicationDetail(medicationId))
+                            }
                         )
                     }
                 }

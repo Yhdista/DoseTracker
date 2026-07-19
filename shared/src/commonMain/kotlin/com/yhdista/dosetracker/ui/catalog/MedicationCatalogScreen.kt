@@ -24,6 +24,7 @@ fun MedicationCatalogScreen(
     onManageRemindersClick: (Long) -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -42,7 +43,7 @@ fun MedicationCatalogScreen(
                 .fillMaxSize()
         ) {
             SearchBar(
-                query = state.searchQuery,
+                query = searchQuery,
                 onQueryChange = { viewModel.onEvent(CatalogEvent.Search(it)) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -82,7 +83,7 @@ fun MedicationCatalogScreen(
                                 MedicationItem(
                                     medication = medication,
                                     onClick = { onMedicationClick(medication.id) },
-                                    onManageReminders = { onManageRemindersClick(medication.id) }
+                                    onLogAdHocDose = { onManageRemindersClick(medication.id) }
                                 )
                                 HorizontalDivider()
                             }
@@ -165,14 +166,14 @@ fun SearchBar(
 fun MedicationItem(
     medication: Medication,
     onClick: () -> Unit,
-    onManageReminders: () -> Unit
+    onLogAdHocDose: () -> Unit
 ) {
     ListItem(
         headlineContent = { Text(medication.name) },
         supportingContent = { Text("${medication.dosage} ${medication.unit}") },
         trailingContent = {
-            IconButton(onClick = onManageReminders) {
-                Icon(Icons.Rounded.Schedule, contentDescription = "Manage reminders")
+            IconButton(onClick = onLogAdHocDose) {
+                Icon(Icons.Default.Add, contentDescription = "Log manual dose")
             }
         },
         modifier = Modifier.clickable(onClick = onClick)

@@ -17,7 +17,8 @@ import kotlinx.datetime.format.char
 fun ConfirmDoseScreen(
     doseId: Long,
     viewModel: ConfirmDoseViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToMedicationDetail: (Long) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -78,6 +79,12 @@ fun ConfirmDoseScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Save")
+                    }
+                    OutlinedButton(
+                        onClick = { onNavigateToMedicationDetail(result.data.medicationId) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Edit Medication Schedule")
                     }
                     if (state.error != null) {
                         Text(text = state.error!!, color = MaterialTheme.colorScheme.error)
