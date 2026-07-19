@@ -83,7 +83,10 @@ class MedicationDetailViewModel(
             if (doses is Data.Success) {
                 doses.data
                     .filter { it.scheduleId == schedule.id && it.status == DoseStatus.PENDING }
-                    .forEach { scheduler.cancelReminder(it.id) }
+                    .forEach {
+                        scheduler.cancelReminder(it.id)
+                        scheduler.cancelMissedTimeout(it.id)
+                    }
             }
             repository.deleteSchedule(schedule)
         }

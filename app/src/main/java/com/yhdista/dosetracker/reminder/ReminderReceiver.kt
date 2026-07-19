@@ -3,6 +3,7 @@ package com.yhdista.dosetracker.reminder
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +22,7 @@ class ReminderReceiver : BroadcastReceiver() {
                 val koin = GlobalContext.get()
                 val repository = koin.get<MedicationRepository>()
                 val dose = repository.getDoseOnce(doseId) ?: return@launch
+                if (dose.status != DoseStatus.PENDING) return@launch
                 val medication = repository.getMedicationOnce(dose.medicationId) ?: return@launch
 
                 koin.get<NotificationHelper>().showNotification(
