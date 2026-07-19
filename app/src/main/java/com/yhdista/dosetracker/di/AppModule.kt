@@ -15,7 +15,6 @@ val appModule = module {
         com.yhdista.dosetracker.reminder.RescheduleWorker(
             params.get(),
             params.get(),
-            get(),
             get()
         )
     }

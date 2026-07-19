@@ -21,4 +21,5 @@ val dataModule = module {
             scheduleDao = get()
         )
     }
+    single { com.yhdista.dosetracker.reminder.DoseGenerator(get(), get()) }
 }
