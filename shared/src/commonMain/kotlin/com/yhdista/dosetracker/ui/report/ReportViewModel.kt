@@ -23,7 +23,10 @@ data class MedicationWeekSummary(
     val taken: Int,
     val missed: Int,
     val skipped: Int,
-    val upcoming: Int
+    val upcoming: Int,
+    val totalAmountTaken: Double,
+    val totalAmountScheduled: Double,
+    val unit: String
 )
 
 data class ReportState(
@@ -78,7 +81,11 @@ class ReportViewModel(
                             taken = doses.count { it.status == DoseStatus.TAKEN },
                             missed = doses.count { it.status == DoseStatus.MISSED },
                             skipped = doses.count { it.status == DoseStatus.SKIPPED },
-                            upcoming = doses.count { it.status == DoseStatus.PENDING }
+                            upcoming = doses.count { it.status == DoseStatus.PENDING },
+                            totalAmountTaken = doses.filter { it.status == DoseStatus.TAKEN }
+                                .sumOf { it.amount ?: 0.0 },
+                            totalAmountScheduled = doses.sumOf { it.amount ?: 0.0 },
+                            unit = doses.firstOrNull { it.unit != null }?.unit ?: ""
                         )
                     }
             )

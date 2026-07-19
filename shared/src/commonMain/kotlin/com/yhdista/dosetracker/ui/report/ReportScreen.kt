@@ -20,6 +20,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.format
 import kotlinx.datetime.format.char
 import kotlinx.datetime.plus
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,6 +94,21 @@ private fun MedicationSummaryCard(summary: MedicationWeekSummary) {
                     "Upcoming: ${summary.upcoming}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (summary.totalAmountScheduled > 0) {
+                val percentage = (summary.totalAmountTaken / summary.totalAmountScheduled * 100).roundToInt()
+                val progress = (summary.totalAmountTaken / summary.totalAmountScheduled).toFloat().coerceIn(0f, 1f)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "${summary.totalAmountTaken} / ${summary.totalAmountScheduled} ${summary.unit} ($percentage%)",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             }
         }

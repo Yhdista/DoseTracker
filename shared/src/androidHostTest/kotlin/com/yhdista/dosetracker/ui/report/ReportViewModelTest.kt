@@ -41,14 +41,14 @@ class ReportViewModelTest {
     }
 
     @Test
-    fun `summarizes counts per medication for the current week`() = runTest {
+    fun `summarizes counts and quantities per medication for the current week`() = runTest {
         val instant = Clock.System.now()
         val doses = listOf(
-            Dose(id = 1, medicationId = 1, medicationName = "Aspirin", timestamp = instant, status = DoseStatus.TAKEN),
-            Dose(id = 2, medicationId = 1, medicationName = "Aspirin", timestamp = instant, status = DoseStatus.MISSED),
-            Dose(id = 3, medicationId = 1, medicationName = "Aspirin", timestamp = instant, status = DoseStatus.TAKEN),
-            Dose(id = 4, medicationId = 2, medicationName = "Ibuprofen", timestamp = instant, status = DoseStatus.SKIPPED),
-            Dose(id = 5, medicationId = 2, medicationName = "Ibuprofen", timestamp = instant, status = DoseStatus.PENDING)
+            Dose(id = 1, medicationId = 1, medicationName = "Aspirin", timestamp = instant, amount = 500.0, unit = "mg", status = DoseStatus.TAKEN),
+            Dose(id = 2, medicationId = 1, medicationName = "Aspirin", timestamp = instant, amount = 500.0, unit = "mg", status = DoseStatus.MISSED),
+            Dose(id = 3, medicationId = 1, medicationName = "Aspirin", timestamp = instant, amount = 500.0, unit = "mg", status = DoseStatus.TAKEN),
+            Dose(id = 4, medicationId = 2, medicationName = "Ibuprofen", timestamp = instant, amount = 400.0, unit = "mg", status = DoseStatus.SKIPPED),
+            Dose(id = 5, medicationId = 2, medicationName = "Ibuprofen", timestamp = instant, amount = 400.0, unit = "mg", status = DoseStatus.PENDING)
         )
         whenever(repository.getDosesInWeek(any())).thenReturn(flowOf(Data.Success(doses)))
 
@@ -63,8 +63,15 @@ class ReportViewModelTest {
         assertEquals(2, aspirin.taken)
         assertEquals(1, aspirin.missed)
         assertEquals(0, aspirin.skipped)
+        assertEquals(1000.0, aspirin.totalAmountTaken, 0.0)
+        assertEquals(1500.0, aspirin.totalAmountScheduled, 0.0)
+        assertEquals("mg", aspirin.unit)
+
         assertEquals(1, ibuprofen.skipped)
         assertEquals(1, ibuprofen.upcoming)
+        assertEquals(0.0, ibuprofen.totalAmountTaken, 0.0)
+        assertEquals(800.0, ibuprofen.totalAmountScheduled, 0.0)
+        assertEquals("mg", ibuprofen.unit)
 
         job.cancel()
     }
