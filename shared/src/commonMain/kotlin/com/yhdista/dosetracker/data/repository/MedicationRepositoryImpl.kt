@@ -15,12 +15,14 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.atTime
+import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 
 class MedicationRepositoryImpl(
@@ -99,6 +101,17 @@ class MedicationRepositoryImpl(
             .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Dose>> }
             .onStart { emit(Data.Loading) }
             .catch { e -> emit(Data.Error("Failed to fetch doses for date", e)) }
+    }
+
+    override fun getDosesInWeek(weekStart: LocalDate): Flow<Data<List<Dose>>> {
+        val zone = TimeZone.currentSystemDefault()
+        val startOfWeek = weekStart.atStartOfDayIn(zone).toEpochMilliseconds()
+        val endOfWeek = weekStart.plus(7, DateTimeUnit.DAY).atStartOfDayIn(zone).toEpochMilliseconds()
+
+        return doseDao.getDosesInTimeRange(startOfWeek, endOfWeek)
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Dose>> }
+            .onStart { emit(Data.Loading) }
+            .catch { e -> emit(Data.Error("Failed to fetch doses for week", e)) }
     }
 
     override fun getAllDoses(): Flow<Data<List<Dose>>> {
