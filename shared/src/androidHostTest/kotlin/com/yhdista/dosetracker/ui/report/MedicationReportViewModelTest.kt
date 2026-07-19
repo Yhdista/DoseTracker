@@ -21,6 +21,8 @@ import kotlinx.datetime.atTime
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
+import kotlinx.datetime.todayIn
+import kotlin.time.Clock
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -49,12 +51,20 @@ class MedicationReportViewModelTest {
 
     @Test
     fun `buckets TAKEN doses by week and fills weeks with no doses as zero`() = runTest {
-        // July 2026's weeks (Monday-aligned): 06-29, 07-06, 07-13, 07-20, 07-27
+        val today = Clock.System.todayIn(zone)
+        val monthStart = LocalDate(today.year, today.month, 1)
+        val monthEndExclusive = monthStart.plus(1, DateTimeUnit.MONTH)
+        val expectedWeeks = generateSequence(weekStartOf(monthStart)) { it.plus(7, DateTimeUnit.DAY) }
+            .takeWhile { it < monthEndExclusive }
+            .toList()
+        // Every month has at least 4 week-buckets (e.g. a 28-day February starting on a Monday),
+        // so indices 0 and 2 always exist regardless of which month "today" falls in.
+        check(expectedWeeks.size >= 4)
+
         val doses = listOf(
-            Dose(id = 1, medicationId = 10, timestamp = LocalDate(2026, 7, 1).atTime(8, 0).toInstant(zone), amount = 500.0, unit = "mg", status = DoseStatus.TAKEN),
-            Dose(id = 2, medicationId = 10, timestamp = LocalDate(2026, 7, 14).atTime(8, 0).toInstant(zone), amount = 500.0, unit = "mg", status = DoseStatus.TAKEN),
-            Dose(id = 3, medicationId = 10, timestamp = LocalDate(2026, 7, 15).atTime(8, 0).toInstant(zone), amount = 500.0, unit = "mg", status = DoseStatus.TAKEN),
-            Dose(id = 4, medicationId = 10, timestamp = LocalDate(2026, 7, 21).atTime(8, 0).toInstant(zone), amount = 500.0, unit = "mg", status = DoseStatus.MISSED)
+            Dose(id = 1, medicationId = 10, timestamp = monthStart.atTime(8, 0).toInstant(zone), amount = 500.0, unit = "mg", status = DoseStatus.TAKEN),
+            Dose(id = 2, medicationId = 10, timestamp = expectedWeeks[2].atTime(8, 0).toInstant(zone), amount = 300.0, unit = "mg", status = DoseStatus.TAKEN),
+            Dose(id = 3, medicationId = 10, timestamp = expectedWeeks[2].plus(1, DateTimeUnit.DAY).atTime(8, 0).toInstant(zone), amount = 999.0, unit = "mg", status = DoseStatus.MISSED)
         )
         whenever(repository.getMedicationById(10)).thenReturn(flowOf(Data.Success(Medication(id = 10, name = "Aspirin", dosage = 500.0, unit = "mg"))))
         whenever(repository.getDosesForMedicationInRange(eq(10L), any(), any())).thenReturn(flowOf(Data.Success(doses)))
@@ -69,17 +79,11 @@ class MedicationReportViewModelTest {
 
         assertEquals("Aspirin", state.medicationName)
         assertEquals("mg", state.unit)
-        assertEquals(5, weeks.size)
-        assertEquals(LocalDate(2026, 6, 29), weeks[0].weekStart)
+        assertEquals(expectedWeeks, weeks.map { it.weekStart })
         assertEquals(500.0, weeks[0].totalTaken, 0.0)
-        assertEquals(LocalDate(2026, 7, 6), weeks[1].weekStart)
         assertEquals(0.0, weeks[1].totalTaken, 0.0)
-        assertEquals(LocalDate(2026, 7, 13), weeks[2].weekStart)
-        assertEquals(1000.0, weeks[2].totalTaken, 0.0)
-        assertEquals(LocalDate(2026, 7, 20), weeks[3].weekStart)
-        assertEquals(0.0, weeks[3].totalTaken, 0.0) // MISSED dose doesn't count
-        assertEquals(LocalDate(2026, 7, 27), weeks[4].weekStart)
-        assertEquals(0.0, weeks[4].totalTaken, 0.0)
+        assertEquals(300.0, weeks[2].totalTaken, 0.0) // the MISSED dose in the same week doesn't count
+        weeks.drop(3).forEach { assertEquals(0.0, it.totalTaken, 0.0) }
 
         job.cancel()
     }
@@ -107,10 +111,14 @@ class MedicationReportViewModelTest {
         val monthBefore = initialPeriodStart.minus(1, DateTimeUnit.MONTH)
         assertEquals(monthBefore, viewModel.uiState.value.periodStart)
 
+        repeat(12) { viewModel.onEvent(MedicationReportEvent.PreviousPeriod) }
+        testDispatcher.scheduler.advanceUntilIdle()
+        val periodAYearBack = viewModel.uiState.value.periodStart // exactly one year before `monthBefore`, same month number
+
         viewModel.onEvent(MedicationReportEvent.ToggleMode)
         testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(ReportRangeMode.YEAR, viewModel.uiState.value.mode)
-        assertEquals(LocalDate(monthBefore.year, 1, 1), viewModel.uiState.value.periodStart)
+        assertEquals(LocalDate(periodAYearBack.year, 1, 1), viewModel.uiState.value.periodStart)
 
         job.cancel()
     }
