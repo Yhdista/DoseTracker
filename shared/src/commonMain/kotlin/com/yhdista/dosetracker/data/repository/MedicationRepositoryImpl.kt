@@ -106,7 +106,7 @@ class MedicationRepositoryImpl(
     override fun getDosesInWeek(weekStart: LocalDate): Flow<Data<List<Dose>>> {
         val zone = TimeZone.currentSystemDefault()
         val startOfWeek = weekStart.atStartOfDayIn(zone).toEpochMilliseconds()
-        val endOfWeek = weekStart.plus(7, DateTimeUnit.DAY).atStartOfDayIn(zone).toEpochMilliseconds()
+        val endOfWeek = weekStart.plus(7, DateTimeUnit.DAY).atStartOfDayIn(zone).toEpochMilliseconds() - 1
 
         return doseDao.getDosesInTimeRange(startOfWeek, endOfWeek)
             .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Dose>> }
