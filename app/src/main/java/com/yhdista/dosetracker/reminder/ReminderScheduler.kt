@@ -43,4 +43,30 @@ class ReminderScheduler(
             alarmManager.cancel(pendingIntent)
         }
     }
+
+    override fun scheduleMissedTimeout(doseId: Long, at: Instant) {
+        val intent = Intent(context, MissedDoseReceiver::class.java).apply {
+            putExtra("doseId", doseId)
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            doseId.toInt(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at.toEpochMilliseconds(), pendingIntent)
+    }
+
+    override fun cancelMissedTimeout(doseId: Long) {
+        val intent = Intent(context, MissedDoseReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            doseId.toInt(),
+            intent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        )
+        if (pendingIntent != null) {
+            alarmManager.cancel(pendingIntent)
+        }
+    }
 }

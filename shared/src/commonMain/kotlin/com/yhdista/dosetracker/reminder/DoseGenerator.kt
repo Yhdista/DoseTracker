@@ -11,6 +11,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atTime
 import kotlinx.datetime.todayIn
 import kotlinx.datetime.toInstant
+import kotlin.time.Duration.Companion.minutes
 
 class DoseGenerator(
     private val repository: MedicationRepository,
@@ -38,6 +39,10 @@ class DoseGenerator(
 
             if (dose.status == DoseStatus.PENDING && scheduledInstant > now) {
                 scheduler.scheduleReminder(dose.id, scheduledInstant)
+                scheduler.scheduleMissedTimeout(
+                    dose.id,
+                    scheduledInstant + DoseReminderScheduler.MISSED_TIMEOUT_MINUTES.minutes
+                )
             }
         }
     }

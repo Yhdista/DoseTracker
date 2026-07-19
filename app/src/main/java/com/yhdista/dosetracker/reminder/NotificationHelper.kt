@@ -63,4 +63,8 @@ class NotificationHelper(
 
         notificationManager.notify(doseId.toInt(), notification)
     }
+
+    fun cancelNotification(doseId: Long) {
+        notificationManager.cancel(doseId.toInt())
+    }
 }
