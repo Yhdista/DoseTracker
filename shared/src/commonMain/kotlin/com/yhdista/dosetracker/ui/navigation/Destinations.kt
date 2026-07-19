@@ -33,4 +33,25 @@ sealed interface Destination : NavKey {
 
     @Serializable
     data object Debug : Destination
+
+    @Serializable
+    data object StyleManual : Destination
+
+    @Serializable
+    data object StyleTypography : Destination
+
+    @Serializable
+    data object StyleIcons : Destination
+
+    @Serializable
+    data object StyleColors : Destination
+
+    @Serializable
+    data object StyleButtons : Destination
+
+    @Serializable
+    data object StyleTexts : Destination
+
+    @Serializable
+    data object StyleComponents : Destination
 }

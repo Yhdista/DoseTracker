@@ -44,8 +44,7 @@ import com.yhdista.dosetracker.ui.today.TodayScreen
 import com.yhdista.dosetracker.ui.today.TodayViewModel
 import com.yhdista.dosetracker.ui.settings.SettingsScreen
 import com.yhdista.dosetracker.ui.settings.SettingsViewModel
-import com.yhdista.dosetracker.ui.debug.DebugScreen
-import com.yhdista.dosetracker.ui.debug.DebugViewModel
+import com.yhdista.dosetracker.ui.debug.*
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class, ExperimentalMaterial3AdaptiveNavigationSuiteApi::class)
@@ -260,7 +259,79 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                         metadata = ListDetailSceneStrategy.listPane()
                     ) {
                         DebugScreen(
-                            viewModel = koinViewModel<DebugViewModel>()
+                            viewModel = koinViewModel<DebugViewModel>(),
+                            onNavigateToStyleManual = { backstack.add(Destination.StyleManual) }
+                        )
+                    }
+                }
+                is Destination.StyleManual -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        StyleManualScreen(
+                            onNavigateToSection = { section -> backstack.add(section) },
+                            onBack = { backstack.removeLastOrNull() }
+                        )
+                    }
+                }
+                is Destination.StyleTypography -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        StyleTypographyScreen(
+                            onBack = { backstack.removeLastOrNull() }
+                        )
+                    }
+                }
+                is Destination.StyleIcons -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        StyleIconsScreen(
+                            onBack = { backstack.removeLastOrNull() }
+                        )
+                    }
+                }
+                is Destination.StyleColors -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        StyleColorsScreen(
+                            onBack = { backstack.removeLastOrNull() }
+                        )
+                    }
+                }
+                is Destination.StyleButtons -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        StyleButtonsScreen(
+                            onBack = { backstack.removeLastOrNull() }
+                        )
+                    }
+                }
+                is Destination.StyleTexts -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        StyleTextsScreen(
+                            onBack = { backstack.removeLastOrNull() }
+                        )
+                    }
+                }
+                is Destination.StyleComponents -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        StyleComponentsScreen(
+                            onBack = { backstack.removeLastOrNull() }
                         )
                     }
                 }
