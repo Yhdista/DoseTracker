@@ -1,5 +1,6 @@
 package com.yhdista.dosetracker.ui.report
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,7 +25,7 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReportScreen(viewModel: ReportViewModel) {
+fun ReportScreen(viewModel: ReportViewModel, onMedicationClick: (Long) -> Unit) {
     val state by viewModel.uiState.collectAsState()
 
     Scaffold(
@@ -73,7 +74,7 @@ fun ReportScreen(viewModel: ReportViewModel) {
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(result.data) { summary ->
-                                MedicationSummaryCard(summary)
+                                MedicationSummaryCard(summary, onClick = { onMedicationClick(summary.medicationId) })
                             }
                         }
                     }
@@ -84,8 +85,8 @@ fun ReportScreen(viewModel: ReportViewModel) {
 }
 
 @Composable
-private fun MedicationSummaryCard(summary: MedicationWeekSummary) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun MedicationSummaryCard(summary: MedicationWeekSummary, onClick: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(summary.medicationName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text("Taken: ${summary.taken}  Missed: ${summary.missed}  Skipped: ${summary.skipped}")

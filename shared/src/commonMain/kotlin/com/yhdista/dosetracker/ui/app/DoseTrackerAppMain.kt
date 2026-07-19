@@ -34,6 +34,8 @@ import com.yhdista.dosetracker.ui.history.HistoryViewModel
 import com.yhdista.dosetracker.ui.medicationdetail.MedicationDetailScreen
 import com.yhdista.dosetracker.ui.medicationdetail.MedicationDetailViewModel
 import com.yhdista.dosetracker.ui.navigation.Destination
+import com.yhdista.dosetracker.ui.report.MedicationReportScreen
+import com.yhdista.dosetracker.ui.report.MedicationReportViewModel
 import com.yhdista.dosetracker.ui.report.ReportScreen
 import com.yhdista.dosetracker.ui.report.ReportViewModel
 import com.yhdista.dosetracker.ui.today.TodayScreen
@@ -156,7 +158,10 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                         key = destination,
                         metadata = ListDetailSceneStrategy.listPane()
                     ) {
-                        ReportScreen(viewModel = koinViewModel<ReportViewModel>())
+                        ReportScreen(
+                            viewModel = koinViewModel<ReportViewModel>(),
+                            onMedicationClick = { id -> backstack.add(Destination.MedicationReport(id)) }
+                        )
                     }
                 }
                 is Destination.AddDose -> {
@@ -191,6 +196,18 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                         ConfirmDoseScreen(
                             doseId = destination.doseId,
                             viewModel = koinViewModel<ConfirmDoseViewModel>(),
+                            onBack = { backstack.removeLastOrNull() }
+                        )
+                    }
+                }
+                is Destination.MedicationReport -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        MedicationReportScreen(
+                            medicationId = destination.medicationId,
+                            viewModel = koinViewModel<MedicationReportViewModel>(),
                             onBack = { backstack.removeLastOrNull() }
                         )
                     }
