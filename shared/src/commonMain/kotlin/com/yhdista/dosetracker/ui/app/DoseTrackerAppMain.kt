@@ -3,6 +3,7 @@ package com.yhdista.dosetracker.ui.app
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Today
@@ -33,6 +34,8 @@ import com.yhdista.dosetracker.ui.history.HistoryViewModel
 import com.yhdista.dosetracker.ui.medicationdetail.MedicationDetailScreen
 import com.yhdista.dosetracker.ui.medicationdetail.MedicationDetailViewModel
 import com.yhdista.dosetracker.ui.navigation.Destination
+import com.yhdista.dosetracker.ui.report.ReportScreen
+import com.yhdista.dosetracker.ui.report.ReportViewModel
 import com.yhdista.dosetracker.ui.today.TodayScreen
 import com.yhdista.dosetracker.ui.today.TodayViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -83,6 +86,17 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                 },
                 icon = { Icon(Icons.Rounded.History, contentDescription = "History") },
                 label = { Text("History") }
+            )
+            item(
+                selected = backstack.last() is Destination.Report,
+                onClick = {
+                    if (backstack.last() !is Destination.Report) {
+                        backstack.clear()
+                        backstack.add(Destination.Report)
+                    }
+                },
+                icon = { Icon(Icons.Rounded.BarChart, contentDescription = "Report") },
+                label = { Text("Report") }
             )
         }
     ) {
@@ -135,6 +149,14 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                         HistoryScreen(
                             viewModel = koinViewModel<HistoryViewModel>()
                         )
+                    }
+                }
+                is Destination.Report -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.listPane()
+                    ) {
+                        ReportScreen(viewModel = koinViewModel<ReportViewModel>())
                     }
                 }
                 is Destination.AddDose -> {

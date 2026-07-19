@@ -14,6 +14,9 @@ sealed interface Destination : NavKey {
     data object History : Destination
 
     @Serializable
+    data object Report : Destination
+
+    @Serializable
     data class MedicationDetail(val id: Long) : Destination
 
     @Serializable

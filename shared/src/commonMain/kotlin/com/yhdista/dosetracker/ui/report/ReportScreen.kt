@@ -1,0 +1,104 @@
+package com.yhdista.dosetracker.ui.report
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.yhdista.dosetracker.core.Data
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.format
+import kotlinx.datetime.format.char
+import kotlinx.datetime.plus
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ReportScreen(viewModel: ReportViewModel) {
+    val state by viewModel.uiState.collectAsState()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("Weekly Report", fontWeight = FontWeight.Bold) })
+        }
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { viewModel.onEvent(ReportEvent.PreviousWeek) }) {
+                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Previous week")
+                }
+                Text(
+                    text = "${state.weekStart.format(weekLabelFormat)} - " +
+                        "${state.weekStart.plus(6, DateTimeUnit.DAY).format(weekLabelFormat)}",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                IconButton(onClick = { viewModel.onEvent(ReportEvent.NextWeek) }) {
+                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = "Next week")
+                }
+            }
+
+            when (val result = state.summaries) {
+                is Data.Loading -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+                is Data.Error -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Error: ${result.message}")
+                    }
+                }
+                is Data.Success -> {
+                    if (result.data.isEmpty()) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("No doses this week")
+                        }
+                    } else {
+                        LazyColumn(
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(result.data) { summary ->
+                                MedicationSummaryCard(summary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MedicationSummaryCard(summary: MedicationWeekSummary) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(summary.medicationName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text("Taken: ${summary.taken}  Missed: ${summary.missed}  Skipped: ${summary.skipped}")
+            if (summary.upcoming > 0) {
+                Text(
+                    "Upcoming: ${summary.upcoming}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+private val weekLabelFormat = LocalDate.Format {
+    monthNumber(); char('/'); day()
+}
