@@ -9,6 +9,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yhdista.dosetracker.core.Data
 import kotlinx.datetime.LocalDateTime
@@ -26,7 +27,7 @@ fun HistoryScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Dose History") })
+            TopAppBar(title = { Text("Dose History", fontWeight = FontWeight.Bold) })
         }
     ) { padding ->
         when (val result = state.dosesWithMeds) {

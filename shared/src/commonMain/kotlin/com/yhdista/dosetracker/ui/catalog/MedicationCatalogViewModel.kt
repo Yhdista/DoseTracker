@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.Medication
+import com.yhdista.dosetracker.domain.model.MedicationUnit
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
@@ -11,7 +12,9 @@ import kotlinx.coroutines.launch
 
 data class CatalogState(
     val medications: Data<List<Medication>> = Data.Loading,
-    val searchQuery: String = ""
+    val searchQuery: String = "",
+    val showOnlyActive: Boolean = false,
+    val activeMedicationIds: Set<Long> = emptySet()
 )
 
 sealed interface CatalogEvent {
@@ -21,6 +24,7 @@ sealed interface CatalogEvent {
         val dosage: String,
         val unit: String
     ) : CatalogEvent
+    data class ToggleOnlyActive(val onlyActive: Boolean) : CatalogEvent
 }
 
 class MedicationCatalogViewModel(
@@ -30,29 +34,51 @@ class MedicationCatalogViewModel(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
+    private val _showOnlyActive = MutableStateFlow(false)
+    val showOnlyActive = _showOnlyActive.asStateFlow()
+
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class, FlowPreview::class)
-    val uiState: StateFlow<CatalogState> = _searchQuery
-        .debounce(300)
-        .flatMapLatest { query ->
-            if (query.isEmpty()) {
-                repository.getMedications()
+    val uiState: StateFlow<CatalogState> = combine(
+        _searchQuery.debounce(300),
+        _showOnlyActive,
+        repository.getAllSchedules()
+    ) { query, onlyActive, schedulesResult ->
+        Triple(query, onlyActive, schedulesResult)
+    }.flatMapLatest { (query, onlyActive, schedulesResult) ->
+        val medsFlow = if (query.isEmpty()) {
+            repository.getMedications()
+        } else {
+            repository.searchMedications(query)
+        }
+        medsFlow.map { medsResult ->
+            val activeMedIds = if (schedulesResult is Data.Success) {
+                schedulesResult.data.filter { it.enabled }.map { it.medicationId }.toSet()
             } else {
-                repository.searchMedications(query)
+                emptySet()
             }
+            val filteredMedsResult = if (onlyActive && medsResult is Data.Success) {
+                Data.Success(medsResult.data.filter { it.id in activeMedIds })
+            } else {
+                medsResult
+            }
+            CatalogState(
+                medications = filteredMedsResult,
+                searchQuery = query,
+                showOnlyActive = onlyActive,
+                activeMedicationIds = activeMedIds
+            )
         }
-        .map { result ->
-            CatalogState(medications = result, searchQuery = _searchQuery.value)
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = CatalogState()
-        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = CatalogState()
+    )
 
     fun onEvent(event: CatalogEvent) {
         when (event) {
             is CatalogEvent.Search -> _searchQuery.value = event.query
             is CatalogEvent.AddMedication -> addMedication(event)
+            is CatalogEvent.ToggleOnlyActive -> _showOnlyActive.value = event.onlyActive
         }
     }
 
@@ -63,7 +89,7 @@ class MedicationCatalogViewModel(
                 Medication(
                     name = event.name,
                     dosage = dosageValue,
-                    unit = event.unit
+                    unit = MedicationUnit.fromSymbol(event.unit)
                 )
             )
         }

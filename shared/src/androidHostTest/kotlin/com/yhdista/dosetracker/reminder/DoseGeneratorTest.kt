@@ -4,6 +4,7 @@ import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.model.Medication
+import com.yhdista.dosetracker.domain.model.MedicationUnit
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import kotlinx.coroutines.Dispatchers
@@ -58,7 +59,7 @@ class DoseGeneratorTest {
         whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
         whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
         whenever(repository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
-        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = "mg"))
+        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
         whenever(repository.insertDose(any())).thenReturn(Data.Success(99L))
 
         generator.runForDate(today)
@@ -150,7 +151,7 @@ class DoseGeneratorTest {
         whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
         whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
         whenever(repository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
-        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = "mg"))
+        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
         whenever(repository.insertDose(any())).thenReturn(Data.Success(99L))
 
         generator.runForDate(today)
@@ -193,7 +194,7 @@ class DoseGeneratorTest {
         whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
         whenever(repository.getPeriodTimesOnce()).thenReturn(periodTimes)
         whenever(repository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
-        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = "mg"))
+        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
         whenever(repository.insertDose(any())).thenReturn(Data.Success(99L))
 
         generator.runForDate(today)

@@ -31,6 +31,7 @@ interface MedicationRepository {
 
     fun getSchedulesForMedication(medicationId: Long): Flow<Data<List<ReminderSchedule>>>
     suspend fun getEnabledSchedules(): Data<List<ReminderSchedule>>
+    fun getAllSchedules(): Flow<Data<List<ReminderSchedule>>>
     suspend fun insertSchedule(schedule: ReminderSchedule): Data<Long>
     suspend fun updateSchedule(schedule: ReminderSchedule): Data<Unit>
     suspend fun deleteSchedule(schedule: ReminderSchedule): Data<Unit>

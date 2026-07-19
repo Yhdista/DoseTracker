@@ -186,6 +186,13 @@ class MedicationRepositoryImpl(
         }
     }
 
+    override fun getAllSchedules(): Flow<Data<List<ReminderSchedule>>> {
+        return scheduleDao.getAllSchedulesFlow()
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<ReminderSchedule>> }
+            .onStart { emit(Data.Loading) }
+            .catch { e -> emit(Data.Error("Failed to fetch all schedules", e)) }
+    }
+
     override suspend fun insertSchedule(schedule: ReminderSchedule): Data<Long> {
         return try {
             Data.Success(scheduleDao.insertSchedule(schedule.toEntity()))

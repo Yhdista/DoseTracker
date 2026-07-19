@@ -1,9 +1,11 @@
 package com.yhdista.dosetracker.ui.catalog
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
@@ -12,9 +14,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.Medication
+import com.yhdista.dosetracker.domain.model.MedicationUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,7 +33,7 @@ fun MedicationCatalogScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Medication Catalog") })
+            TopAppBar(title = { Text("Medication Catalog", fontWeight = FontWeight.Bold) })
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddDialog = true }) {
@@ -47,8 +51,20 @@ fun MedicationCatalogScreen(
                 onQueryChange = { viewModel.onEvent(CatalogEvent.Search(it)) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+            ) {
+                FilterChip(
+                    selected = state.showOnlyActive,
+                    onClick = { viewModel.onEvent(CatalogEvent.ToggleOnlyActive(!state.showOnlyActive)) },
+                    label = { Text("Pouze užívané") }
+                )
+            }
 
             if (showAddDialog) {
                 AddMedicationDialog(
@@ -82,6 +98,7 @@ fun MedicationCatalogScreen(
                             items(medications) { medication ->
                                 MedicationItem(
                                     medication = medication,
+                                    isActive = medication.id in state.activeMedicationIds,
                                     onClick = { onMedicationClick(medication.id) },
                                     onLogAdHocDose = { onManageRemindersClick(medication.id) }
                                 )
@@ -102,7 +119,7 @@ fun AddMedicationDialog(
 ) {
     var name by remember { mutableStateOf("") }
     var dosage by remember { mutableStateOf("") }
-    var unit by remember { mutableStateOf("mg") }
+    var selectedUnit by remember { mutableStateOf(MedicationUnit.MG) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -121,17 +138,31 @@ fun AddMedicationDialog(
                     label = { Text("Dosage") },
                     modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
-                    value = unit,
-                    onValueChange = { unit = it },
-                    label = { Text("Unit (e.g., mg, ml)") },
-                    modifier = Modifier.fillMaxWidth()
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Jednotka",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    MedicationUnit.entries.forEach { medUnit ->
+                        FilterChip(
+                            selected = selectedUnit == medUnit,
+                            onClick = { selectedUnit = medUnit },
+                            label = { Text(medUnit.symbol) }
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(name, dosage, unit) },
+                onClick = { onConfirm(name, dosage, selectedUnit.symbol) },
                 enabled = name.isNotBlank() && dosage.isNotBlank()
             ) {
                 Text("Add")
@@ -165,11 +196,32 @@ fun SearchBar(
 @Composable
 fun MedicationItem(
     medication: Medication,
+    isActive: Boolean,
     onClick: () -> Unit,
     onLogAdHocDose: () -> Unit
 ) {
     ListItem(
-        headlineContent = { Text(medication.name) },
+        headlineContent = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(medication.name)
+                if (isActive) {
+                    Surface(
+                        shape = MaterialTheme.shapes.extraSmall,
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Text(
+                            text = "Užívaný",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+        },
         supportingContent = { Text("${medication.dosage} ${medication.unit}") },
         trailingContent = {
             IconButton(onClick = onLogAdHocDose) {

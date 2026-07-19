@@ -80,7 +80,7 @@ class AddDoseViewModel(
                 medicationId = medication.id,
                 timestamp = currentState.time.toInstant(TimeZone.currentSystemDefault()),
                 amount = currentState.amount.toDoubleOrNull(),
-                unit = medication.unit,
+                unit = medication.unit.symbol,
                 status = DoseStatus.TAKEN
             )
             when (val result = repository.insertDose(dose)) {

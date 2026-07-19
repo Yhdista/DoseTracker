@@ -104,7 +104,7 @@ class MedicationReportViewModel(
                 }
                 MedicationReportState(
                     medicationName = medication?.name ?: "",
-                    unit = medication?.unit ?: "",
+                    unit = medication?.unit?.symbol ?: "",
                     mode = selection.mode,
                     periodStart = selection.periodStart,
                     weeks = weeks

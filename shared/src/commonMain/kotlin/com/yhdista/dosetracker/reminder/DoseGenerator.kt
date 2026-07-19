@@ -105,7 +105,7 @@ class DoseGenerator(
             scheduleId = scheduleId,
             timestamp = at,
             amount = medication.dosage,
-            unit = medication.unit,
+            unit = medication.unit.symbol,
             status = DoseStatus.PENDING
         )
         val id = (repository.insertDose(dose) as? Data.Success)?.data ?: return null

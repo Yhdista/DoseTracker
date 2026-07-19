@@ -7,6 +7,8 @@ import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Today
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -40,6 +42,10 @@ import com.yhdista.dosetracker.ui.report.ReportScreen
 import com.yhdista.dosetracker.ui.report.ReportViewModel
 import com.yhdista.dosetracker.ui.today.TodayScreen
 import com.yhdista.dosetracker.ui.today.TodayViewModel
+import com.yhdista.dosetracker.ui.settings.SettingsScreen
+import com.yhdista.dosetracker.ui.settings.SettingsViewModel
+import com.yhdista.dosetracker.ui.debug.DebugScreen
+import com.yhdista.dosetracker.ui.debug.DebugViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class, ExperimentalMaterial3AdaptiveNavigationSuiteApi::class)
@@ -99,6 +105,28 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                 },
                 icon = { Icon(Icons.Rounded.BarChart, contentDescription = "Report") },
                 label = { Text("Report") }
+            )
+            item(
+                selected = backstack.last() is Destination.Settings,
+                onClick = {
+                    if (backstack.last() !is Destination.Settings) {
+                        backstack.clear()
+                        backstack.add(Destination.Settings)
+                    }
+                },
+                icon = { Icon(Icons.Rounded.Settings, contentDescription = "Settings") },
+                label = { Text("Settings") }
+            )
+            item(
+                selected = backstack.last() is Destination.Debug,
+                onClick = {
+                    if (backstack.last() !is Destination.Debug) {
+                        backstack.clear()
+                        backstack.add(Destination.Debug)
+                    }
+                },
+                icon = { Icon(Icons.Rounded.BugReport, contentDescription = "Debug") },
+                label = { Text("Debug") }
             )
         }
     ) {
@@ -213,6 +241,26 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                             medicationId = destination.medicationId,
                             viewModel = koinViewModel<MedicationReportViewModel>(),
                             onBack = { backstack.removeLastOrNull() }
+                        )
+                    }
+                }
+                is Destination.Settings -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.listPane()
+                    ) {
+                        SettingsScreen(
+                            viewModel = koinViewModel<SettingsViewModel>()
+                        )
+                    }
+                }
+                is Destination.Debug -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.listPane()
+                    ) {
+                        DebugScreen(
+                            viewModel = koinViewModel<DebugViewModel>()
                         )
                     }
                 }

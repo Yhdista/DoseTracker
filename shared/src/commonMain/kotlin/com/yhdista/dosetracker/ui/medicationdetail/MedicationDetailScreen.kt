@@ -50,7 +50,7 @@ fun MedicationDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text((state.medication as? Data.Success)?.data?.name ?: "Medication") },
+                title = { Text((state.medication as? Data.Success)?.data?.name ?: "Medication", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")

@@ -12,6 +12,9 @@ interface ReminderScheduleDao {
     @Query("SELECT * FROM reminder_schedules WHERE enabled = 1")
     suspend fun getAllEnabledSchedules(): List<ReminderScheduleEntity>
 
+    @Query("SELECT * FROM reminder_schedules")
+    fun getAllSchedulesFlow(): Flow<List<ReminderScheduleEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSchedule(schedule: ReminderScheduleEntity): Long
 
