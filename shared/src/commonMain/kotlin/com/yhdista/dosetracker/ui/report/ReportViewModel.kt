@@ -19,6 +19,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
 
 data class MedicationWeekSummary(
+    val medicationId: Long,
     val medicationName: String,
     val taken: Int,
     val missed: Int,
@@ -39,11 +40,13 @@ sealed interface ReportEvent {
     data object NextWeek : ReportEvent
 }
 
-private fun currentWeekStart(): LocalDate {
-    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-    val daysSinceMonday = today.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber
-    return today.minus(daysSinceMonday, DateTimeUnit.DAY)
+fun weekStartOf(date: LocalDate): LocalDate {
+    val daysSinceMonday = date.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber
+    return date.minus(daysSinceMonday, DateTimeUnit.DAY)
 }
+
+private fun currentWeekStart(): LocalDate =
+    weekStartOf(Clock.System.todayIn(TimeZone.currentSystemDefault()))
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReportViewModel(
@@ -74,10 +77,11 @@ class ReportViewModel(
         return when (result) {
             is Data.Success -> Data.Success(
                 result.data
-                    .groupBy { it.medicationName }
-                    .map { (name, doses) ->
+                    .groupBy { it.medicationId }
+                    .map { (medicationId, doses) ->
                         MedicationWeekSummary(
-                            medicationName = name,
+                            medicationId = medicationId,
+                            medicationName = doses.first().medicationName,
                             taken = doses.count { it.status == DoseStatus.TAKEN },
                             missed = doses.count { it.status == DoseStatus.MISSED },
                             skipped = doses.count { it.status == DoseStatus.SKIPPED },

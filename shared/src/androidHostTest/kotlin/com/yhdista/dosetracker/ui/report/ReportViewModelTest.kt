@@ -60,6 +60,7 @@ class ReportViewModelTest {
         val aspirin = summaries.first { it.medicationName == "Aspirin" }
         val ibuprofen = summaries.first { it.medicationName == "Ibuprofen" }
 
+        assertEquals(1L, aspirin.medicationId)
         assertEquals(2, aspirin.taken)
         assertEquals(1, aspirin.missed)
         assertEquals(0, aspirin.skipped)
@@ -67,6 +68,7 @@ class ReportViewModelTest {
         assertEquals(1500.0, aspirin.totalAmountScheduled, 0.0)
         assertEquals("mg", aspirin.unit)
 
+        assertEquals(2L, ibuprofen.medicationId)
         assertEquals(1, ibuprofen.skipped)
         assertEquals(1, ibuprofen.upcoming)
         assertEquals(0.0, ibuprofen.totalAmountTaken, 0.0)
@@ -74,6 +76,13 @@ class ReportViewModelTest {
         assertEquals("mg", ibuprofen.unit)
 
         job.cancel()
+    }
+
+    @Test
+    fun `weekStartOf returns the Monday on or before the given date`() {
+        assertEquals(LocalDate(2026, 7, 13), weekStartOf(LocalDate(2026, 7, 13))) // a Monday itself
+        assertEquals(LocalDate(2026, 7, 13), weekStartOf(LocalDate(2026, 7, 19))) // the Sunday ending that week
+        assertEquals(LocalDate(2026, 7, 20), weekStartOf(LocalDate(2026, 7, 20))) // the following Monday
     }
 
     @Test
