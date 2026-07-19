@@ -24,11 +24,17 @@ interface MedicationRepository {
     suspend fun getDoseOnce(id: Long): Dose?
     fun getDoseById(id: Long): Flow<Data<Dose>>
     suspend fun getDoseForSchedule(scheduleId: Long, timestamp: Instant): Dose?
+    suspend fun getDoseForScheduleOnDate(scheduleId: Long, date: LocalDate): Dose?
     suspend fun insertDose(dose: Dose): Data<Long>
     suspend fun updateDose(dose: Dose): Data<Unit>
 
     fun getSchedulesForMedication(medicationId: Long): Flow<Data<List<ReminderSchedule>>>
     suspend fun getEnabledSchedules(): Data<List<ReminderSchedule>>
     suspend fun insertSchedule(schedule: ReminderSchedule): Data<Long>
+    suspend fun updateSchedule(schedule: ReminderSchedule): Data<Unit>
     suspend fun deleteSchedule(schedule: ReminderSchedule): Data<Unit>
+
+    fun getPeriodTimes(): Flow<Data<Map<String, Int>>>
+    suspend fun getPeriodTimesOnce(): Map<String, Int>
+    suspend fun updatePeriodTime(period: String, minutesOfDay: Int): Data<Unit>
 }

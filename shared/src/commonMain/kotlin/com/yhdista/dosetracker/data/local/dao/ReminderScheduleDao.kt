@@ -17,4 +17,7 @@ interface ReminderScheduleDao {
 
     @Delete
     suspend fun deleteSchedule(schedule: ReminderScheduleEntity)
+
+    @Update
+    suspend fun updateSchedule(schedule: ReminderScheduleEntity)
 }

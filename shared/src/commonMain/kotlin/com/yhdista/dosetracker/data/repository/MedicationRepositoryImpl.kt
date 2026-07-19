@@ -25,10 +25,14 @@ import kotlinx.datetime.atTime
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 
+import com.yhdista.dosetracker.data.local.dao.PeriodTimeDao
+import com.yhdista.dosetracker.data.local.entity.PeriodTimeEntity
+
 class MedicationRepositoryImpl(
     private val medicationDao: MedicationDao,
     private val doseDao: DoseDao,
-    private val scheduleDao: ReminderScheduleDao
+    private val scheduleDao: ReminderScheduleDao,
+    private val periodTimeDao: PeriodTimeDao
 ) : MedicationRepository {
 
     override fun getMedications(): Flow<Data<List<Medication>>> {
@@ -187,4 +191,43 @@ class MedicationRepositoryImpl(
             Data.Error("Failed to delete schedule", e)
         }
     }
+
+    override suspend fun getDoseForScheduleOnDate(scheduleId: Long, date: LocalDate): Dose? {
+        val zone = TimeZone.currentSystemDefault()
+        val startOfDay = date.atStartOfDayIn(zone)
+        val endOfDay = date.atTime(LocalTime(23, 59, 59, 999_000_000)).toInstant(zone)
+        return doseDao.getDoseForScheduleOnDate(scheduleId, startOfDay, endOfDay)?.toDomain()
+    }
+
+    override suspend fun updateSchedule(schedule: ReminderSchedule): Data<Unit> {
+        return try {
+            scheduleDao.updateSchedule(schedule.toEntity())
+            Data.Success(Unit)
+        } catch (e: Exception) {
+            Data.Error("Failed to update schedule", e)
+        }
+    }
+
+    override fun getPeriodTimes(): Flow<Data<Map<String, Int>>> {
+        return periodTimeDao.getAllPeriodTimesFlow()
+            .map { entities ->
+                val map = entities.associate { it.period to it.minutesOfDay }
+                Data.Success(map) as Data<Map<String, Int>>
+            }
+            .onStart { emit(Data.Loading) }
+            .catch { e -> emit(Data.Error("Failed to fetch period times", e)) }
+     }
+
+     override suspend fun getPeriodTimesOnce(): Map<String, Int> {
+         return periodTimeDao.getAllPeriodTimes().associate { it.period to it.minutesOfDay }
+     }
+
+     override suspend fun updatePeriodTime(period: String, minutesOfDay: Int): Data<Unit> {
+         return try {
+             periodTimeDao.insertPeriodTime(PeriodTimeEntity(period, minutesOfDay))
+             Data.Success(Unit)
+         } catch (e: Exception) {
+             Data.Error("Failed to update period time", e)
+         }
+     }
 }

@@ -15,15 +15,28 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
 
 data class MedicationDetailState(
     val medication: Data<Medication> = Data.Loading,
-    val schedules: Data<List<ReminderSchedule>> = Data.Loading
+    val schedules: Data<List<ReminderSchedule>> = Data.Loading,
+    val periodTimes: Data<Map<String, Int>> = Data.Loading
 )
 
 sealed interface MedicationDetailEvent {
-    data class AddSchedule(val minutesOfDay: Int, val daysOfWeek: Set<DayOfWeek>) : MedicationDetailEvent
+    data class AddSchedule(
+        val minutesOfDay: Int,
+        val daysOfWeek: Set<DayOfWeek>,
+        val scheduleType: String,
+        val intervalDays: Int,
+        val startDate: LocalDate?,
+        val timeType: String,
+        val dayPeriod: String?
+    ) : MedicationDetailEvent
+
+    data class UpdateSchedule(val schedule: ReminderSchedule) : MedicationDetailEvent
     data class DeleteSchedule(val schedule: ReminderSchedule) : MedicationDetailEvent
+    data class UpdatePeriodTime(val period: String, val minutesOfDay: Int) : MedicationDetailEvent
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -41,8 +54,11 @@ class MedicationDetailViewModel(
         .flatMapLatest { id ->
             combine(
                 repository.getMedicationById(id),
-                repository.getSchedulesForMedication(id)
-            ) { medication, schedules -> MedicationDetailState(medication, schedules) }
+                repository.getSchedulesForMedication(id),
+                repository.getPeriodTimes()
+            ) { medication, schedules, periodTimes ->
+                MedicationDetailState(medication, schedules, periodTimes)
+            }
         }
         .stateIn(
             scope = viewModelScope,
@@ -59,7 +75,9 @@ class MedicationDetailViewModel(
     fun onEvent(event: MedicationDetailEvent) {
         when (event) {
             is MedicationDetailEvent.AddSchedule -> addSchedule(event)
+            is MedicationDetailEvent.UpdateSchedule -> updateSchedule(event.schedule)
             is MedicationDetailEvent.DeleteSchedule -> deleteSchedule(event.schedule)
+            is MedicationDetailEvent.UpdatePeriodTime -> updatePeriodTime(event.period, event.minutesOfDay)
         }
     }
 
@@ -70,9 +88,28 @@ class MedicationDetailViewModel(
                 ReminderSchedule(
                     medicationId = medicationId,
                     minutesOfDay = event.minutesOfDay,
-                    daysOfWeek = WeekDays.toBitmask(event.daysOfWeek)
+                    daysOfWeek = WeekDays.toBitmask(event.daysOfWeek),
+                    scheduleType = event.scheduleType,
+                    intervalDays = event.intervalDays,
+                    startDate = event.startDate,
+                    timeType = event.timeType,
+                    dayPeriod = event.dayPeriod
                 )
             )
+            doseGenerator.runForToday()
+        }
+    }
+
+    private fun updateSchedule(schedule: ReminderSchedule) {
+        viewModelScope.launch {
+            repository.updateSchedule(schedule)
+            doseGenerator.runForToday()
+        }
+    }
+
+    private fun updatePeriodTime(period: String, minutesOfDay: Int) {
+        viewModelScope.launch {
+            repository.updatePeriodTime(period, minutesOfDay)
             doseGenerator.runForToday()
         }
     }

@@ -23,5 +23,10 @@ data class ReminderScheduleEntity(
     val medicationId: Long,
     val minutesOfDay: Int,
     val daysOfWeek: Int,
-    val enabled: Boolean = true
+    val enabled: Boolean = true,
+    val scheduleType: String = "WEEKDAYS",
+    val intervalDays: Int = 1,
+    val startDate: String? = null,
+    val timeType: String = "EXACT",
+    val dayPeriod: String? = null
 )

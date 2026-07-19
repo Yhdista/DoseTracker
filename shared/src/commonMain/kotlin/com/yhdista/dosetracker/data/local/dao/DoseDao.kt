@@ -62,6 +62,9 @@ interface DoseDao {
     @Query("SELECT * FROM doses WHERE scheduleId = :scheduleId AND timestamp = :timestamp LIMIT 1")
     suspend fun getDoseForSchedule(scheduleId: Long, timestamp: Instant): DoseEntity?
 
+    @Query("SELECT * FROM doses WHERE scheduleId = :scheduleId AND timestamp >= :startTime AND timestamp <= :endTime LIMIT 1")
+    suspend fun getDoseForScheduleOnDate(scheduleId: Long, startTime: Instant, endTime: Instant): DoseEntity?
+
     @Transaction
     @Query("""
         SELECT doses.*, medications.name as medicationName
