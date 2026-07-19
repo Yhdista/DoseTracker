@@ -15,7 +15,8 @@ fun ReminderScheduleEntity.toDomain(): ReminderSchedule = ReminderSchedule(
     intervalDays = intervalDays,
     startDate = startDate?.let { LocalDate.parse(it) },
     timeType = timeType,
-    dayPeriod = dayPeriod
+    dayPeriod = dayPeriod,
+    cycleWeekId = cycleWeekId
 )
 
 fun ReminderSchedule.toEntity(): ReminderScheduleEntity = ReminderScheduleEntity(
@@ -28,5 +29,6 @@ fun ReminderSchedule.toEntity(): ReminderScheduleEntity = ReminderScheduleEntity
     intervalDays = intervalDays,
     startDate = startDate?.toString(),
     timeType = timeType,
-    dayPeriod = dayPeriod
+    dayPeriod = dayPeriod,
+    cycleWeekId = cycleWeekId
 )

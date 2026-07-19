@@ -1,6 +1,8 @@
 package com.yhdista.dosetracker.domain.repository
 
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.domain.model.Cycle
+import com.yhdista.dosetracker.domain.model.CycleWeek
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
@@ -30,6 +32,7 @@ interface MedicationRepository {
     suspend fun updateDose(dose: Dose): Data<Unit>
 
     fun getSchedulesForMedication(medicationId: Long): Flow<Data<List<ReminderSchedule>>>
+    fun getSchedulesForCycleWeek(cycleWeekId: Long): Flow<Data<List<ReminderSchedule>>>
     suspend fun getEnabledSchedules(): Data<List<ReminderSchedule>>
     fun getAllSchedules(): Flow<Data<List<ReminderSchedule>>>
     suspend fun insertSchedule(schedule: ReminderSchedule): Data<Long>
@@ -39,4 +42,14 @@ interface MedicationRepository {
     fun getPeriodTimes(): Flow<Data<Map<String, Int>>>
     suspend fun getPeriodTimesOnce(): Map<String, Int>
     suspend fun updatePeriodTime(period: String, minutesOfDay: Int): Data<Unit>
+
+    fun getActiveCycle(): Flow<Data<Cycle?>>
+    suspend fun getActiveCycleOnce(): Cycle?
+    suspend fun getStandardCycle(): Cycle?
+    suspend fun getCycleById(id: Long): Cycle?
+    fun getCompletedCycles(): Flow<Data<List<Cycle>>>
+    suspend fun createCycle(cycle: Cycle): Data<Long>
+    suspend fun updateCycle(cycle: Cycle): Data<Unit>
+    fun getWeeksForCycle(cycleId: Long): Flow<Data<List<CycleWeek>>>
+    suspend fun getCycleWeek(cycleId: Long, weekIndex: Int): CycleWeek?
 }
