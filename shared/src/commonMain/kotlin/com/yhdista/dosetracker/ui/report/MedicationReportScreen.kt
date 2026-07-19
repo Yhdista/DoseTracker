@@ -101,6 +101,13 @@ fun MedicationReportScreen(
                 is Data.Success -> {
                     val weeks = result.data
                     val maxTaken = weeks.maxOfOrNull { it.totalTaken } ?: 0.0
+                    Text(
+                        text = selectedWeek?.let { ws -> weeks.find { it.weekStart == ws } }
+                            ?.let { "${it.weekStart.format(weekTickFormat)}: ${it.totalTaken} ${state.unit}" }
+                            ?: " ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                    )
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -113,7 +120,6 @@ fun MedicationReportScreen(
                             WeekBar(
                                 week = week,
                                 maxTaken = maxTaken,
-                                unit = state.unit,
                                 isSelected = selectedWeek == week.weekStart,
                                 onClick = {
                                     selectedWeek = if (selectedWeek == week.weekStart) null else week.weekStart
@@ -131,7 +137,6 @@ fun MedicationReportScreen(
 private fun WeekBar(
     week: WeekQuantity,
     maxTaken: Double,
-    unit: String,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
@@ -145,15 +150,6 @@ private fun WeekBar(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(32.dp)
     ) {
-        if (isSelected) {
-            Text(
-                text = "${week.totalTaken} $unit",
-                style = MaterialTheme.typography.labelSmall,
-                maxLines = 1
-            )
-        } else {
-            Spacer(Modifier.height(16.dp))
-        }
         Box(
             modifier = Modifier
                 .width(24.dp)
@@ -165,7 +161,9 @@ private fun WeekBar(
                     .width(24.dp)
                     .height(heightDp)
                     .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                    .background(MaterialTheme.colorScheme.primary)
+                    .background(
+                        MaterialTheme.colorScheme.primary.copy(alpha = if (isSelected) 1f else 0.7f)
+                    )
                     .clickable(onClick = onClick)
             )
         }
