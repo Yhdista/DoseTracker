@@ -3364,3 +3364,77 @@ Using the Debug tab, reset the database (or manually adjust system date forward,
 - [ ] **Step 8: Confirm no regressions in the existing Today/Medication flows**
 
 Toggle a dose's status (tap the checkmark icon) on both a cycle dose and a standalone dose — confirm both update correctly. Open the Medications tab and confirm `MedicationDetailScreen`'s existing "Add Reminder" dialog (now backed by the shared `ScheduleDialog`) still works exactly as before.
+
+---
+
+### Task 11: "Spravovat" entry point to `CreateCycleScreen` while a cycle is active
+
+**Context (why this task exists):** Manual verification (Task 10) found a real gap: `CreateCycleViewModel`/`CreateCycleScreen` already correctly handle the case where a cycle is active (offering only "Standardní cyklus" edit-in-place or "Post-cyklus" attach, per Task 6), but there was no way to reach `CreateCycleScreen` from the UI once a cycle is running — `CycleDashboardHeader` only exposed a "Historie cyklu" link. This task adds the missing entry point.
+
+**Files:**
+- Modify: `shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/today/TodayScreen.kt`
+- Modify: `shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/app/DoseTrackerAppMain.kt`
+
+**Interfaces:**
+- Consumes: `Destination.CreateCycle` (Task 6), `CreateCycleScreen`/`CreateCycleViewModel` (Task 6).
+- Produces: `CycleDashboardHeader` gains an `onManageCycle: () -> Unit` parameter; `TodayContent`/`TodayScreen` thread it through as `onManageCycle`.
+
+- [ ] **Step 1: Add a "Spravovat" button to `CycleDashboardHeader`**
+
+In `TodayScreen.kt`, change the `CycleDashboardHeader` function signature from:
+
+```kotlin
+private fun CycleDashboardHeader(cycle: Cycle, onOpenHistory: () -> Unit) {
+```
+
+to:
+
+```kotlin
+private fun CycleDashboardHeader(cycle: Cycle, onOpenHistory: () -> Unit, onManageCycle: () -> Unit) {
+```
+
+Replace the single `TextButton(onClick = onOpenHistory) { Text("Historie cyklu") }` at the end of the `Column` with a `Row` holding both actions:
+
+```kotlin
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onOpenHistory) {
+                    Text("Historie cyklu")
+                }
+                TextButton(onClick = onManageCycle) {
+                    Text("Spravovat")
+                }
+            }
+```
+
+Update the one call site of `CycleDashboardHeader(...)` inside `TodayContent` (in the `item { ... }` block) to pass the new parameter:
+
+```kotlin
+                        if (activeCycle != null) {
+                            CycleDashboardHeader(cycle = activeCycle, onOpenHistory = onOpenCycleHistory, onManageCycle = onCreateCycle)
+                        } else {
+                            NoCycleHeader(onCreateCycle = onCreateCycle)
+                        }
+```
+
+Note: this reuses the existing `onCreateCycle: () -> Unit` parameter already on `TodayContent`/`TodayScreen` — no new parameter needed on those two functions, since "create a cycle" and "manage the active cycle" both resolve to the same `Destination.CreateCycle` navigation target; `CreateCycleViewModel`'s own `hasActiveCycle` check (already built in Task 6) is what decides whether the form shows the "new cycle" or "manage the active one" options.
+
+- [ ] **Step 2: Verify `DoseTrackerAppMain.kt` needs no change**
+
+Read `DoseTrackerAppMain.kt`'s `is Destination.Today -> { TodayScreen(...) }` call site — it already passes `onNavigateToCreateCycle = { backstack.add(Destination.CreateCycle) }` (from Task 9), and that's exactly what both the "+ Nový cyklus" button and this new "Spravovat" button need. Confirm no change is required here; if you find the call site doesn't already wire `onNavigateToCreateCycle`, stop and report BLOCKED — that would mean Task 9 wasn't actually completed, which would be a separate, deeper problem.
+
+- [ ] **Step 3: Verify the project compiles**
+
+Run: `./gradlew :app:assembleDebug`
+Expected: BUILD SUCCESSFUL
+
+- [ ] **Step 4: Manual verification**
+
+Launch the app with a cycle already active (from Task 10's manual test, or create one fresh). Confirm the dashboard header now shows both "Historie cyklu" and "Spravovat" side by side. Tap "Spravovat" — confirm it opens `CreateCycleScreen` and that the type picker offers only "Standardní cyklus" and "Post-cyklus" (not "Cyklus"), matching the already-built `hasActiveCycle == true` branch from Task 6.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/today/TodayScreen.kt \
+        shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/app/DoseTrackerAppMain.kt
+git commit -m "feat: add Spravovat entry point to manage/attach a cycle while one is active"
+```
