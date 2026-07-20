@@ -1,93 +1,84 @@
-package com.yhdista.dosetracker.ui.medicationdetail
+package com.yhdista.dosetracker.ui.cycle
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
 import com.yhdista.dosetracker.reminder.WeekDays
 import com.yhdista.dosetracker.ui.schedule.ScheduleDialog
 import com.yhdista.dosetracker.ui.schedule.formatMinutes
-import kotlin.time.Clock
-import kotlinx.datetime.DayOfWeek
-import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.atStartOfDayIn
-import kotlinx.datetime.toLocalDateTime
-import kotlinx.datetime.todayIn
 
-@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MedicationDetailScreen(
-    medicationId: Long,
-    viewModel: MedicationDetailViewModel,
+fun CycleWeekEditorScreen(
+    cycleId: Long,
+    weekIndex: Int,
+    viewModel: CycleWeekEditorViewModel,
     onBack: () -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
-    var showAddDialog by remember { mutableStateOf(false) }
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var pendingMedicationId by remember { mutableStateOf<Long?>(null) }
     var editingSchedule by remember { mutableStateOf<ReminderSchedule?>(null) }
-    var showPeriodSettings by remember { mutableStateOf(false) }
+    var pickingMedication by remember { mutableStateOf(false) }
+
+    LaunchedEffect(cycleId, weekIndex) {
+        viewModel.setCycleWeek(cycleId, weekIndex)
+    }
 
     val periodTimes = (state.periodTimes as? Data.Success)?.data ?: emptyMap()
-
-    LaunchedEffect(medicationId) {
-        viewModel.setMedicationId(medicationId)
-    }
+    val medications = (state.medications as? Data.Success)?.data ?: emptyList()
+    val medicationNames = medications.associate { it.id to it.name }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text((state.medication as? Data.Success)?.data?.name ?: "Medication", fontWeight = FontWeight.Bold) },
+                title = { Text("Týden ${weekIndex + 1}", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showPeriodSettings = true }) {
-                        Icon(Icons.Rounded.Settings, contentDescription = "Period settings")
                     }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Rounded.Add, contentDescription = "Add reminder")
+            FloatingActionButton(onClick = { pickingMedication = true }) {
+                Icon(Icons.Rounded.Add, contentDescription = "Přidat lék")
             }
         }
     ) { padding ->
-        if (showPeriodSettings) {
-            PeriodSettingsDialog(
-                currentTimes = periodTimes,
-                onDismiss = { showPeriodSettings = false },
-                onSavePeriod = { period, minutes ->
-                    viewModel.onEvent(MedicationDetailEvent.UpdatePeriodTime(period, minutes))
+        if (pickingMedication) {
+            MedicationPickerDialog(
+                medications = medications,
+                onDismiss = { pickingMedication = false },
+                onPick = { medicationId ->
+                    pickingMedication = false
+                    pendingMedicationId = medicationId
                 }
             )
         }
 
-        if (showAddDialog) {
+        pendingMedicationId?.let { medicationId ->
             ScheduleDialog(
                 periodTimes = periodTimes,
-                onDismiss = { showAddDialog = false },
+                onDismiss = { pendingMedicationId = null },
                 onConfirm = { minutes, days, schedType, interval, start, tType, period ->
                     viewModel.onEvent(
-                        MedicationDetailEvent.AddSchedule(
+                        CycleWeekEditorEvent.AddSchedule(
+                            medicationId = medicationId,
                             minutesOfDay = minutes,
                             daysOfWeek = days,
                             scheduleType = schedType,
@@ -97,7 +88,7 @@ fun MedicationDetailScreen(
                             dayPeriod = period
                         )
                     )
-                    showAddDialog = false
+                    pendingMedicationId = null
                 }
             )
         }
@@ -109,7 +100,7 @@ fun MedicationDetailScreen(
                 onDismiss = { editingSchedule = null },
                 onConfirm = { minutes, days, schedType, interval, start, tType, period ->
                     viewModel.onEvent(
-                        MedicationDetailEvent.UpdateSchedule(
+                        CycleWeekEditorEvent.UpdateSchedule(
                             schedule.copy(
                                 minutesOfDay = minutes,
                                 daysOfWeek = WeekDays.toBitmask(days),
@@ -134,13 +125,13 @@ fun MedicationDetailScreen(
             }
             is Data.Error -> {
                 Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Error: ${result.message}")
+                    Text("Chyba: ${result.message}")
                 }
             }
             is Data.Success -> {
                 if (result.data.isEmpty()) {
                     Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No reminders yet")
+                        Text("Žádný lék pro tento týden")
                     }
                 } else {
                     LazyColumn(
@@ -149,11 +140,12 @@ fun MedicationDetailScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(result.data, key = { it.id }) { schedule ->
-                            ScheduleRow(
+                            CycleScheduleRow(
                                 schedule = schedule,
+                                medicationName = medicationNames[schedule.medicationId] ?: "?",
                                 periodTimes = periodTimes,
                                 onClick = { editingSchedule = schedule },
-                                onDelete = { viewModel.onEvent(MedicationDetailEvent.DeleteSchedule(schedule)) }
+                                onDelete = { viewModel.onEvent(CycleWeekEditorEvent.DeleteSchedule(schedule)) }
                             )
                         }
                     }
@@ -164,8 +156,9 @@ fun MedicationDetailScreen(
 }
 
 @Composable
-private fun ScheduleRow(
+private fun CycleScheduleRow(
     schedule: ReminderSchedule,
+    medicationName: String,
     periodTimes: Map<String, Int>,
     onClick: () -> Unit,
     onDelete: () -> Unit
@@ -177,106 +170,46 @@ private fun ScheduleRow(
     } else {
         formatMinutes(schedule.minutesOfDay)
     }
-
     val freqLabel = if (schedule.scheduleType == "INTERVAL") {
-        "Every ${schedule.intervalDays} days (from ${schedule.startDate})"
+        "Každých ${schedule.intervalDays} dní (od ${schedule.startDate})"
     } else {
         val days = WeekDays.fromBitmask(schedule.daysOfWeek)
-        if (days.size == 7) "Every day" else days.joinToString { it.name.take(3) }
+        if (days.size == 7) "Každý den" else days.joinToString { it.name.take(3) }
     }
 
     ListItem(
-        headlineContent = { Text(timeLabel) },
-        supportingContent = { Text(freqLabel) },
+        headlineContent = { Text(medicationName, fontWeight = FontWeight.SemiBold) },
+        supportingContent = { Text("$timeLabel - $freqLabel") },
         trailingContent = {
             IconButton(onClick = onDelete) {
-                Icon(Icons.Rounded.Delete, contentDescription = "Delete reminder")
+                Icon(Icons.Rounded.Delete, contentDescription = "Smazat")
             }
         },
         modifier = Modifier.clickable(onClick = onClick)
     )
 }
 
-
 @Composable
-fun PeriodSettingsDialog(
-    currentTimes: Map<String, Int>,
+private fun MedicationPickerDialog(
+    medications: List<Medication>,
     onDismiss: () -> Unit,
-    onSavePeriod: (String, Int) -> Unit
+    onPick: (Long) -> Unit
 ) {
-    var editingPeriod by remember { mutableStateOf<String?>(null) }
-    
-    if (editingPeriod != null) {
-        val period = editingPeriod!!
-        val minutes = currentTimes[period] ?: 480
-        PeriodTimePickerDialog(
-            periodName = period,
-            initialMinutes = minutes,
-            onDismiss = { editingPeriod = null },
-            onConfirm = { newMinutes ->
-                onSavePeriod(period, newMinutes)
-                editingPeriod = null
-            }
-        )
-    }
-
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Period Notification Times") },
+        title = { Text("Vyber lék") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(
-                    "MORNING" to "Morning (Ráno)",
-                    "NOON" to "Noon (Poledne)",
-                    "EVENING" to "Evening (Večer)",
-                    "NIGHT" to "Night (Noc)"
-                ).forEach { (key, label) ->
-                    val minutes = currentTimes[key] ?: 0
+            LazyColumn {
+                items(medications, key = { it.id }) { medication ->
                     ListItem(
-                        headlineContent = { Text(label) },
-                        supportingContent = { Text(formatMinutes(minutes)) },
-                        trailingContent = {
-                            TextButton(onClick = { editingPeriod = key }) {
-                                Text("Change")
-                            }
-                        }
+                        headlineContent = { Text(medication.name) },
+                        modifier = Modifier.clickable { onPick(medication.id) }
                     )
                 }
             }
         },
         confirmButton = {
-            Button(onClick = onDismiss) { Text("Done") }
+            TextButton(onClick = onDismiss) { Text("Zrušit") }
         }
     )
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun PeriodTimePickerDialog(
-    periodName: String,
-    initialMinutes: Int,
-    onDismiss: () -> Unit,
-    onConfirm: (Int) -> Unit
-) {
-    val timePickerState = rememberTimePickerState(
-        initialHour = initialMinutes / 60,
-        initialMinute = initialMinutes % 60,
-        is24Hour = true
-    )
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Set Time for ${periodName.lowercase().replaceFirstChar { it.uppercase() }}") },
-        text = {
-            TimePicker(state = timePickerState)
-        },
-        confirmButton = {
-            Button(onClick = { onConfirm(timePickerState.hour * 60 + timePickerState.minute) }) {
-                Text("OK")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
-    )
-}
-
