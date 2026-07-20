@@ -10,6 +10,9 @@ import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -99,7 +102,8 @@ fun TodayContent(
                                 cycle = activeCycle,
                                 onOpenHistory = onOpenCycleHistory,
                                 onManageCycle = onCreateCycle,
-                                onManageWeeks = { onManageWeeks(activeCycle.id) }
+                                onManageWeeks = { onManageWeeks(activeCycle.id) },
+                                onEndCycle = { onEvent(TodayEvent.EndActiveCycle) }
                             )
                         } else {
                             NoCycleHeader(onCreateCycle = onCreateCycle)
@@ -157,14 +161,34 @@ fun TodayContent(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun CycleDashboardHeader(
     cycle: Cycle,
     onOpenHistory: () -> Unit,
     onManageCycle: () -> Unit,
-    onManageWeeks: () -> Unit
+    onManageWeeks: () -> Unit,
+    onEndCycle: () -> Unit
 ) {
+    var showEndConfirm by remember { mutableStateOf(false) }
+
+    if (showEndConfirm) {
+        AlertDialog(
+            onDismissRequest = { showEndConfirm = false },
+            title = { Text("Ukončit cyklus?") },
+            text = { Text("Cyklus \"${cycle.name}\" bude ukončen a nebude žádný aktivní cyklus.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showEndConfirm = false
+                    onEndCycle()
+                }) { Text("Ukončit") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEndConfirm = false }) { Text("Zrušit") }
+            }
+        )
+    }
+
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
     val elapsedDays = cycle.startDate.daysUntil(today)
     val typeLabel = when (cycle.type) {
@@ -197,6 +221,9 @@ private fun CycleDashboardHeader(
                 }
                 TextButton(onClick = onManageWeeks) {
                     Text("Upravit týdny")
+                }
+                TextButton(onClick = { showEndConfirm = true }) {
+                    Text("Ukončit cyklus")
                 }
             }
         }

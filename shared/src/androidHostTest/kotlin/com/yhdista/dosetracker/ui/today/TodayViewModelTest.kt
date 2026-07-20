@@ -24,6 +24,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -79,6 +80,28 @@ class TodayViewModelTest {
         val finalState = viewModel.uiState.value
         assert(finalState.activeCycle is Data.Success)
         assertEquals(cycle, (finalState.activeCycle as Data.Success).data)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `EndActiveCycle marks the active cycle COMPLETED without touching onCompleteAction routing`() = runTest {
+        val cycle = Cycle(
+            id = 1, name = "Cyklus", type = CycleType.STANDARD, totalWeeks = null,
+            startDate = LocalDate(2026, 1, 1), status = CycleStatus.ACTIVE, onCompleteAction = CycleCompleteAction.TO_NONE
+        )
+        whenever(repository.getDosesForDate(org.mockito.kotlin.any())).thenReturn(flowOf(Data.Success(emptyList())))
+        whenever(repository.getActiveCycle()).thenReturn(flowOf(Data.Success(cycle)))
+        whenever(repository.getActiveCycleOnce()).thenReturn(cycle)
+
+        val viewModel = TodayViewModel(repository, SavedStateHandle())
+        val job = launch { viewModel.uiState.collect {} }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onEvent(TodayEvent.EndActiveCycle)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify(repository).updateCycle(cycle.copy(status = CycleStatus.COMPLETED))
 
         job.cancel()
     }

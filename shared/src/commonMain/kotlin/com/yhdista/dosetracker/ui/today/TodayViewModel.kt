@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.Cycle
+import com.yhdista.dosetracker.domain.model.CycleStatus
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
@@ -27,6 +28,7 @@ data class TodayState(
 sealed interface TodayEvent {
     data class ToggleDoseStatus(val dose: Dose) : TodayEvent
     data class SelectDose(val id: Long?) : TodayEvent
+    object EndActiveCycle : TodayEvent
 }
 
 class TodayViewModel(
@@ -56,6 +58,7 @@ class TodayViewModel(
         when (event) {
             is TodayEvent.ToggleDoseStatus -> toggleDoseStatus(event.dose)
             is TodayEvent.SelectDose -> selectDose(event.id)
+            is TodayEvent.EndActiveCycle -> endActiveCycle()
         }
     }
 
@@ -68,5 +71,12 @@ class TodayViewModel(
 
     private fun selectDose(id: Long?) {
         savedStateHandle["selectedDoseId"] = id
+    }
+
+    private fun endActiveCycle() {
+        viewModelScope.launch {
+            val cycle = repository.getActiveCycleOnce() ?: return@launch
+            repository.updateCycle(cycle.copy(status = CycleStatus.COMPLETED))
+        }
     }
 }
