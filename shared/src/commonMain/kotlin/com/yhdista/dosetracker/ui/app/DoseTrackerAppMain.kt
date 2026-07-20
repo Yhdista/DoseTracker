@@ -249,6 +249,30 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                         )
                     }
                 }
+                is Destination.CreateCycle -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        // Task 9: wire real CreateCycleScreen/navigation here
+                    }
+                }
+                is Destination.CycleWeekEditor -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        // Task 9: wire real CycleWeekEditorScreen/navigation here
+                    }
+                }
+                is Destination.CycleHistory -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        // Task 9: wire real CycleHistoryScreen/navigation here
+                    }
+                }
                 is Destination.Settings -> {
                     NavEntry(
                         key = destination,

@@ -29,6 +29,15 @@ sealed interface Destination : NavKey {
     data class MedicationReport(val medicationId: Long) : Destination
 
     @Serializable
+    data object CreateCycle : Destination
+
+    @Serializable
+    data class CycleWeekEditor(val cycleId: Long, val weekIndex: Int) : Destination
+
+    @Serializable
+    data object CycleHistory : Destination
+
+    @Serializable
     data object Settings : Destination
 
     @Serializable
