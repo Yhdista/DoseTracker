@@ -3438,3 +3438,546 @@ git add shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/today/TodayScree
         shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/app/DoseTrackerAppMain.kt
 git commit -m "feat: add Spravovat entry point to manage/attach a cycle while one is active"
 ```
+
+---
+
+### Task 12: Week list screen (fixes: multi-week cycles were only ever configurable for week 1)
+
+**Context (why this task exists):** The final whole-branch review found a Critical gap: the design spec's `CreateCycle` flow says "on save, navigates to a list of the cycle's weeks... tapping a week opens `CycleWeekEditor`" — but the actual wiring (Task 9) always jumped straight to `CycleWeekEditor(cycleId, 0)`, so weeks 2..N of a multi-week cycle were never reachable from the UI, even though `MedicationRepository.getWeeksForCycle()` (Task 2) already exists and is fully implemented, just never consumed. This task adds the missing week-list screen and wires it in as the real navigation target, and additionally exposes the same list as an "Upravit týdny" action on the running cycle's dashboard (so an already-active cycle's weeks can be revisited, not just configured once right after creation).
+
+**Files:**
+- Modify: `shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/navigation/Destinations.kt`
+- Create: `shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/cycle/CycleWeekListViewModel.kt`
+- Create: `shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/cycle/CycleWeekListScreen.kt`
+- Modify: `shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/today/TodayScreen.kt`
+- Modify: `shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/app/DoseTrackerAppMain.kt`
+- Modify: `shared/src/commonMain/kotlin/com/yhdista/dosetracker/di/ViewModelModule.kt`
+
+**Interfaces:**
+- Consumes: `MedicationRepository.getWeeksForCycle(cycleId): Flow<Data<List<CycleWeek>>>` (Task 2, already exists, unused until now).
+- Produces: `Destination.CycleWeekList(cycleId: Long)`; `CycleWeekListViewModel(repository, savedStateHandle)`; `CycleWeekListScreen(cycleId, viewModel, onBack, onWeekClick)`; `CycleDashboardHeader` gains `onManageWeeks: () -> Unit`; `TodayContent`/`TodayScreen` gain `onManageWeeks: (cycleId: Long) -> Unit` — consumed by Task 13 (which adds a 4th button to the same header) and by `DoseTrackerAppMain.kt`.
+
+- [ ] **Step 1: Add the new destination**
+
+Add this entry to the `Destination` sealed interface in `Destinations.kt` (near `CycleWeekEditor`):
+
+```kotlin
+    @Serializable
+    data class CycleWeekList(val cycleId: Long) : Destination
+```
+
+- [ ] **Step 2: Implement `CycleWeekListViewModel`**
+
+```kotlin
+package com.yhdista.dosetracker.ui.cycle
+
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.domain.model.CycleWeek
+import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+
+data class CycleWeekListState(
+    val cycleId: Long? = null,
+    val weeks: Data<List<CycleWeek>> = Data.Loading
+)
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class CycleWeekListViewModel(
+    private val repository: MedicationRepository,
+    private val savedStateHandle: SavedStateHandle
+) : ViewModel() {
+
+    private val cycleIdFlow = savedStateHandle.getStateFlow<Long?>("cycleId", null)
+
+    val uiState: StateFlow<CycleWeekListState> = cycleIdFlow
+        .filterNotNull()
+        .flatMapLatest { cycleId ->
+            repository.getWeeksForCycle(cycleId).map { weeks -> CycleWeekListState(cycleId, weeks) }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = CycleWeekListState()
+        )
+
+    fun setCycleId(cycleId: Long) {
+        if (savedStateHandle.get<Long>("cycleId") == null) {
+            savedStateHandle["cycleId"] = cycleId
+        }
+    }
+}
+```
+
+- [ ] **Step 3: Implement `CycleWeekListScreen`**
+
+```kotlin
+package com.yhdista.dosetracker.ui.cycle
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.yhdista.dosetracker.core.Data
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CycleWeekListScreen(
+    cycleId: Long,
+    viewModel: CycleWeekListViewModel,
+    onBack: () -> Unit,
+    onWeekClick: (weekIndex: Int) -> Unit
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(cycleId) {
+        viewModel.setCycleId(cycleId)
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Týdny cyklu", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        when (val result = state.weeks) {
+            is Data.Loading -> {
+                Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
+            is Data.Error -> {
+                Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Chyba: ${result.message}")
+                }
+            }
+            is Data.Success -> {
+                LazyColumn(
+                    modifier = Modifier.padding(padding).fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(result.data, key = { it.id }) { week ->
+                        ListItem(
+                            headlineContent = { Text("Týden ${week.weekIndex + 1}") },
+                            modifier = Modifier.clickable { onWeekClick(week.weekIndex) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+- [ ] **Step 4: Add the "Upravit týdny" button and thread `onManageWeeks` through `TodayScreen.kt`**
+
+Replace the `TodayScreen` function with:
+
+```kotlin
+@Composable
+fun TodayScreen(
+    viewModel: TodayViewModel,
+    onNavigateToConfirm: (Long) -> Unit,
+    onNavigateToCreateCycle: () -> Unit,
+    onNavigateToCycleHistory: () -> Unit,
+    onNavigateToManageWeeks: (Long) -> Unit
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    TodayContent(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onNavigateToConfirm = onNavigateToConfirm,
+        onCreateCycle = onNavigateToCreateCycle,
+        onOpenCycleHistory = onNavigateToCycleHistory,
+        onManageWeeks = onNavigateToManageWeeks
+    )
+}
+```
+
+Replace the `TodayContent` function's signature and its `CycleDashboardHeader(...)` call site with:
+
+```kotlin
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TodayContent(
+    state: TodayState,
+    onEvent: (TodayEvent) -> Unit,
+    onNavigateToConfirm: (Long) -> Unit,
+    onCreateCycle: () -> Unit = {},
+    onOpenCycleHistory: () -> Unit = {},
+    onManageWeeks: (Long) -> Unit = {}
+) {
+```
+
+(keep the rest of `TodayContent`'s body exactly as-is except the one call site below)
+
+```kotlin
+                        if (activeCycle != null) {
+                            CycleDashboardHeader(
+                                cycle = activeCycle,
+                                onOpenHistory = onOpenCycleHistory,
+                                onManageCycle = onCreateCycle,
+                                onManageWeeks = { onManageWeeks(activeCycle.id) }
+                            )
+                        } else {
+                            NoCycleHeader(onCreateCycle = onCreateCycle)
+                        }
+```
+
+Replace `CycleDashboardHeader`'s signature and its trailing button row with:
+
+```kotlin
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CycleDashboardHeader(
+    cycle: Cycle,
+    onOpenHistory: () -> Unit,
+    onManageCycle: () -> Unit,
+    onManageWeeks: () -> Unit
+) {
+```
+
+```kotlin
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onOpenHistory) {
+                    Text("Historie cyklu")
+                }
+                TextButton(onClick = onManageCycle) {
+                    Text("Spravovat")
+                }
+                TextButton(onClick = onManageWeeks) {
+                    Text("Upravit týdny")
+                }
+            }
+```
+
+`FlowRow`/`ExperimentalLayoutApi` come from `androidx.compose.foundation.layout.*`, already wildcard-imported at the top of the file — no new import needed. `FlowRow` wraps to a new line if the three buttons don't fit the card's width (matters more once Task 13 adds a 4th button).
+
+Update the one call site of `TodayContentPreview()` at the bottom of the file — it doesn't call `CycleDashboardHeader` directly and needs no change (it only calls `TodayContent`, which already has an `onManageWeeks` default).
+
+- [ ] **Step 5: Register `CycleWeekListViewModel` in `viewModelModule`**
+
+Add this line inside `viewModelModule` in `ViewModelModule.kt`:
+
+```kotlin
+    viewModel { com.yhdista.dosetracker.ui.cycle.CycleWeekListViewModel(get(), get()) }
+```
+
+- [ ] **Step 6: Wire the destination and update `CreateCycleScreen`'s `onCreated` navigation in `DoseTrackerAppMain.kt`**
+
+Add these two imports:
+
+```kotlin
+import com.yhdista.dosetracker.ui.cycle.CycleWeekListScreen
+import com.yhdista.dosetracker.ui.cycle.CycleWeekListViewModel
+```
+
+Replace the `is Destination.Today -> { ... }` block's `TodayScreen(...)` call with:
+
+```kotlin
+                        TodayScreen(
+                            viewModel = koinViewModel<TodayViewModel>(),
+                            onNavigateToConfirm = { doseId ->
+                                backstack.add(Destination.ConfirmDose(doseId))
+                            },
+                            onNavigateToCreateCycle = {
+                                backstack.add(Destination.CreateCycle)
+                            },
+                            onNavigateToCycleHistory = {
+                                backstack.add(Destination.CycleHistory)
+                            },
+                            onNavigateToManageWeeks = { cycleId ->
+                                backstack.add(Destination.CycleWeekList(cycleId))
+                            }
+                        )
+```
+
+Replace the `is Destination.CreateCycle -> { ... }` block's `onCreated` lambda with:
+
+```kotlin
+                            onCreated = { cycleId, weekCount ->
+                                backstack.removeLastOrNull()
+                                if (weekCount > 0) {
+                                    backstack.add(Destination.CycleWeekList(cycleId))
+                                }
+                            }
+```
+
+Add a new branch right after the existing `is Destination.CycleWeekEditor -> { ... }` block:
+
+```kotlin
+                is Destination.CycleWeekList -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        CycleWeekListScreen(
+                            cycleId = destination.cycleId,
+                            viewModel = koinViewModel<CycleWeekListViewModel>(),
+                            onBack = { backstack.removeLastOrNull() },
+                            onWeekClick = { weekIndex ->
+                                backstack.add(Destination.CycleWeekEditor(destination.cycleId, weekIndex))
+                            }
+                        )
+                    }
+                }
+```
+
+- [ ] **Step 7: Verify the project compiles**
+
+Run: `./gradlew :app:assembleDebug`
+Expected: BUILD SUCCESSFUL
+
+- [ ] **Step 8: Manual verification**
+
+Launch the app (or reuse Task 10's test cycle). Create a cycle with `Počet týdnů = 3`. Confirm saving now lands on a "Týdny cyklu" list showing "Týden 1", "Týden 2", "Týden 3" (not straight into a single week editor). Tap "Týden 2", add a medication schedule, go back — confirm you land back on the week list, not Today. From the Today dashboard, tap the new "Upravit týdny" button — confirm it reopens the same three-week list for the running cycle, and that "Týden 2" still shows the medication you just added.
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/navigation/Destinations.kt \
+        shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/cycle/CycleWeekListViewModel.kt \
+        shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/cycle/CycleWeekListScreen.kt \
+        shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/today/TodayScreen.kt \
+        shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/app/DoseTrackerAppMain.kt \
+        shared/src/commonMain/kotlin/com/yhdista/dosetracker/di/ViewModelModule.kt
+git commit -m "feat: add week-list screen so multi-week cycles can configure every week, not just week 1"
+```
+
+---
+
+### Task 13: "Ukončit cyklus" — manually end the active cycle
+
+**Context (why this task exists):** The final whole-branch review flagged that once a cycle reaches the `Standardní cyklus` baseline (which never completes on its own — it has no `totalWeeks`), there is no way in the UI to ever stop it and free up "no active cycle" so a brand-new `Cyklus` can be started — `CreateCycleScreen`'s NORMAL chip is only offered when `hasActiveCycle == false`, and nothing ever sets `hasActiveCycle` back to `false` once a cycle exists. This task adds a manual "end the active cycle" action. Deliberately simple semantics: ending a cycle manually always results in "no active cycle" — it does **not** run the cycle's `onCompleteAction` chain (that chain is only for automatic, time-based completion; a manual stop is the user overriding that and explicitly wants a clean slate).
+
+**Files:**
+- Modify: `shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/today/TodayViewModel.kt`
+- Modify: `shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/today/TodayScreen.kt`
+- Test: `shared/src/androidHostTest/kotlin/com/yhdista/dosetracker/ui/today/TodayViewModelTest.kt`
+
+**Interfaces:**
+- Consumes: `MedicationRepository.updateCycle(cycle)` (Task 2).
+- Produces: `TodayEvent.EndActiveCycle`; `CycleDashboardHeader` gains a 4th "Ukončit cyklus" button with an inline confirmation dialog.
+
+- [ ] **Step 1: Write the failing test**
+
+Add this test to `TodayViewModelTest.kt` (needs `import com.yhdista.dosetracker.domain.model.Cycle`, `CycleCompleteAction`, `CycleStatus`, `CycleType`, `kotlinx.datetime.LocalDate` — already added by Task 5's test changes, so only add these if not already present):
+
+```kotlin
+    @Test
+    fun `EndActiveCycle marks the active cycle COMPLETED without touching onCompleteAction routing`() = runTest {
+        val cycle = Cycle(
+            id = 1, name = "Cyklus", type = CycleType.STANDARD, totalWeeks = null,
+            startDate = LocalDate(2026, 1, 1), status = CycleStatus.ACTIVE, onCompleteAction = CycleCompleteAction.TO_NONE
+        )
+        whenever(repository.getDosesForDate(org.mockito.kotlin.any())).thenReturn(flowOf(Data.Success(emptyList())))
+        whenever(repository.getActiveCycle()).thenReturn(flowOf(Data.Success(cycle)))
+        whenever(repository.getActiveCycleOnce()).thenReturn(cycle)
+
+        val viewModel = TodayViewModel(repository, SavedStateHandle())
+        val job = launch { viewModel.uiState.collect {} }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onEvent(TodayEvent.EndActiveCycle)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify(repository).updateCycle(cycle.copy(status = CycleStatus.COMPLETED))
+
+        job.cancel()
+    }
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `./gradlew :shared:testAndroidHostTest --tests "com.yhdista.dosetracker.ui.today.TodayViewModelTest"`
+Expected: FAIL — compile error (`TodayEvent.EndActiveCycle` is unresolved, `repository.getActiveCycleOnce()` mock target exists on the interface already from Task 2 but the event/handler don't exist yet)
+
+- [ ] **Step 3: Add the event and handler to `TodayViewModel`**
+
+Add this import to `TodayViewModel.kt`:
+
+```kotlin
+import com.yhdista.dosetracker.domain.model.CycleStatus
+```
+
+Replace the `TodayEvent` sealed interface with:
+
+```kotlin
+sealed interface TodayEvent {
+    data class ToggleDoseStatus(val dose: Dose) : TodayEvent
+    data class SelectDose(val id: Long?) : TodayEvent
+    object EndActiveCycle : TodayEvent
+}
+```
+
+Replace the `onEvent` function with:
+
+```kotlin
+    fun onEvent(event: TodayEvent) {
+        when (event) {
+            is TodayEvent.ToggleDoseStatus -> toggleDoseStatus(event.dose)
+            is TodayEvent.SelectDose -> selectDose(event.id)
+            is TodayEvent.EndActiveCycle -> endActiveCycle()
+        }
+    }
+```
+
+Add this function alongside `toggleDoseStatus`/`selectDose`:
+
+```kotlin
+    private fun endActiveCycle() {
+        viewModelScope.launch {
+            val cycle = repository.getActiveCycleOnce() ?: return@launch
+            repository.updateCycle(cycle.copy(status = CycleStatus.COMPLETED))
+        }
+    }
+```
+
+- [ ] **Step 4: Run the test to verify it passes**
+
+Run: `./gradlew :shared:testAndroidHostTest --tests "com.yhdista.dosetracker.ui.today.TodayViewModelTest"`
+Expected: BUILD SUCCESSFUL, 3 tests passed (2 existing from Task 5 + this new one)
+
+- [ ] **Step 5: Add the "Ukončit cyklus" button and confirmation dialog to `TodayScreen.kt`**
+
+Add these three imports:
+
+```kotlin
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+```
+
+Update the `CycleDashboardHeader(...)` call site inside `TodayContent` (added in Task 12) to also pass an `onEndCycle` lambda:
+
+```kotlin
+                        if (activeCycle != null) {
+                            CycleDashboardHeader(
+                                cycle = activeCycle,
+                                onOpenHistory = onOpenCycleHistory,
+                                onManageCycle = onCreateCycle,
+                                onManageWeeks = { onManageWeeks(activeCycle.id) },
+                                onEndCycle = { onEvent(TodayEvent.EndActiveCycle) }
+                            )
+                        } else {
+                            NoCycleHeader(onCreateCycle = onCreateCycle)
+                        }
+```
+
+Replace `CycleDashboardHeader`'s signature (add the new parameter) and body (add the confirmation dialog and the 4th button) with:
+
+```kotlin
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@Composable
+private fun CycleDashboardHeader(
+    cycle: Cycle,
+    onOpenHistory: () -> Unit,
+    onManageCycle: () -> Unit,
+    onManageWeeks: () -> Unit,
+    onEndCycle: () -> Unit
+) {
+    var showEndConfirm by remember { mutableStateOf(false) }
+
+    if (showEndConfirm) {
+        AlertDialog(
+            onDismissRequest = { showEndConfirm = false },
+            title = { Text("Ukončit cyklus?") },
+            text = { Text("Cyklus \"${cycle.name}\" bude ukončen a nebude žádný aktivní cyklus.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showEndConfirm = false
+                    onEndCycle()
+                }) { Text("Ukončit") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEndConfirm = false }) { Text("Zrušit") }
+            }
+        )
+    }
+
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    val elapsedDays = cycle.startDate.daysUntil(today)
+    val typeLabel = when (cycle.type) {
+        CycleType.NORMAL -> "Cyklus"
+        CycleType.STANDARD -> "Standardní cyklus"
+        CycleType.POST -> "Post-cyklus"
+    }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(cycle.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(typeLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Začátek: ${cycle.startDate}")
+            Text("Běží $elapsedDays dní")
+            val totalWeeks = cycle.totalWeeks
+            if (totalWeeks != null) {
+                val totalDays = totalWeeks * 7
+                val remainingDays = (totalDays - elapsedDays).coerceAtLeast(0)
+                val endDate = cycle.startDate.plus(totalDays, DateTimeUnit.DAY)
+                Text("Zbývá $remainingDays dní (končí $endDate)")
+            } else {
+                Text("Běží neomezeně")
+            }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onOpenHistory) {
+                    Text("Historie cyklu")
+                }
+                TextButton(onClick = onManageCycle) {
+                    Text("Spravovat")
+                }
+                TextButton(onClick = onManageWeeks) {
+                    Text("Upravit týdny")
+                }
+                TextButton(onClick = { showEndConfirm = true }) {
+                    Text("Ukončit cyklus")
+                }
+            }
+        }
+    }
+}
+```
+
+- [ ] **Step 6: Verify the project compiles**
+
+Run: `./gradlew :app:assembleDebug`
+Expected: BUILD SUCCESSFUL
+
+- [ ] **Step 7: Manual verification**
+
+With a cycle active, open Today. Confirm the dashboard now shows all 4 actions ("Historie cyklu", "Spravovat", "Upravit týdny", "Ukončit cyklus"), wrapping to a second line if needed. Tap "Ukončit cyklus" — confirm a dialog appears asking to confirm, naming the cycle. Tap "Zrušit" — confirm nothing happens. Tap "Ukončit cyklus" again, then "Ukončit" — confirm the dashboard now shows "Žádný aktivní cyklus" / "+ Nový cyklus" (the no-cycle state), and that the "Cyklus" chip is now offered again in "+ Nový cyklus"'s type picker.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/today/TodayViewModel.kt \
+        shared/src/commonMain/kotlin/com/yhdista/dosetracker/ui/today/TodayScreen.kt \
+        shared/src/androidHostTest/kotlin/com/yhdista/dosetracker/ui/today/TodayViewModelTest.kt
+git commit -m "feat: add Ukoncit cyklus action to manually end the active cycle"
+```
