@@ -26,5 +26,5 @@ val dataModule = module {
         )
     }
     single { com.yhdista.dosetracker.reminder.CycleLifecycleManager(get()) }
-    single { com.yhdista.dosetracker.reminder.DoseGenerator(get(), get(), get()) }
+    single { com.yhdista.dosetracker.reminder.DoseGenerator(get(), get()) }
 }
