@@ -16,27 +16,37 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.domain.model.Cycle
+import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.ui.theme.DoseTrackerTheme
 import kotlin.time.Clock
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.daysUntil
 import kotlinx.datetime.format
+import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.todayIn
 import kotlinx.datetime.format.char
 import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun TodayScreen(
     viewModel: TodayViewModel,
-    onNavigateToConfirm: (Long) -> Unit
+    onNavigateToConfirm: (Long) -> Unit,
+    onNavigateToCreateCycle: () -> Unit,
+    onNavigateToCycleHistory: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     TodayContent(
         state = state,
         onEvent = viewModel::onEvent,
-        onNavigateToConfirm = onNavigateToConfirm
+        onNavigateToConfirm = onNavigateToConfirm,
+        onCreateCycle = onNavigateToCreateCycle,
+        onOpenCycleHistory = onNavigateToCycleHistory
     )
 }
 
@@ -45,8 +55,12 @@ fun TodayScreen(
 fun TodayContent(
     state: TodayState,
     onEvent: (TodayEvent) -> Unit,
-    onNavigateToConfirm: (Long) -> Unit
+    onNavigateToConfirm: (Long) -> Unit,
+    onCreateCycle: () -> Unit = {},
+    onOpenCycleHistory: () -> Unit = {}
 ) {
+    val activeCycle = (state.activeCycle as? Data.Success)?.data
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -66,19 +80,62 @@ fun TodayContent(
                 }
             }
             is Data.Success -> {
-                if (doses.data.isEmpty()) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No doses scheduled for today")
+                val cycleDoses = if (activeCycle != null) doses.data.filter { it.cycleId == activeCycle.id } else emptyList()
+                val otherDoses = if (activeCycle != null) doses.data.filter { it.cycleId != activeCycle.id } else doses.data
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item {
+                        if (activeCycle != null) {
+                            CycleDashboardHeader(cycle = activeCycle, onOpenHistory = onOpenCycleHistory)
+                        } else {
+                            NoCycleHeader(onCreateCycle = onCreateCycle)
+                        }
                     }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(doses.data, key = { it.id }) { dose ->
+
+                    if (doses.data.isEmpty()) {
+                        item {
+                            Text(
+                                "No doses scheduled for today",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    if (activeCycle != null && cycleDoses.isNotEmpty()) {
+                        item {
+                            Text(
+                                "V rámci cyklu ${activeCycle.name}",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        items(cycleDoses, key = { it.id }) { dose ->
+                            DoseItem(
+                                dose = dose,
+                                onClick = { onNavigateToConfirm(dose.id) },
+                                onToggleStatus = { onEvent(TodayEvent.ToggleDoseStatus(dose)) }
+                            )
+                        }
+                    }
+
+                    if (otherDoses.isNotEmpty()) {
+                        if (activeCycle != null) {
+                            item {
+                                Text(
+                                    "Ostatní",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                        items(otherDoses, key = { it.id }) { dose ->
                             DoseItem(
                                 dose = dose,
                                 onClick = { onNavigateToConfirm(dose.id) },
@@ -87,6 +144,56 @@ fun TodayContent(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CycleDashboardHeader(cycle: Cycle, onOpenHistory: () -> Unit) {
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    val elapsedDays = cycle.startDate.daysUntil(today)
+    val typeLabel = when (cycle.type) {
+        CycleType.NORMAL -> "Cyklus"
+        CycleType.STANDARD -> "Standardní cyklus"
+        CycleType.POST -> "Post-cyklus"
+    }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(cycle.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(typeLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Začátek: ${cycle.startDate}")
+            Text("Běží $elapsedDays dní")
+            val totalWeeks = cycle.totalWeeks
+            if (totalWeeks != null) {
+                val totalDays = totalWeeks * 7
+                val remainingDays = (totalDays - elapsedDays).coerceAtLeast(0)
+                val endDate = cycle.startDate.plus(totalDays, DateTimeUnit.DAY)
+                Text("Zbývá $remainingDays dní (končí $endDate)")
+            } else {
+                Text("Běží neomezeně")
+            }
+            TextButton(onClick = onOpenHistory) {
+                Text("Historie cyklu")
+            }
+        }
+    }
+}
+
+@Composable
+private fun NoCycleHeader(onCreateCycle: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Žádný aktivní cyklus", style = MaterialTheme.typography.bodyMedium)
+            Button(onClick = onCreateCycle) {
+                Text("+ Nový cyklus")
             }
         }
     }
@@ -158,7 +265,8 @@ fun TodayContentPreview() {
                 doses = Data.Success(listOf(
                     Dose(id = 1, medicationId = 1, timestamp = Clock.System.now(), status = DoseStatus.PENDING),
                     Dose(id = 2, medicationId = 2, timestamp = Clock.System.now(), status = DoseStatus.TAKEN)
-                ))
+                )),
+                activeCycle = Data.Success(null)
             ),
             onEvent = {},
             onNavigateToConfirm = {}

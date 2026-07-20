@@ -2,6 +2,10 @@ package com.yhdista.dosetracker.ui.today
 
 import androidx.lifecycle.SavedStateHandle
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.domain.model.Cycle
+import com.yhdista.dosetracker.domain.model.CycleCompleteAction
+import com.yhdista.dosetracker.domain.model.CycleStatus
+import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
@@ -14,6 +18,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.time.Clock
+import kotlinx.datetime.LocalDate
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -43,6 +48,7 @@ class TodayViewModelTest {
             Dose(id = 1, medicationId = 1, timestamp = Clock.System.now(), status = DoseStatus.PENDING)
         )
         whenever(repository.getDosesForDate(org.mockito.kotlin.any())).thenReturn(flowOf(Data.Success(doses)))
+        whenever(repository.getActiveCycle()).thenReturn(flowOf(Data.Success(null)))
 
         val viewModel = TodayViewModel(repository, SavedStateHandle())
 
@@ -53,6 +59,26 @@ class TodayViewModelTest {
         val finalState = viewModel.uiState.value
         assert(finalState.doses is Data.Success)
         assertEquals(doses, (finalState.doses as Data.Success).data)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `uiState includes the active cycle when one is running`() = runTest {
+        val cycle = Cycle(
+            id = 1, name = "Cyklus", type = CycleType.NORMAL, totalWeeks = 4,
+            startDate = LocalDate(2026, 7, 1), status = CycleStatus.ACTIVE, onCompleteAction = CycleCompleteAction.TO_STANDARD
+        )
+        whenever(repository.getDosesForDate(org.mockito.kotlin.any())).thenReturn(flowOf(Data.Success(emptyList())))
+        whenever(repository.getActiveCycle()).thenReturn(flowOf(Data.Success(cycle)))
+
+        val viewModel = TodayViewModel(repository, SavedStateHandle())
+        val job = launch { viewModel.uiState.collect {} }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val finalState = viewModel.uiState.value
+        assert(finalState.activeCycle is Data.Success)
+        assertEquals(cycle, (finalState.activeCycle as Data.Success).data)
 
         job.cancel()
     }

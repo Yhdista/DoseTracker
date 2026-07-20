@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.domain.model.Cycle
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
@@ -19,6 +20,7 @@ import kotlinx.datetime.todayIn
 
 data class TodayState(
     val doses: Data<List<Dose>> = Data.Loading,
+    val activeCycle: Data<Cycle?> = Data.Loading,
     val selectedDoseId: Long? = null
 )
 
@@ -36,10 +38,12 @@ class TodayViewModel(
 
     val uiState: StateFlow<TodayState> = combine(
         repository.getDosesForDate(Clock.System.todayIn(TimeZone.currentSystemDefault())),
+        repository.getActiveCycle(),
         _selectedDoseId
-    ) { doses, selectedId ->
+    ) { doses, activeCycle, selectedId ->
         TodayState(
             doses = doses,
+            activeCycle = activeCycle,
             selectedDoseId = selectedId
         )
     }.stateIn(

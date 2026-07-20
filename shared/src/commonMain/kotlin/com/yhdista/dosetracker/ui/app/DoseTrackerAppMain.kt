@@ -150,6 +150,12 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                             viewModel = koinViewModel<TodayViewModel>(),
                             onNavigateToConfirm = { doseId ->
                                 backstack.add(Destination.ConfirmDose(doseId))
+                            },
+                            onNavigateToCreateCycle = {
+                                // Task 9: Wire to CreateCycle destination
+                            },
+                            onNavigateToCycleHistory = {
+                                // Task 9: Wire to CycleHistory destination
                             }
                         )
                     }
