@@ -29,6 +29,12 @@ import com.yhdista.dosetracker.ui.catalog.MedicationCatalogScreen
 import com.yhdista.dosetracker.ui.catalog.MedicationCatalogViewModel
 import com.yhdista.dosetracker.ui.confirm.ConfirmDoseScreen
 import com.yhdista.dosetracker.ui.confirm.ConfirmDoseViewModel
+import com.yhdista.dosetracker.ui.cycle.CreateCycleScreen
+import com.yhdista.dosetracker.ui.cycle.CreateCycleViewModel
+import com.yhdista.dosetracker.ui.cycle.CycleHistoryScreen
+import com.yhdista.dosetracker.ui.cycle.CycleHistoryViewModel
+import com.yhdista.dosetracker.ui.cycle.CycleWeekEditorScreen
+import com.yhdista.dosetracker.ui.cycle.CycleWeekEditorViewModel
 import com.yhdista.dosetracker.ui.dose.AddDoseScreen
 import com.yhdista.dosetracker.ui.dose.AddDoseViewModel
 import com.yhdista.dosetracker.ui.history.HistoryScreen
@@ -152,10 +158,10 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                                 backstack.add(Destination.ConfirmDose(doseId))
                             },
                             onNavigateToCreateCycle = {
-                                // Task 9: Wire to CreateCycle destination
+                                backstack.add(Destination.CreateCycle)
                             },
                             onNavigateToCycleHistory = {
-                                // Task 9: Wire to CycleHistory destination
+                                backstack.add(Destination.CycleHistory)
                             }
                         )
                     }
@@ -254,7 +260,16 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                         key = destination,
                         metadata = ListDetailSceneStrategy.detailPane()
                     ) {
-                        // Task 9: wire real CreateCycleScreen/navigation here
+                        CreateCycleScreen(
+                            viewModel = koinViewModel<CreateCycleViewModel>(),
+                            onBack = { backstack.removeLastOrNull() },
+                            onCreated = { cycleId, weekCount ->
+                                backstack.removeLastOrNull()
+                                if (weekCount > 0) {
+                                    backstack.add(Destination.CycleWeekEditor(cycleId, 0))
+                                }
+                            }
+                        )
                     }
                 }
                 is Destination.CycleWeekEditor -> {
@@ -262,7 +277,12 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                         key = destination,
                         metadata = ListDetailSceneStrategy.detailPane()
                     ) {
-                        // Task 9: wire real CycleWeekEditorScreen/navigation here
+                        CycleWeekEditorScreen(
+                            cycleId = destination.cycleId,
+                            weekIndex = destination.weekIndex,
+                            viewModel = koinViewModel<CycleWeekEditorViewModel>(),
+                            onBack = { backstack.removeLastOrNull() }
+                        )
                     }
                 }
                 is Destination.CycleHistory -> {
@@ -270,7 +290,10 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                         key = destination,
                         metadata = ListDetailSceneStrategy.detailPane()
                     ) {
-                        // Task 9: wire real CycleHistoryScreen/navigation here
+                        CycleHistoryScreen(
+                            viewModel = koinViewModel<CycleHistoryViewModel>(),
+                            onBack = { backstack.removeLastOrNull() }
+                        )
                     }
                 }
                 is Destination.Settings -> {
