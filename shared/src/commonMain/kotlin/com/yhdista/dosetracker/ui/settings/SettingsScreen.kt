@@ -84,6 +84,71 @@ fun SettingsScreen(
             Spacer(Modifier.height(8.dp))
 
             Text(
+                text = "Reminder Settings",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Default Time Type",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "Select whether new reminders default to exact times or day periods.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable {
+                                viewModel.onEvent(SettingsEvent.UpdateDefaultTimeType(com.yhdista.dosetracker.domain.model.TimeType.EXACT))
+                            }
+                        ) {
+                            RadioButton(
+                                selected = state.defaultTimeType == com.yhdista.dosetracker.domain.model.TimeType.EXACT,
+                                onClick = {
+                                    viewModel.onEvent(SettingsEvent.UpdateDefaultTimeType(com.yhdista.dosetracker.domain.model.TimeType.EXACT))
+                                }
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("Exact Time")
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable {
+                                viewModel.onEvent(SettingsEvent.UpdateDefaultTimeType(com.yhdista.dosetracker.domain.model.TimeType.PERIOD))
+                            }
+                        ) {
+                            RadioButton(
+                                selected = state.defaultTimeType == com.yhdista.dosetracker.domain.model.TimeType.PERIOD,
+                                onClick = {
+                                    viewModel.onEvent(SettingsEvent.UpdateDefaultTimeType(com.yhdista.dosetracker.domain.model.TimeType.PERIOD))
+                                }
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("Day Period")
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
                 text = "About",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold

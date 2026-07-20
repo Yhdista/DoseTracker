@@ -11,6 +11,8 @@ import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import com.yhdista.dosetracker.reminder.DoseGenerator
 import com.yhdista.dosetracker.reminder.DoseReminderScheduler
 import com.yhdista.dosetracker.reminder.WeekDays
+import com.yhdista.dosetracker.domain.model.TimeType
+import com.yhdista.dosetracker.domain.repository.SettingsRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -20,7 +22,8 @@ import kotlinx.datetime.LocalDate
 data class MedicationDetailState(
     val medication: Data<Medication> = Data.Loading,
     val schedules: Data<List<ReminderSchedule>> = Data.Loading,
-    val periodTimes: Data<Map<String, Int>> = Data.Loading
+    val periodTimes: Data<Map<String, Int>> = Data.Loading,
+    val defaultTimeType: TimeType = TimeType.PERIOD
 )
 
 sealed interface MedicationDetailEvent {
@@ -42,6 +45,7 @@ sealed interface MedicationDetailEvent {
 @OptIn(ExperimentalCoroutinesApi::class)
 class MedicationDetailViewModel(
     private val repository: MedicationRepository,
+    private val settingsRepository: SettingsRepository,
     private val scheduler: DoseReminderScheduler,
     private val doseGenerator: DoseGenerator,
     private val savedStateHandle: SavedStateHandle
@@ -55,9 +59,10 @@ class MedicationDetailViewModel(
             combine(
                 repository.getMedicationById(id),
                 repository.getSchedulesForMedication(id),
-                repository.getPeriodTimes()
-            ) { medication, schedules, periodTimes ->
-                MedicationDetailState(medication, schedules, periodTimes)
+                repository.getPeriodTimes(),
+                settingsRepository.getDefaultTimeType()
+            ) { medication, schedules, periodTimes, defaultTimeType ->
+                MedicationDetailState(medication, schedules, periodTimes, defaultTimeType)
             }
         }
         .stateIn(

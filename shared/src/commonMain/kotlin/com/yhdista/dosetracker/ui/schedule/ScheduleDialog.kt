@@ -25,6 +25,7 @@ import kotlinx.datetime.todayIn
 @Composable
 fun ScheduleDialog(
     schedule: ReminderSchedule? = null,
+    defaultTimeType: String = "EXACT",
     periodTimes: Map<String, Int>,
     onDismiss: () -> Unit,
     onConfirm: (
@@ -39,7 +40,7 @@ fun ScheduleDialog(
 ) {
     val isEdit = schedule != null
 
-    var timeType by remember { mutableStateOf(schedule?.timeType ?: "EXACT") }
+    var timeType by remember { mutableStateOf(schedule?.timeType ?: defaultTimeType) }
     val initialMinutes = schedule?.minutesOfDay ?: 480
     val timePickerState = rememberTimePickerState(
         initialHour = initialMinutes / 60,

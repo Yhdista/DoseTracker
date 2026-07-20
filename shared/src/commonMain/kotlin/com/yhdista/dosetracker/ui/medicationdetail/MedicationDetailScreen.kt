@@ -83,6 +83,7 @@ fun MedicationDetailScreen(
 
         if (showAddDialog) {
             ScheduleDialog(
+                defaultTimeType = state.defaultTimeType.value,
                 periodTimes = periodTimes,
                 onDismiss = { showAddDialog = false },
                 onConfirm = { minutes, days, schedType, interval, start, tType, period ->
@@ -105,6 +106,7 @@ fun MedicationDetailScreen(
         editingSchedule?.let { schedule ->
             ScheduleDialog(
                 schedule = schedule,
+                defaultTimeType = state.defaultTimeType.value,
                 periodTimes = periodTimes,
                 onDismiss = { editingSchedule = null },
                 onConfirm = { minutes, days, schedType, interval, start, tType, period ->

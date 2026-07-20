@@ -73,6 +73,7 @@ fun CycleWeekEditorScreen(
 
         pendingMedicationId?.let { medicationId ->
             ScheduleDialog(
+                defaultTimeType = state.defaultTimeType.value,
                 periodTimes = periodTimes,
                 onDismiss = { pendingMedicationId = null },
                 onConfirm = { minutes, days, schedType, interval, start, tType, period ->
@@ -96,6 +97,7 @@ fun CycleWeekEditorScreen(
         editingSchedule?.let { schedule ->
             ScheduleDialog(
                 schedule = schedule,
+                defaultTimeType = state.defaultTimeType.value,
                 periodTimes = periodTimes,
                 onDismiss = { editingSchedule = null },
                 onConfirm = { minutes, days, schedType, interval, start, tType, period ->

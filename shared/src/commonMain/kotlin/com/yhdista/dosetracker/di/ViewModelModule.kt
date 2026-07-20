@@ -22,14 +22,14 @@ val viewModelModule = module {
     viewModel { AddDoseViewModel(get(), get()) }
     viewModel { HistoryViewModel(get()) }
     viewModel { TodayViewModel(get(), get()) }
-    viewModel { MedicationDetailViewModel(get(), get(), get(), get()) }
+    viewModel { MedicationDetailViewModel(get(), get(), get(), get(), get()) }
     viewModel { ConfirmDoseViewModel(get(), get()) }
     viewModel { ReportViewModel(get()) }
     viewModel { MedicationReportViewModel(get(), get()) }
     viewModel { CreateCycleViewModel(get(), get()) }
-    viewModel { CycleWeekEditorViewModel(get(), get(), get()) }
+    viewModel { CycleWeekEditorViewModel(get(), get(), get(), get()) }
     viewModel { CycleWeekListViewModel(get(), get()) }
     viewModel { CycleHistoryViewModel(get()) }
-    viewModel { SettingsViewModel(get()) }
+    viewModel { SettingsViewModel(get(), get()) }
     viewModel { DebugViewModel(get(), get(), get()) }
 }

@@ -9,6 +9,8 @@ import com.yhdista.dosetracker.domain.model.ReminderSchedule
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import com.yhdista.dosetracker.reminder.DoseGenerator
 import com.yhdista.dosetracker.reminder.WeekDays
+import com.yhdista.dosetracker.domain.model.TimeType
+import com.yhdista.dosetracker.domain.repository.SettingsRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -19,7 +21,8 @@ data class CycleWeekEditorState(
     val weekId: Long? = null,
     val schedules: Data<List<ReminderSchedule>> = Data.Loading,
     val medications: Data<List<Medication>> = Data.Loading,
-    val periodTimes: Data<Map<String, Int>> = Data.Loading
+    val periodTimes: Data<Map<String, Int>> = Data.Loading,
+    val defaultTimeType: TimeType = TimeType.PERIOD
 )
 
 sealed interface CycleWeekEditorEvent {
@@ -41,6 +44,7 @@ sealed interface CycleWeekEditorEvent {
 @OptIn(ExperimentalCoroutinesApi::class)
 class CycleWeekEditorViewModel(
     private val repository: MedicationRepository,
+    private val settingsRepository: SettingsRepository,
     private val doseGenerator: DoseGenerator,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -58,9 +62,10 @@ class CycleWeekEditorViewModel(
             combine(
                 repository.getSchedulesForCycleWeek(weekId),
                 repository.getMedications(),
-                repository.getPeriodTimes()
-            ) { schedules, medications, periodTimes ->
-                CycleWeekEditorState(weekId, schedules, medications, periodTimes)
+                repository.getPeriodTimes(),
+                settingsRepository.getDefaultTimeType()
+            ) { schedules, medications, periodTimes, defaultTimeType ->
+                CycleWeekEditorState(weekId, schedules, medications, periodTimes, defaultTimeType)
             }
         }
         .stateIn(
