@@ -3,6 +3,7 @@ package com.yhdista.dosetracker.di
 import com.yhdista.dosetracker.ui.catalog.MedicationCatalogViewModel
 import com.yhdista.dosetracker.ui.confirm.ConfirmDoseViewModel
 import com.yhdista.dosetracker.ui.cycle.CreateCycleViewModel
+import com.yhdista.dosetracker.ui.cycle.CycleHistoryViewModel
 import com.yhdista.dosetracker.ui.cycle.CycleWeekEditorViewModel
 import com.yhdista.dosetracker.ui.dose.AddDoseViewModel
 import com.yhdista.dosetracker.ui.history.HistoryViewModel
@@ -26,6 +27,7 @@ val viewModelModule = module {
     viewModel { MedicationReportViewModel(get(), get()) }
     viewModel { CreateCycleViewModel(get(), get()) }
     viewModel { CycleWeekEditorViewModel(get(), get(), get()) }
+    viewModel { CycleHistoryViewModel(get()) }
     viewModel { SettingsViewModel(get()) }
     viewModel { DebugViewModel(get(), get(), get()) }
 }
