@@ -1,6 +1,11 @@
 package com.yhdista.dosetracker.reminder
 
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.domain.model.Cycle
+import com.yhdista.dosetracker.domain.model.CycleCompleteAction
+import com.yhdista.dosetracker.domain.model.CycleStatus
+import com.yhdista.dosetracker.domain.model.CycleType
+import com.yhdista.dosetracker.domain.model.CycleWeek
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.model.Medication
@@ -33,7 +38,8 @@ class DoseGeneratorTest {
 
     private val repository = mock<MedicationRepository>()
     private val scheduler = mock<DoseReminderScheduler>()
-    private val generator = DoseGenerator(repository, scheduler)
+    private val cycleLifecycleManager = mock<CycleLifecycleManager>()
+    private val generator = DoseGenerator(repository, scheduler, cycleLifecycleManager)
     private val testDispatcher = StandardTestDispatcher()
 
     private val today = LocalDate(2026, 7, 20)
@@ -201,6 +207,93 @@ class DoseGeneratorTest {
 
         verify(repository).insertDose(
             Dose(medicationId = 10, scheduleId = 1, timestamp = expectedInstant, amount = 100.0, unit = "mg", status = DoseStatus.PENDING)
+        )
+    }
+
+    @Test
+    fun `advances the cycle lifecycle before generating doses`() = runTest {
+        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(emptyList()))
+        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
+
+        generator.runForDate(today)
+
+        verify(cycleLifecycleManager).advance(today)
+    }
+
+    @Test
+    fun `generates a dose for a cycle-linked schedule when its week is the active cycle's current week`() = runTest {
+        val cycle = Cycle(
+            id = 1, name = "Cyklus", type = CycleType.NORMAL, totalWeeks = 4,
+            startDate = today, status = CycleStatus.ACTIVE, onCompleteAction = CycleCompleteAction.TO_STANDARD
+        )
+        val week0 = CycleWeek(id = 100, cycleId = 1, weekIndex = 0)
+        val schedule = ReminderSchedule(
+            id = 1, medicationId = 10, minutesOfDay = 480,
+            daysOfWeek = WeekDays.toBitmask(setOf(today.dayOfWeek)),
+            cycleWeekId = 100
+        )
+        val expectedInstant = today.atTime(8, 0).toInstant(TimeZone.currentSystemDefault())
+        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(repository.getActiveCycleOnce()).thenReturn(cycle)
+        whenever(repository.getCycleWeek(1, 0)).thenReturn(week0)
+        whenever(repository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
+        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
+        whenever(repository.insertDose(any())).thenReturn(Data.Success(99L))
+
+        generator.runForDate(today)
+
+        verify(repository).insertDose(
+            Dose(medicationId = 10, scheduleId = 1, cycleId = 1, timestamp = expectedInstant, amount = 100.0, unit = "mg", status = DoseStatus.PENDING)
+        )
+    }
+
+    @Test
+    fun `skips a cycle-linked schedule whose week is not the active cycle's current week`() = runTest {
+        val cycle = Cycle(
+            id = 1, name = "Cyklus", type = CycleType.NORMAL, totalWeeks = 4,
+            startDate = today, status = CycleStatus.ACTIVE, onCompleteAction = CycleCompleteAction.TO_STANDARD
+        )
+        val week0 = CycleWeek(id = 100, cycleId = 1, weekIndex = 0)
+        val schedule = ReminderSchedule(
+            id = 1, medicationId = 10, minutesOfDay = 480,
+            daysOfWeek = WeekDays.toBitmask(setOf(today.dayOfWeek)),
+            cycleWeekId = 200
+        )
+        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(repository.getActiveCycleOnce()).thenReturn(cycle)
+        whenever(repository.getCycleWeek(1, 0)).thenReturn(week0)
+
+        generator.runForDate(today)
+
+        verify(repository, never()).insertDose(any())
+    }
+
+    @Test
+    fun `still generates a standalone schedule while a cycle is active`() = runTest {
+        val cycle = Cycle(
+            id = 1, name = "Cyklus", type = CycleType.NORMAL, totalWeeks = 4,
+            startDate = today, status = CycleStatus.ACTIVE, onCompleteAction = CycleCompleteAction.TO_STANDARD
+        )
+        val week0 = CycleWeek(id = 100, cycleId = 1, weekIndex = 0)
+        val schedule = ReminderSchedule(
+            id = 1, medicationId = 10, minutesOfDay = 480,
+            daysOfWeek = WeekDays.toBitmask(setOf(today.dayOfWeek))
+        )
+        val expectedInstant = today.atTime(8, 0).toInstant(TimeZone.currentSystemDefault())
+        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(repository.getActiveCycleOnce()).thenReturn(cycle)
+        whenever(repository.getCycleWeek(1, 0)).thenReturn(week0)
+        whenever(repository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
+        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
+        whenever(repository.insertDose(any())).thenReturn(Data.Success(99L))
+
+        generator.runForDate(today)
+
+        verify(repository).insertDose(
+            Dose(medicationId = 10, scheduleId = 1, cycleId = null, timestamp = expectedInstant, amount = 100.0, unit = "mg", status = DoseStatus.PENDING)
         )
     }
 }

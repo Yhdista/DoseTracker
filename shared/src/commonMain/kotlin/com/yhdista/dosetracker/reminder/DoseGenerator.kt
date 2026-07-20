@@ -1,6 +1,8 @@
 package com.yhdista.dosetracker.reminder
 
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.domain.model.Cycle
+import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
@@ -17,20 +19,25 @@ import kotlin.time.Duration.Companion.minutes
 
 class DoseGenerator(
     private val repository: MedicationRepository,
-    private val scheduler: DoseReminderScheduler
+    private val scheduler: DoseReminderScheduler,
+    private val cycleLifecycleManager: CycleLifecycleManager
 ) {
     suspend fun runForToday() {
         runForDate(Clock.System.todayIn(TimeZone.currentSystemDefault()))
     }
 
     suspend fun runForDate(date: LocalDate) {
+        cycleLifecycleManager.advance(date)
+
         val schedules = (repository.getEnabledSchedules() as? Data.Success)?.data ?: return
         val periodTimes = repository.getPeriodTimesOnce()
         val zone = TimeZone.currentSystemDefault()
         val now = Clock.System.now()
+        val activeCycle = repository.getActiveCycleOnce()
+        val activeCycleWeekId = resolveActiveCycleWeekId(activeCycle, date)
 
         for (schedule in schedules) {
-            if (!matchesDate(schedule, date)) continue
+            if (!matchesDate(schedule, date, activeCycleWeekId)) continue
 
             val minutes = if (schedule.timeType == "PERIOD") {
                 periodTimes[schedule.dayPeriod] ?: schedule.minutesOfDay
@@ -41,12 +48,13 @@ class DoseGenerator(
             val hour = minutes / 60
             val minute = minutes % 60
             val scheduledInstant = date.atTime(hour, minute).toInstant(zone)
+            val cycleId = if (schedule.cycleWeekId != null) activeCycle?.id else null
 
             // Look up if there's any dose for this schedule on this date
             val existingDose = repository.getDoseForScheduleOnDate(schedule.id, date)
 
             if (existingDose == null) {
-                val newDose = createDose(schedule.medicationId, schedule.id, scheduledInstant)
+                val newDose = createDose(schedule.medicationId, schedule.id, scheduledInstant, cycleId)
                 if (newDose != null && newDose.status == DoseStatus.PENDING && scheduledInstant > now) {
                     scheduler.scheduleReminder(newDose.id, scheduledInstant)
                     scheduler.scheduleMissedTimeout(
@@ -86,7 +94,18 @@ class DoseGenerator(
         }
     }
 
-    private fun matchesDate(schedule: ReminderSchedule, date: LocalDate): Boolean {
+    private suspend fun resolveActiveCycleWeekId(activeCycle: Cycle?, date: LocalDate): Long? {
+        if (activeCycle == null) return null
+        val weekIndex = if (activeCycle.type == CycleType.STANDARD) {
+            0
+        } else {
+            activeCycle.startDate.daysUntil(date) / 7
+        }
+        return repository.getCycleWeek(activeCycle.id, weekIndex)?.id
+    }
+
+    private fun matchesDate(schedule: ReminderSchedule, date: LocalDate, activeCycleWeekId: Long?): Boolean {
+        if (schedule.cycleWeekId != null && schedule.cycleWeekId != activeCycleWeekId) return false
         return when (schedule.scheduleType) {
             "WEEKDAYS" -> WeekDays.contains(schedule.daysOfWeek, date.dayOfWeek)
             "INTERVAL" -> {
@@ -98,11 +117,12 @@ class DoseGenerator(
         }
     }
 
-    private suspend fun createDose(medicationId: Long, scheduleId: Long, at: Instant): Dose? {
+    private suspend fun createDose(medicationId: Long, scheduleId: Long, at: Instant, cycleId: Long?): Dose? {
         val medication = repository.getMedicationOnce(medicationId) ?: return null
         val dose = Dose(
             medicationId = medicationId,
             scheduleId = scheduleId,
+            cycleId = cycleId,
             timestamp = at,
             amount = medication.dosage,
             unit = medication.unit.symbol,
