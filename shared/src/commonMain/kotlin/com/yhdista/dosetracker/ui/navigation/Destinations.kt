@@ -35,6 +35,9 @@ sealed interface Destination : NavKey {
     data class CycleWeekEditor(val cycleId: Long, val weekIndex: Int) : Destination
 
     @Serializable
+    data class CycleWeekList(val cycleId: Long) : Destination
+
+    @Serializable
     data object CycleHistory : Destination
 
     @Serializable

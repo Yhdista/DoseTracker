@@ -37,7 +37,8 @@ fun TodayScreen(
     viewModel: TodayViewModel,
     onNavigateToConfirm: (Long) -> Unit,
     onNavigateToCreateCycle: () -> Unit,
-    onNavigateToCycleHistory: () -> Unit
+    onNavigateToCycleHistory: () -> Unit,
+    onNavigateToManageWeeks: (Long) -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -46,7 +47,8 @@ fun TodayScreen(
         onEvent = viewModel::onEvent,
         onNavigateToConfirm = onNavigateToConfirm,
         onCreateCycle = onNavigateToCreateCycle,
-        onOpenCycleHistory = onNavigateToCycleHistory
+        onOpenCycleHistory = onNavigateToCycleHistory,
+        onManageWeeks = onNavigateToManageWeeks
     )
 }
 
@@ -57,7 +59,8 @@ fun TodayContent(
     onEvent: (TodayEvent) -> Unit,
     onNavigateToConfirm: (Long) -> Unit,
     onCreateCycle: () -> Unit = {},
-    onOpenCycleHistory: () -> Unit = {}
+    onOpenCycleHistory: () -> Unit = {},
+    onManageWeeks: (Long) -> Unit = {}
 ) {
     val activeCycle = (state.activeCycle as? Data.Success)?.data
 
@@ -92,7 +95,12 @@ fun TodayContent(
                 ) {
                     item {
                         if (activeCycle != null) {
-                            CycleDashboardHeader(cycle = activeCycle, onOpenHistory = onOpenCycleHistory, onManageCycle = onCreateCycle)
+                            CycleDashboardHeader(
+                                cycle = activeCycle,
+                                onOpenHistory = onOpenCycleHistory,
+                                onManageCycle = onCreateCycle,
+                                onManageWeeks = { onManageWeeks(activeCycle.id) }
+                            )
                         } else {
                             NoCycleHeader(onCreateCycle = onCreateCycle)
                         }
@@ -149,8 +157,14 @@ fun TodayContent(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun CycleDashboardHeader(cycle: Cycle, onOpenHistory: () -> Unit, onManageCycle: () -> Unit) {
+private fun CycleDashboardHeader(
+    cycle: Cycle,
+    onOpenHistory: () -> Unit,
+    onManageCycle: () -> Unit,
+    onManageWeeks: () -> Unit
+) {
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
     val elapsedDays = cycle.startDate.daysUntil(today)
     val typeLabel = when (cycle.type) {
@@ -174,12 +188,15 @@ private fun CycleDashboardHeader(cycle: Cycle, onOpenHistory: () -> Unit, onMana
             } else {
                 Text("Běží neomezeně")
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = onOpenHistory) {
                     Text("Historie cyklu")
                 }
                 TextButton(onClick = onManageCycle) {
                     Text("Spravovat")
+                }
+                TextButton(onClick = onManageWeeks) {
+                    Text("Upravit týdny")
                 }
             }
         }

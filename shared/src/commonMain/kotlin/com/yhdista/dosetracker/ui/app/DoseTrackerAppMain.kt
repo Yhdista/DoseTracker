@@ -35,6 +35,8 @@ import com.yhdista.dosetracker.ui.cycle.CycleHistoryScreen
 import com.yhdista.dosetracker.ui.cycle.CycleHistoryViewModel
 import com.yhdista.dosetracker.ui.cycle.CycleWeekEditorScreen
 import com.yhdista.dosetracker.ui.cycle.CycleWeekEditorViewModel
+import com.yhdista.dosetracker.ui.cycle.CycleWeekListScreen
+import com.yhdista.dosetracker.ui.cycle.CycleWeekListViewModel
 import com.yhdista.dosetracker.ui.dose.AddDoseScreen
 import com.yhdista.dosetracker.ui.dose.AddDoseViewModel
 import com.yhdista.dosetracker.ui.history.HistoryScreen
@@ -162,6 +164,9 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                             },
                             onNavigateToCycleHistory = {
                                 backstack.add(Destination.CycleHistory)
+                            },
+                            onNavigateToManageWeeks = { cycleId ->
+                                backstack.add(Destination.CycleWeekList(cycleId))
                             }
                         )
                     }
@@ -266,7 +271,7 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                             onCreated = { cycleId, weekCount ->
                                 backstack.removeLastOrNull()
                                 if (weekCount > 0) {
-                                    backstack.add(Destination.CycleWeekEditor(cycleId, 0))
+                                    backstack.add(Destination.CycleWeekList(cycleId))
                                 }
                             }
                         )
@@ -282,6 +287,21 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                             weekIndex = destination.weekIndex,
                             viewModel = koinViewModel<CycleWeekEditorViewModel>(),
                             onBack = { backstack.removeLastOrNull() }
+                        )
+                    }
+                }
+                is Destination.CycleWeekList -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        CycleWeekListScreen(
+                            cycleId = destination.cycleId,
+                            viewModel = koinViewModel<CycleWeekListViewModel>(),
+                            onBack = { backstack.removeLastOrNull() },
+                            onWeekClick = { weekIndex ->
+                                backstack.add(Destination.CycleWeekEditor(destination.cycleId, weekIndex))
+                            }
                         )
                     }
                 }
