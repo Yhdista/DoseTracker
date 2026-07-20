@@ -1,6 +1,8 @@
 package com.yhdista.dosetracker.ui.cycle
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.*
@@ -17,14 +19,12 @@ import com.yhdista.dosetracker.domain.model.CycleType
 fun CreateCycleScreen(
     viewModel: CreateCycleViewModel,
     onBack: () -> Unit,
-    onCycleCreated: (cycleId: Long, weekCount: Int) -> Unit
+    onCreated: (cycleId: Long, weekCount: Int) -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
 
     LaunchedEffect(state.createdCycleId) {
-        if (state.createdCycleId != null) {
-            onCycleCreated(state.createdCycleId!!, state.createdWeekCount)
-        }
+        state.createdCycleId?.let { onCreated(it, state.createdWeekCount) }
     }
 
     Scaffold(
@@ -39,88 +39,95 @@ fun CreateCycleScreen(
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Name field
-            OutlinedTextField(
-                value = state.name,
-                onValueChange = { viewModel.onEvent(CreateCycleEvent.NameChanged(it)) },
-                label = { Text("Název") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // Type selector
-            Text("Typ cyklu", style = MaterialTheme.typography.labelLarge)
-            Row(
+        if (state.hasActiveCycle == null) {
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(padding)
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                listOf(
-                    CycleType.NORMAL to "Normální",
-                    CycleType.STANDARD to "Standardní",
-                    CycleType.POST to "Post"
-                ).forEach { (type, label) ->
-                    FilterChip(
-                        selected = state.type == type,
-                        onClick = { viewModel.onEvent(CreateCycleEvent.TypeChanged(type)) },
-                        label = { Text(label) },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                CircularProgressIndicator()
             }
-
-            // Total weeks field (hidden for STANDARD type)
-            if (state.type != CycleType.STANDARD) {
+        } else {
+            Column(
+                modifier = Modifier
+                    .padding(padding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Name field
                 OutlinedTextField(
-                    value = state.totalWeeks.toString(),
-                    onValueChange = { newValue ->
-                        newValue.toIntOrNull()?.let {
-                            viewModel.onEvent(CreateCycleEvent.TotalWeeksChanged(it))
-                        }
-                    },
-                    label = { Text("Počet týdnů") },
+                    value = state.name,
+                    onValueChange = { viewModel.onEvent(CreateCycleEvent.NameChanged(it)) },
+                    label = { Text("Název") },
                     modifier = Modifier.fillMaxWidth()
                 )
-            }
 
-            // On complete action selector
-            if (state.hasActiveCycle == true) {
-                Text("Po dokončení", style = MaterialTheme.typography.labelLarge)
-                listOf(
-                    CycleCompleteAction.TO_STANDARD to "Na standardní",
-                    CycleCompleteAction.TO_POST to "Na post",
-                    CycleCompleteAction.TO_NONE to "Nic"
-                ).forEach { (action, label) ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = state.onCompleteAction == action,
-                            onClick = { viewModel.onEvent(CreateCycleEvent.OnCompleteActionChanged(action)) }
+                // Type selector
+                Text("Typ cyklu", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (state.hasActiveCycle == false) {
+                        FilterChip(
+                            selected = state.type == CycleType.NORMAL,
+                            onClick = { viewModel.onEvent(CreateCycleEvent.TypeChanged(CycleType.NORMAL)) },
+                            label = { Text("Cyklus") }
                         )
-                        Text(label, modifier = Modifier.padding(start = 8.dp))
+                    }
+                    FilterChip(
+                        selected = state.type == CycleType.STANDARD,
+                        onClick = { viewModel.onEvent(CreateCycleEvent.TypeChanged(CycleType.STANDARD)) },
+                        label = { Text("Standardní cyklus") }
+                    )
+                    if (state.hasActiveCycle == true) {
+                        FilterChip(
+                            selected = state.type == CycleType.POST,
+                            onClick = { viewModel.onEvent(CreateCycleEvent.TypeChanged(CycleType.POST)) },
+                            label = { Text("Post-cyklus") }
+                        )
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.weight(1f))
+                // Total weeks field (hidden for STANDARD type)
+                if (state.type != CycleType.STANDARD) {
+                    OutlinedTextField(
+                        value = state.totalWeeks.toString(),
+                        onValueChange = { newValue ->
+                            newValue.toIntOrNull()?.let {
+                                viewModel.onEvent(CreateCycleEvent.TotalWeeksChanged(it))
+                            }
+                        },
+                        label = { Text("Počet týdnů") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
 
-            // Save button
-            Button(
-                onClick = { viewModel.onEvent(CreateCycleEvent.Save) },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Uložit")
+                // On complete action selector
+                if (state.type != CycleType.STANDARD && state.hasActiveCycle == false) {
+                    Text("Po skončení přejde do", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = state.onCompleteAction == CycleCompleteAction.TO_STANDARD,
+                            onClick = { viewModel.onEvent(CreateCycleEvent.OnCompleteActionChanged(CycleCompleteAction.TO_STANDARD)) },
+                            label = { Text("Standardní cyklus") }
+                        )
+                        FilterChip(
+                            selected = state.onCompleteAction == CycleCompleteAction.TO_POST,
+                            onClick = { viewModel.onEvent(CreateCycleEvent.OnCompleteActionChanged(CycleCompleteAction.TO_POST)) },
+                            label = { Text("Post-cyklus") }
+                        )
+                    }
+                }
+
+                val isValid = state.name.isNotBlank() && (state.type == CycleType.STANDARD || state.totalWeeks > 0)
+                Button(
+                    onClick = { viewModel.onEvent(CreateCycleEvent.Save) },
+                    enabled = isValid,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Uložit")
+                }
             }
         }
     }
