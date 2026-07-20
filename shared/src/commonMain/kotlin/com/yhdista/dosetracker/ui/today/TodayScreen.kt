@@ -92,7 +92,7 @@ fun TodayContent(
                 ) {
                     item {
                         if (activeCycle != null) {
-                            CycleDashboardHeader(cycle = activeCycle, onOpenHistory = onOpenCycleHistory)
+                            CycleDashboardHeader(cycle = activeCycle, onOpenHistory = onOpenCycleHistory, onManageCycle = onCreateCycle)
                         } else {
                             NoCycleHeader(onCreateCycle = onCreateCycle)
                         }
@@ -150,7 +150,7 @@ fun TodayContent(
 }
 
 @Composable
-private fun CycleDashboardHeader(cycle: Cycle, onOpenHistory: () -> Unit) {
+private fun CycleDashboardHeader(cycle: Cycle, onOpenHistory: () -> Unit, onManageCycle: () -> Unit) {
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
     val elapsedDays = cycle.startDate.daysUntil(today)
     val typeLabel = when (cycle.type) {
@@ -174,8 +174,13 @@ private fun CycleDashboardHeader(cycle: Cycle, onOpenHistory: () -> Unit) {
             } else {
                 Text("Běží neomezeně")
             }
-            TextButton(onClick = onOpenHistory) {
-                Text("Historie cyklu")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onOpenHistory) {
+                    Text("Historie cyklu")
+                }
+                TextButton(onClick = onManageCycle) {
+                    Text("Spravovat")
+                }
             }
         }
     }
