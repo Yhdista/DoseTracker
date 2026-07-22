@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +30,13 @@ fun CycleSettingsScreen(
     onEnded: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state) {
+        val result = state
+        if (result is Data.Success && result.data == null) {
+            onEnded()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -67,10 +75,7 @@ fun CycleSettingsScreen(
                         onOpenHistory = onNavigateToCycleHistory,
                         onAddFollowUp = onNavigateToCreateCycle,
                         onManageWeeks = { onNavigateToManageWeeks(cycle.id) },
-                        onEndCycle = {
-                            viewModel.endCycle()
-                            onEnded()
-                        }
+                        onEndCycle = { viewModel.endCycle() }
                     )
                 }
             }
