@@ -179,6 +179,7 @@ private fun CycleDashboardHeader(
             text = { Text("Cyklus \"${cycle.name}\" bude ukončen a nebude žádný aktivní cyklus.") },
             confirmButton = {
                 TextButton(onClick = {
+                    com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Confirm: Ukončit cyklus (cycleId=${cycle.id}, name='${cycle.name}')")
                     showEndConfirm = false
                     onEndCycle()
                 }) { Text("Ukončit") }
@@ -213,16 +214,28 @@ private fun CycleDashboardHeader(
                 Text("Běží neomezeně")
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = onOpenHistory) {
+                TextButton(onClick = {
+                    com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Click: Historie cyklu (cycleId=${cycle.id}, name='${cycle.name}')")
+                    onOpenHistory()
+                }) {
                     Text("Historie cyklu")
                 }
-                TextButton(onClick = onManageCycle) {
-                    Text("Spravovat")
+                TextButton(onClick = {
+                    com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Click: Přidat návazný cyklus (cycleId=${cycle.id}, name='${cycle.name}') -> opens CreateCycleScreen to attach a follow-up cycle")
+                    onManageCycle()
+                }) {
+                    Text("Přidat návazný cyklus")
                 }
-                TextButton(onClick = onManageWeeks) {
+                TextButton(onClick = {
+                    com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Click: Upravit týdny (cycleId=${cycle.id}, name='${cycle.name}')")
+                    onManageWeeks()
+                }) {
                     Text("Upravit týdny")
                 }
-                TextButton(onClick = { showEndConfirm = true }) {
+                TextButton(onClick = {
+                    com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Click: Ukončit cyklus, opening confirm dialog (cycleId=${cycle.id}, name='${cycle.name}')")
+                    showEndConfirm = true
+                }) {
                     Text("Ukončit cyklus")
                 }
             }
@@ -241,7 +254,10 @@ private fun NoCycleHeader(onCreateCycle: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Žádný aktivní cyklus", style = MaterialTheme.typography.bodyMedium)
-            Button(onClick = onCreateCycle) {
+            Button(onClick = {
+                com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Click: + Nový cyklus (no active cycle)")
+                onCreateCycle()
+            }) {
                 Text("+ Nový cyklus")
             }
         }

@@ -24,7 +24,13 @@ fun CreateCycleScreen(
     val state by viewModel.uiState.collectAsState()
 
     LaunchedEffect(state.createdCycleId) {
-        state.createdCycleId?.let { onCreated(it, state.createdWeekCount) }
+        state.createdCycleId?.let {
+            com.yhdista.dosetracker.core.AppLogger.d(
+                "CreateCycleScreen",
+                "Navigating away after create: cycleId=$it, weekCount=${state.createdWeekCount}"
+            )
+            onCreated(it, state.createdWeekCount)
+        }
     }
 
     Scaffold(
