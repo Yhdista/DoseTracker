@@ -33,6 +33,8 @@ import com.yhdista.dosetracker.ui.cycle.CreateCycleScreen
 import com.yhdista.dosetracker.ui.cycle.CreateCycleViewModel
 import com.yhdista.dosetracker.ui.cycle.CycleHistoryScreen
 import com.yhdista.dosetracker.ui.cycle.CycleHistoryViewModel
+import com.yhdista.dosetracker.ui.cycle.CycleSettingsScreen
+import com.yhdista.dosetracker.ui.cycle.CycleSettingsViewModel
 import com.yhdista.dosetracker.ui.cycle.CycleWeekEditorScreen
 import com.yhdista.dosetracker.ui.cycle.CycleWeekEditorViewModel
 import com.yhdista.dosetracker.ui.cycle.CycleWeekListScreen
@@ -317,6 +319,21 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                         CycleHistoryScreen(
                             viewModel = koinViewModel<CycleHistoryViewModel>(),
                             onBack = { backstack.removeLastOrNull() }
+                        )
+                    }
+                }
+                is Destination.CycleSettings -> {
+                    NavEntry(
+                        key = destination,
+                        metadata = ListDetailSceneStrategy.detailPane()
+                    ) {
+                        CycleSettingsScreen(
+                            viewModel = koinViewModel<CycleSettingsViewModel>(),
+                            onBack = { backstack.removeLastOrNull() },
+                            onNavigateToCycleHistory = { backstack.add(Destination.CycleHistory) },
+                            onNavigateToCreateCycle = { backstack.add(Destination.CreateCycle) },
+                            onNavigateToManageWeeks = { cycleId -> backstack.add(Destination.CycleWeekList(cycleId)) },
+                            onEnded = { backstack.removeLastOrNull() }
                         )
                     }
                 }

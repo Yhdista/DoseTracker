@@ -41,6 +41,9 @@ sealed interface Destination : NavKey {
     data object CycleHistory : Destination
 
     @Serializable
+    data object CycleSettings : Destination
+
+    @Serializable
     data object Settings : Destination
 
     @Serializable
