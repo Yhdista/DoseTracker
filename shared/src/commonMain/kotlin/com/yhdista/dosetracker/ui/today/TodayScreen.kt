@@ -103,7 +103,8 @@ fun TodayContent(
                                 onOpenHistory = onOpenCycleHistory,
                                 onManageCycle = onCreateCycle,
                                 onManageWeeks = { onManageWeeks(activeCycle.id) },
-                                onEndCycle = { onEvent(TodayEvent.EndActiveCycle) }
+                                onEndCycle = { onEvent(TodayEvent.EndActiveCycle) },
+                                onRename = { newName -> onEvent(TodayEvent.RenameActiveCycle(newName)) }
                             )
                         } else {
                             NoCycleHeader(onCreateCycle = onCreateCycle)
@@ -168,9 +169,12 @@ private fun CycleDashboardHeader(
     onOpenHistory: () -> Unit,
     onManageCycle: () -> Unit,
     onManageWeeks: () -> Unit,
-    onEndCycle: () -> Unit
+    onEndCycle: () -> Unit,
+    onRename: (String) -> Unit
 ) {
     var showEndConfirm by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var renameText by remember(cycle.id) { mutableStateOf(cycle.name) }
 
     if (showEndConfirm) {
         AlertDialog(
@@ -186,6 +190,34 @@ private fun CycleDashboardHeader(
             },
             dismissButton = {
                 TextButton(onClick = { showEndConfirm = false }) { Text("Zrušit") }
+            }
+        )
+    }
+
+    if (showRenameDialog) {
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text("Přejmenovat cyklus") },
+            text = {
+                OutlinedTextField(
+                    value = renameText,
+                    onValueChange = { renameText = it },
+                    label = { Text("Název") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = renameText.isNotBlank(),
+                    onClick = {
+                        com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Confirm: Přejmenovat cyklus (cycleId=${cycle.id}, oldName='${cycle.name}', newName='$renameText')")
+                        showRenameDialog = false
+                        onRename(renameText)
+                    }
+                ) { Text("Uložit") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameDialog = false }) { Text("Zrušit") }
             }
         )
     }
@@ -214,6 +246,13 @@ private fun CycleDashboardHeader(
                 Text("Běží neomezeně")
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = {
+                    com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Click: Přejmenovat (cycleId=${cycle.id}, name='${cycle.name}')")
+                    renameText = cycle.name
+                    showRenameDialog = true
+                }) {
+                    Text("Přejmenovat")
+                }
                 TextButton(onClick = {
                     com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Click: Historie cyklu (cycleId=${cycle.id}, name='${cycle.name}')")
                     onOpenHistory()
