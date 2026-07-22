@@ -31,6 +31,7 @@ sealed interface TodayEvent {
     data class ToggleDoseStatus(val dose: Dose) : TodayEvent
     data class SelectDose(val id: Long?) : TodayEvent
     object EndActiveCycle : TodayEvent
+    data class RenameActiveCycle(val name: String) : TodayEvent
 }
 
 class TodayViewModel(
@@ -81,6 +82,7 @@ class TodayViewModel(
             is TodayEvent.ToggleDoseStatus -> toggleDoseStatus(event.dose)
             is TodayEvent.SelectDose -> selectDose(event.id)
             is TodayEvent.EndActiveCycle -> endActiveCycle()
+            is TodayEvent.RenameActiveCycle -> renameActiveCycle(event.name)
         }
     }
 
@@ -99,6 +101,13 @@ class TodayViewModel(
         viewModelScope.launch {
             val cycle = repository.getActiveCycleOnce() ?: return@launch
             repository.updateCycle(cycle.copy(status = CycleStatus.COMPLETED))
+        }
+    }
+
+    private fun renameActiveCycle(name: String) {
+        viewModelScope.launch {
+            val cycle = repository.getActiveCycleOnce() ?: return@launch
+            repository.updateCycle(cycle.copy(name = name))
         }
     }
 }

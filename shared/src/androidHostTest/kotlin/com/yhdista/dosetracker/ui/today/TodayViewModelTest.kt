@@ -105,4 +105,26 @@ class TodayViewModelTest {
 
         job.cancel()
     }
+
+    @Test
+    fun `RenameActiveCycle updates only the name, leaving other fields untouched`() = runTest {
+        val cycle = Cycle(
+            id = 1, name = "Cyklus", type = CycleType.NORMAL, totalWeeks = 12,
+            startDate = LocalDate(2026, 1, 1), status = CycleStatus.ACTIVE, onCompleteAction = CycleCompleteAction.TO_STANDARD
+        )
+        whenever(repository.getDosesForDate(org.mockito.kotlin.any())).thenReturn(flowOf(Data.Success(emptyList())))
+        whenever(repository.getActiveCycle()).thenReturn(flowOf(Data.Success(cycle)))
+        whenever(repository.getActiveCycleOnce()).thenReturn(cycle)
+
+        val viewModel = TodayViewModel(repository, SavedStateHandle())
+        val job = launch { viewModel.uiState.collect {} }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onEvent(TodayEvent.RenameActiveCycle("primo"))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify(repository).updateCycle(cycle.copy(name = "primo"))
+
+        job.cancel()
+    }
 }
