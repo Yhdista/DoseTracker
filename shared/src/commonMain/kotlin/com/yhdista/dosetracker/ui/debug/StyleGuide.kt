@@ -14,14 +14,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.yhdista.dosetracker.domain.model.Cycle
+import com.yhdista.dosetracker.domain.model.CycleCompleteAction
+import com.yhdista.dosetracker.domain.model.CycleStatus
+import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.model.MedicationUnit
 import com.yhdista.dosetracker.ui.catalog.MedicationItem
+import com.yhdista.dosetracker.ui.today.CycleTimeline
 import com.yhdista.dosetracker.ui.today.DoseItem
+import com.yhdista.dosetracker.ui.today.buildTimelineBands
 import kotlin.math.roundToInt
 import kotlin.time.Clock
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
+import kotlinx.datetime.todayIn
 import com.yhdista.dosetracker.ui.navigation.Destination
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -634,6 +644,87 @@ private fun ComponentsManual() {
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
+            }
+        }
+
+        Text("4. Časová osa cyklů (CycleTimeline)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+        val sampleActive = Cycle(
+            id = 1, name = "Objemový blok", type = CycleType.NORMAL, totalWeeks = 12,
+            startDate = today.plus(-30, DateTimeUnit.DAY), status = CycleStatus.ACTIVE,
+            onCompleteAction = CycleCompleteAction.TO_POST
+        )
+        val sampleCompleted = Cycle(
+            id = 2, name = "Předchozí", type = CycleType.NORMAL, totalWeeks = 4,
+            startDate = today.plus(-120, DateTimeUnit.DAY), status = CycleStatus.COMPLETED,
+            onCompleteAction = CycleCompleteAction.TO_NONE
+        )
+        val sampleFuture = Cycle(
+            id = 3, name = "Post", type = CycleType.POST, totalWeeks = 4,
+            startDate = today.plus(60, DateTimeUnit.DAY), status = CycleStatus.DRAFT,
+            onCompleteAction = CycleCompleteAction.TO_NONE
+        )
+        Card(modifier = Modifier.fillMaxWidth()) {
+            CycleTimeline(
+                today = today,
+                bands = buildTimelineBands(today, sampleActive, listOf(sampleCompleted, sampleFuture)),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                outlineColor = MaterialTheme.colorScheme.outline,
+                hatchColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                primaryColor = MaterialTheme.colorScheme.primary
+            )
+        }
+        Text(
+            "Aktivní cyklus je zvýrazněný a orámovaný, dokončené jsou poloprůhledné, neznámá budoucnost je šrafovaná (\"neplánováno\").",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Text("5. Řádek dne v agendě (zjednodušený)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        SampleAgendaRow(dow = "Čt", day = "23", summary = "2 dávky", times = listOf("08:00", "20:00"), cycleTinted = true)
+        SampleAgendaRow(dow = "So", day = "25", summary = "Žádné dávky", times = emptyList(), cycleTinted = false)
+
+        Text("6. Hlavička týdne (sticky)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        Surface(
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                "Tento týden",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SampleAgendaRow(dow: String, day: String, summary: String, times: List<String>, cycleTinted: Boolean) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Column(modifier = Modifier.width(38.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(dow, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(day, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        }
+        if (times.isEmpty()) {
+            Text(summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(summary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                times.forEach { t ->
+                    Surface(
+                        color = if (cycleTinted) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = if (cycleTinted) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)
+                    ) {
+                        Text(t, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp))
+                    }
+                }
             }
         }
     }

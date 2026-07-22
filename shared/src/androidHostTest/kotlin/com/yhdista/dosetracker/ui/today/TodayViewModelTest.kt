@@ -42,13 +42,19 @@ class TodayViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private fun stubCyclesEmpty() {
+        whenever(repository.getCompletedCycles()).thenReturn(flowOf(Data.Success(emptyList())))
+    }
+
     @Test
     fun `uiState emits success when repository returns data`() = runTest {
         val doses = listOf(
             Dose(id = 1, medicationId = 1, timestamp = Clock.System.now(), status = DoseStatus.PENDING)
         )
-        whenever(repository.getDosesForDate(org.mockito.kotlin.any())).thenReturn(flowOf(Data.Success(doses)))
+        whenever(repository.getDosesInRange(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
+            .thenReturn(flowOf(Data.Success(doses)))
         whenever(repository.getActiveCycle()).thenReturn(flowOf(Data.Success(null)))
+        stubCyclesEmpty()
 
         val viewModel = TodayViewModel(repository, SavedStateHandle())
 
@@ -57,8 +63,8 @@ class TodayViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         val finalState = viewModel.uiState.value
-        assert(finalState.doses is Data.Success)
-        assertEquals(doses, (finalState.doses as Data.Success).data)
+        assert(finalState.dosesInWindow is Data.Success)
+        assertEquals(doses, (finalState.dosesInWindow as Data.Success).data)
 
         job.cancel()
     }
@@ -69,8 +75,10 @@ class TodayViewModelTest {
             id = 1, name = "Cyklus", type = CycleType.NORMAL, totalWeeks = 4,
             startDate = LocalDate(2026, 7, 1), status = CycleStatus.ACTIVE, onCompleteAction = CycleCompleteAction.TO_STANDARD
         )
-        whenever(repository.getDosesForDate(org.mockito.kotlin.any())).thenReturn(flowOf(Data.Success(emptyList())))
+        whenever(repository.getDosesInRange(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
+            .thenReturn(flowOf(Data.Success(emptyList())))
         whenever(repository.getActiveCycle()).thenReturn(flowOf(Data.Success(cycle)))
+        stubCyclesEmpty()
 
         val viewModel = TodayViewModel(repository, SavedStateHandle())
         val job = launch { viewModel.uiState.collect {} }
@@ -82,5 +90,4 @@ class TodayViewModelTest {
 
         job.cancel()
     }
-
 }
