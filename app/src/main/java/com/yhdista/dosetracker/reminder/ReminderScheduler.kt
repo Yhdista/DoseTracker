@@ -13,6 +13,7 @@ class ReminderScheduler(
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     override fun scheduleReminder(doseId: Long, at: Instant) {
+        com.yhdista.dosetracker.core.AppLogger.d("ReminderScheduler", "scheduleReminder(doseId=$doseId, at=$at)")
         val intent = Intent(context, ReminderReceiver::class.java).apply {
             putExtra("doseId", doseId)
         }
@@ -32,6 +33,7 @@ class ReminderScheduler(
     }
 
     override fun cancelReminder(doseId: Long) {
+        com.yhdista.dosetracker.core.AppLogger.d("ReminderScheduler", "cancelReminder(doseId=$doseId)")
         val intent = Intent(context, ReminderReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
@@ -45,6 +47,7 @@ class ReminderScheduler(
     }
 
     override fun scheduleMissedTimeout(doseId: Long, at: Instant) {
+        com.yhdista.dosetracker.core.AppLogger.d("ReminderScheduler", "scheduleMissedTimeout(doseId=$doseId, at=$at)")
         val intent = Intent(context, MissedDoseReceiver::class.java).apply {
             putExtra("doseId", doseId)
         }
@@ -64,6 +67,7 @@ class ReminderScheduler(
     }
 
     override fun cancelMissedTimeout(doseId: Long) {
+        com.yhdista.dosetracker.core.AppLogger.d("ReminderScheduler", "cancelMissedTimeout(doseId=$doseId)")
         val intent = Intent(context, MissedDoseReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             context,

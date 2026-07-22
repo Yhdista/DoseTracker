@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
@@ -57,6 +58,20 @@ class ConfirmDoseViewModel(
                 }
             }
             .launchIn(viewModelScope)
+
+        viewModelScope.launch {
+            state.collect { s ->
+                val doseDesc = s.dose.describe { dose ->
+                    val timeStr = try {
+                        dose.timestamp.toLocalDateTime(TimeZone.currentSystemDefault()).toString().replace("T", " ").substring(0, 16)
+                    } catch (e: Exception) {
+                        "????-??-?? ??:??"
+                    }
+                    "${dose.medicationName} ${dose.amount ?: ""}${dose.unit ?: ""} scheduled @ $timeStr, status=${dose.status}"
+                }
+                com.yhdista.dosetracker.core.AppLogger.d("ConfirmDoseViewModel", "State updated: dose=$doseDesc, amount=${s.amount}, time=${s.time}, isSuccess=${s.isSuccess}, error=${s.error}")
+            }
+        }
     }
 
     fun setDoseId(id: Long) {
@@ -66,6 +81,7 @@ class ConfirmDoseViewModel(
     }
 
     fun onEvent(event: ConfirmDoseEvent) {
+        com.yhdista.dosetracker.core.AppLogger.d("ConfirmDoseViewModel", "onEvent: $event")
         when (event) {
             is ConfirmDoseEvent.UpdateAmount -> _state.update { it.copy(amount = event.amount) }
             is ConfirmDoseEvent.Save -> save()

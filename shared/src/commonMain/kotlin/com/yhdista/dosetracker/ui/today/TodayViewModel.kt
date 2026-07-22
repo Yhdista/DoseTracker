@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Cycle
 import com.yhdista.dosetracker.domain.model.CycleStatus
 import com.yhdista.dosetracker.domain.model.Dose
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import kotlinx.datetime.toLocalDateTime
 
 data class TodayState(
     val doses: Data<List<Dose>> = Data.Loading,
@@ -54,7 +56,27 @@ class TodayViewModel(
         initialValue = TodayState()
     )
 
+    init {
+        viewModelScope.launch {
+            uiState.collect { state ->
+                val dosesDesc = state.doses.describe { doses ->
+                    doses.joinToString(prefix = "[", postfix = "]") { dose ->
+                        val timeStr = try {
+                            dose.timestamp.toLocalDateTime(TimeZone.currentSystemDefault()).time.toString().substring(0, 5)
+                        } catch (e: Exception) {
+                            "??:??"
+                        }
+                        "${dose.medicationName} ${dose.amount ?: ""}${dose.unit ?: ""} @ $timeStr (${dose.status})"
+                    }
+                }
+                val cycleDesc = state.activeCycle.describe { cycle -> "name=${cycle?.name ?: "none"}" }
+                com.yhdista.dosetracker.core.AppLogger.d("TodayViewModel", "State updated: doses=$dosesDesc, activeCycle=$cycleDesc, selectedDoseId=${state.selectedDoseId}")
+            }
+        }
+    }
+
     fun onEvent(event: TodayEvent) {
+        com.yhdista.dosetracker.core.AppLogger.d("TodayViewModel", "onEvent: $event")
         when (event) {
             is TodayEvent.ToggleDoseStatus -> toggleDoseStatus(event.dose)
             is TodayEvent.SelectDose -> selectDose(event.id)

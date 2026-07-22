@@ -8,6 +8,7 @@ import androidx.work.WorkManager
 
 class RescheduleReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        com.yhdista.dosetracker.core.AppLogger.i("RescheduleReceiver", "onReceive action=${intent.action}")
         if (intent.action == Intent.ACTION_BOOT_COMPLETED ||
             intent.action == Intent.ACTION_MY_PACKAGE_REPLACED ||
             intent.action == "android.intent.action.QUICKBOOT_POWERON"

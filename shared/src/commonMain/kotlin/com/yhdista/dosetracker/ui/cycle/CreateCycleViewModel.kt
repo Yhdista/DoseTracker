@@ -51,9 +51,18 @@ class CreateCycleViewModel(
                 type = if (active != null) CycleType.POST else CycleType.NORMAL
             )
         }
+        viewModelScope.launch {
+            uiState.collect { state ->
+                com.yhdista.dosetracker.core.AppLogger.d(
+                    "CreateCycleViewModel",
+                    "State updated: hasActiveCycle=${state.hasActiveCycle}, name='${state.name}', type=${state.type}, totalWeeks=${state.totalWeeks}, onCompleteAction=${state.onCompleteAction}, createdCycleId=${state.createdCycleId}, createdWeekCount=${state.createdWeekCount}"
+                )
+            }
+        }
     }
 
     fun onEvent(event: CreateCycleEvent) {
+        com.yhdista.dosetracker.core.AppLogger.d("CreateCycleViewModel", "onEvent: $event")
         when (event) {
             is CreateCycleEvent.NameChanged -> _state.value = _state.value.copy(name = event.name)
             is CreateCycleEvent.TypeChanged -> _state.value = _state.value.copy(type = event.type)

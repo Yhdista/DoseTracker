@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
@@ -22,7 +23,8 @@ data class CycleWeekEditorState(
     val schedules: Data<List<ReminderSchedule>> = Data.Loading,
     val medications: Data<List<Medication>> = Data.Loading,
     val periodTimes: Data<Map<String, Int>> = Data.Loading,
-    val defaultTimeType: TimeType = TimeType.PERIOD
+    val defaultTimeType: TimeType = TimeType.PERIOD,
+    val cycle: com.yhdista.dosetracker.domain.model.Cycle? = null
 )
 
 sealed interface CycleWeekEditorEvent {
@@ -51,6 +53,7 @@ class CycleWeekEditorViewModel(
 
     private val cycleIdFlow = savedStateHandle.getStateFlow<Long?>("cycleId", null)
     private val weekIndexFlow = savedStateHandle.getStateFlow<Int?>("weekIndex", null)
+    private val _cycle = MutableStateFlow<com.yhdista.dosetracker.domain.model.Cycle?>(null)
 
     val uiState: StateFlow<CycleWeekEditorState> = combine(cycleIdFlow, weekIndexFlow) { cycleId, weekIndex ->
         cycleId to weekIndex
@@ -63,9 +66,10 @@ class CycleWeekEditorViewModel(
                 repository.getSchedulesForCycleWeek(weekId),
                 repository.getMedications(),
                 repository.getPeriodTimes(),
-                settingsRepository.getDefaultTimeType()
-            ) { schedules, medications, periodTimes, defaultTimeType ->
-                CycleWeekEditorState(weekId, schedules, medications, periodTimes, defaultTimeType)
+                settingsRepository.getDefaultTimeType(),
+                _cycle
+            ) { schedules, medications, periodTimes, defaultTimeType, cycle ->
+                CycleWeekEditorState(weekId, schedules, medications, periodTimes, defaultTimeType, cycle)
             }
         }
         .stateIn(
@@ -73,6 +77,45 @@ class CycleWeekEditorViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = CycleWeekEditorState()
         )
+
+    init {
+        viewModelScope.launch {
+            cycleIdFlow.filterNotNull().collect { id ->
+                _cycle.value = repository.getCycleById(id)
+            }
+        }
+        viewModelScope.launch {
+            uiState.collect { state ->
+                val cycleDesc = state.cycle?.let { "Cycle(id=${it.id}, name='${it.name}', type=${it.type}, totalWeeks=${it.totalWeeks})" } ?: "null"
+                val schedulesDesc = when (val s = state.schedules) {
+                    is Data.Success -> {
+                        val listStr = s.data.joinToString(prefix = "[", postfix = "]") { sch ->
+                            val timeStr = if (sch.timeType == "PERIOD") sch.dayPeriod else "${sch.minutesOfDay / 60}:${(sch.minutesOfDay % 60).toString().padStart(2, '0')}"
+                            "Schedule(id=${sch.id}, medId=${sch.medicationId}, type=${sch.scheduleType}, time=$timeStr, enabled=${sch.enabled})"
+                        }
+                        "Success($listStr)"
+                    }
+                    is Data.Error -> "Error('${s.message}')"
+                    Data.Loading -> "Loading"
+                }
+                val medicationsDesc = when (val m = state.medications) {
+                    is Data.Success -> {
+                        val listStr = m.data.joinToString(prefix = "[", postfix = "]") { med ->
+                            "${med.name} (${med.dosage} ${med.unit.symbol})"
+                        }
+                        "Success($listStr)"
+                    }
+                    is Data.Error -> "Error('${m.message}')"
+                    Data.Loading -> "Loading"
+                }
+                val periodTimesDesc = state.periodTimes.describe { it.toString() }
+                com.yhdista.dosetracker.core.AppLogger.d(
+                    "CycleWeekEditorViewModel",
+                    "State updated: weekId=${state.weekId}, weekIndex=${weekIndexFlow.value}, cycle=$cycleDesc, schedules=$schedulesDesc, medications=$medicationsDesc, periodTimes=$periodTimesDesc, defaultTimeType=${state.defaultTimeType}"
+                )
+            }
+        }
+    }
 
     fun setCycleWeek(cycleId: Long, weekIndex: Int) {
         if (savedStateHandle.get<Long>("cycleId") == null) {
@@ -82,6 +125,7 @@ class CycleWeekEditorViewModel(
     }
 
     fun onEvent(event: CycleWeekEditorEvent) {
+        com.yhdista.dosetracker.core.AppLogger.d("CycleWeekEditorViewModel", "onEvent: $event")
         when (event) {
             is CycleWeekEditorEvent.AddSchedule -> addSchedule(event)
             is CycleWeekEditorEvent.UpdateSchedule -> updateSchedule(event.schedule)

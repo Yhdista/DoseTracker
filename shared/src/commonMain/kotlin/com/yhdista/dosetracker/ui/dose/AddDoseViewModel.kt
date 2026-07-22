@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.model.Medication
@@ -55,6 +56,16 @@ class AddDoseViewModel(
                 }
             }
             .launchIn(viewModelScope)
+
+        viewModelScope.launch {
+            state.collect { s ->
+                val medDesc = s.medication.describe { med -> "name='${med.name}', dosage=${med.dosage} ${med.unit.symbol}" }
+                com.yhdista.dosetracker.core.AppLogger.d(
+                    "AddDoseViewModel",
+                    "State updated: medication=$medDesc, amount=${s.amount}, time=${s.time}, isSuccess=${s.isSuccess}, error=${s.error}"
+                )
+            }
+        }
     }
 
     fun setMedicationId(id: Long) {
@@ -64,6 +75,7 @@ class AddDoseViewModel(
     }
 
     fun onEvent(event: AddDoseEvent) {
+        com.yhdista.dosetracker.core.AppLogger.d("AddDoseViewModel", "onEvent: $event")
         when (event) {
             is AddDoseEvent.UpdateAmount -> _state.update { it.copy(amount = event.amount) }
             is AddDoseEvent.UpdateTime -> _state.update { it.copy(time = event.time) }

@@ -27,17 +27,26 @@ class DoseGenerator(
     }
 
     suspend fun runForDate(date: LocalDate) {
+        com.yhdista.dosetracker.core.AppLogger.i("DoseGenerator", "runForDate(date=$date) starting...")
         cycleLifecycleManager.advance(date)
 
-        val schedules = (repository.getEnabledSchedules() as? Data.Success)?.data ?: return
+        val schedulesData = repository.getEnabledSchedules()
+        if (schedulesData !is Data.Success) {
+            com.yhdista.dosetracker.core.AppLogger.e("DoseGenerator", "runForDate failed to get enabled schedules: $schedulesData")
+            return
+        }
+        val schedules = schedulesData.data
         val periodTimes = repository.getPeriodTimesOnce()
         val zone = TimeZone.currentSystemDefault()
         val now = Clock.System.now()
         val activeCycle = repository.getActiveCycleOnce()
         val activeCycleWeekId = resolveActiveCycleWeekId(activeCycle, date)
 
+        com.yhdista.dosetracker.core.AppLogger.d("DoseGenerator", "Running for ${schedules.size} enabled schedules. Active cycle: ${activeCycle?.id}, cycleWeekId: $activeCycleWeekId")
+
         for (schedule in schedules) {
-            if (!matchesDate(schedule, date, activeCycleWeekId)) continue
+            val matches = matchesDate(schedule, date, activeCycleWeekId)
+            if (!matches) continue
 
             val minutes = if (schedule.timeType == "PERIOD") {
                 periodTimes[schedule.dayPeriod] ?: schedule.minutesOfDay
@@ -54,17 +63,24 @@ class DoseGenerator(
             val existingDose = repository.getDoseForScheduleOnDate(schedule.id, date)
 
             if (existingDose == null) {
+                com.yhdista.dosetracker.core.AppLogger.d("DoseGenerator", "No existing dose for scheduleId=${schedule.id} on date=$date. Creating new dose...")
                 val newDose = createDose(schedule.medicationId, schedule.id, scheduledInstant, cycleId)
-                if (newDose != null && newDose.status == DoseStatus.PENDING && scheduledInstant > now) {
-                    scheduler.scheduleReminder(newDose.id, scheduledInstant)
-                    scheduler.scheduleMissedTimeout(
-                        newDose.id,
-                        scheduledInstant + DoseReminderScheduler.MISSED_TIMEOUT_MINUTES.minutes
-                    )
+                if (newDose != null) {
+                    com.yhdista.dosetracker.core.AppLogger.i("DoseGenerator", "Created new dose: id=${newDose.id}, medicationId=${newDose.medicationId}, time=$scheduledInstant")
+                    if (newDose.status == DoseStatus.PENDING && scheduledInstant > now) {
+                        com.yhdista.dosetracker.core.AppLogger.d("DoseGenerator", "Scheduling reminder and missed timeout alarms for new dose id=${newDose.id}")
+                        scheduler.scheduleReminder(newDose.id, scheduledInstant)
+                        scheduler.scheduleMissedTimeout(
+                            newDose.id,
+                            scheduledInstant + DoseReminderScheduler.MISSED_TIMEOUT_MINUTES.minutes
+                        )
+                    }
                 }
             } else {
+                com.yhdista.dosetracker.core.AppLogger.d("DoseGenerator", "Found existing dose for scheduleId=${schedule.id} on date=$date: id=${existingDose.id}, status=${existingDose.status}")
                 if (existingDose.status == DoseStatus.PENDING) {
                     if (existingDose.timestamp != scheduledInstant) {
+                        com.yhdista.dosetracker.core.AppLogger.i("DoseGenerator", "Rescheduling pending dose id=${existingDose.id}: time changed from ${existingDose.timestamp} to $scheduledInstant")
                         // Cancel old alarms
                         scheduler.cancelReminder(existingDose.id)
                         scheduler.cancelMissedTimeout(existingDose.id)
@@ -83,6 +99,7 @@ class DoseGenerator(
                         }
                     } else if (scheduledInstant > now) {
                         // Just make sure it is scheduled (for boot or re-arm)
+                        com.yhdista.dosetracker.core.AppLogger.d("DoseGenerator", "Verifying scheduling for pending dose id=${existingDose.id} at time=$scheduledInstant")
                         scheduler.scheduleReminder(existingDose.id, scheduledInstant)
                         scheduler.scheduleMissedTimeout(
                             existingDose.id,
@@ -92,6 +109,7 @@ class DoseGenerator(
                 }
             }
         }
+        com.yhdista.dosetracker.core.AppLogger.i("DoseGenerator", "runForDate(date=$date) finished")
     }
 
     private suspend fun resolveActiveCycleWeekId(activeCycle: Cycle?, date: LocalDate): Long? {

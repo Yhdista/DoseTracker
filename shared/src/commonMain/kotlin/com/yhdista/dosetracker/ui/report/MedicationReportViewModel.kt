@@ -4,11 +4,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import kotlin.time.Clock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -117,6 +119,20 @@ class MedicationReportViewModel(
             initialValue = MedicationReportState()
         )
 
+    init {
+        viewModelScope.launch {
+            uiState.collect { state ->
+                val weeksDesc = state.weeks.describe { weeks ->
+                    weeks.joinToString(prefix = "[", postfix = "]") { "${it.weekStart}=${it.totalTaken}" }
+                }
+                com.yhdista.dosetracker.core.AppLogger.d(
+                    "MedicationReportViewModel",
+                    "State updated: medicationName='${state.medicationName}', unit='${state.unit}', mode=${state.mode}, periodStart=${state.periodStart}, weeks=$weeksDesc"
+                )
+            }
+        }
+    }
+
     fun setMedicationId(id: Long) {
         if (savedStateHandle.get<Long>("medicationId") == null) {
             savedStateHandle["medicationId"] = id
@@ -124,6 +140,7 @@ class MedicationReportViewModel(
     }
 
     fun onEvent(event: MedicationReportEvent) {
+        com.yhdista.dosetracker.core.AppLogger.d("MedicationReportViewModel", "onEvent: $event")
         when (event) {
             is MedicationReportEvent.ToggleMode -> _selection.update { current ->
                 val newMode = if (current.mode == ReportRangeMode.MONTH) ReportRangeMode.YEAR else ReportRangeMode.MONTH

@@ -17,19 +17,25 @@ class CycleLifecycleManager(
         val weekIndex = cycle.startDate.daysUntil(today) / 7
         if (weekIndex < totalWeeks) return
 
+        com.yhdista.dosetracker.core.AppLogger.i("CycleLifecycleManager", "Active cycle expired: id=${cycle.id}, name='${cycle.name}', totalWeeks=$totalWeeks, completed on=$today")
         repository.updateCycle(cycle.copy(status = CycleStatus.COMPLETED))
 
+        com.yhdista.dosetracker.core.AppLogger.i("CycleLifecycleManager", "Executing on-complete action: ${cycle.onCompleteAction}")
         when (cycle.onCompleteAction) {
             CycleCompleteAction.TO_STANDARD -> {
                 val standard = repository.getStandardCycle() ?: return
+                com.yhdista.dosetracker.core.AppLogger.i("CycleLifecycleManager", "Activating standard cycle: id=${standard.id}")
                 repository.updateCycle(standard.copy(status = CycleStatus.ACTIVE, startDate = today))
             }
             CycleCompleteAction.TO_POST -> {
                 val nextId = cycle.nextCycleId ?: return
                 val next = repository.getCycleById(nextId) ?: return
+                com.yhdista.dosetracker.core.AppLogger.i("CycleLifecycleManager", "Activating post cycle: id=${next.id}, name='${next.name}'")
                 repository.updateCycle(next.copy(status = CycleStatus.ACTIVE, startDate = today))
             }
-            CycleCompleteAction.TO_NONE -> Unit
+            CycleCompleteAction.TO_NONE -> {
+                com.yhdista.dosetracker.core.AppLogger.i("CycleLifecycleManager", "No cycle transition configured.")
+            }
         }
     }
 }

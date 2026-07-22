@@ -14,6 +14,7 @@ class ReminderReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val doseId = intent.getLongExtra("doseId", -1L)
+        com.yhdista.dosetracker.core.AppLogger.i("ReminderReceiver", "onReceive: doseId=$doseId")
         if (doseId == -1L) return
 
         val pendingResult = goAsync()

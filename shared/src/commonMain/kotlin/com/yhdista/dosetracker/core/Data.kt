@@ -15,3 +15,12 @@ sealed class Data<out T> {
 
     fun getOrNull(): T? = (this as? Success)?.data
 }
+
+/**
+ * Human-readable summary for logging: "Loading", "Error('msg')", or "Success(<formatSuccess(data)>)".
+ */
+fun <T> Data<T>.describe(formatSuccess: (T) -> String = { it.toString() }): String = when (this) {
+    is Data.Success -> "Success(${formatSuccess(data)})"
+    is Data.Error -> "Error('$message')"
+    Data.Loading -> "Loading"
+}

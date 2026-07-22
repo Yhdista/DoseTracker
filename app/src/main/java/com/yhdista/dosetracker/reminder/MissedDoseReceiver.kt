@@ -13,6 +13,7 @@ import org.koin.core.context.GlobalContext
 class MissedDoseReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val doseId = intent.getLongExtra("doseId", -1L)
+        com.yhdista.dosetracker.core.AppLogger.i("MissedDoseReceiver", "onReceive: doseId=$doseId")
         if (doseId == -1L) return
 
         val pendingResult = goAsync()

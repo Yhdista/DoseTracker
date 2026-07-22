@@ -63,6 +63,10 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
     val backstack = rememberNavBackStack(Destination.Today)
     val listDetailStrategy = rememberListDetailSceneStrategy<NavKey>()
 
+    LaunchedEffect(backstack.last()) {
+        com.yhdista.dosetracker.core.AppLogger.i("Navigation", "Screen Transition: ${backstack.last()::class.simpleName ?: "Unknown"} (Route: ${backstack.last()})")
+    }
+
     LaunchedEffect(initialConfirmDoseId) {
         initialConfirmDoseId?.let { backstack.add(Destination.ConfirmDose(it)) }
     }

@@ -55,6 +55,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.core.ktx)
             implementation(libs.accompanist.permissions)
+            api(libs.timber)
         }
         commonTest.dependencies {
             implementation(libs.kotlinx.coroutines.test)

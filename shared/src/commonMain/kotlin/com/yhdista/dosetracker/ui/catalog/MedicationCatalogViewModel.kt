@@ -3,6 +3,7 @@ package com.yhdista.dosetracker.ui.catalog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.model.MedicationUnit
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
@@ -74,7 +75,21 @@ class MedicationCatalogViewModel(
         initialValue = CatalogState()
     )
 
+    init {
+        viewModelScope.launch {
+            uiState.collect { state ->
+                val medsDesc = state.medications.describe { meds ->
+                    meds.joinToString(prefix = "[", postfix = "]") { med ->
+                        "${med.name} (${med.dosage} ${med.unit.symbol})"
+                    }
+                }
+                com.yhdista.dosetracker.core.AppLogger.d("MedicationCatalogViewModel", "State updated: medications=$medsDesc, searchQuery='${state.searchQuery}', showOnlyActive=${state.showOnlyActive}")
+            }
+        }
+    }
+
     fun onEvent(event: CatalogEvent) {
+        com.yhdista.dosetracker.core.AppLogger.d("MedicationCatalogViewModel", "onEvent: $event")
         when (event) {
             is CatalogEvent.Search -> _searchQuery.value = event.query
             is CatalogEvent.AddMedication -> addMedication(event)

@@ -23,6 +23,7 @@ class DoseActionReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val doseId = intent.getLongExtra("doseId", -1L)
+        com.yhdista.dosetracker.core.AppLogger.i("DoseActionReceiver", "onReceive: action=${intent.action}, doseId=$doseId")
         if (doseId == -1L) return
 
         val pendingResult = goAsync()

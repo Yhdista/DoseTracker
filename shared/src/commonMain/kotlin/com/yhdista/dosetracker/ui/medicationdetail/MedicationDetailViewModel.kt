@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
@@ -71,6 +72,21 @@ class MedicationDetailViewModel(
             initialValue = MedicationDetailState()
         )
 
+    init {
+        viewModelScope.launch {
+            uiState.collect { state ->
+                val medDesc = state.medication.describe { med -> "name='${med.name}', dosage=${med.dosage} ${med.unit.symbol}" }
+                val schedulesDesc = state.schedules.describe { schedules ->
+                    schedules.joinToString(prefix = "[", postfix = "]") { sch ->
+                        val timeStr = if (sch.timeType == "PERIOD") sch.dayPeriod else "${sch.minutesOfDay / 60}:${(sch.minutesOfDay % 60).toString().padStart(2, '0')}"
+                        "Schedule(id=${sch.id}, type=${sch.scheduleType}, time=$timeStr, enabled=${sch.enabled})"
+                    }
+                }
+                com.yhdista.dosetracker.core.AppLogger.d("MedicationDetailViewModel", "State updated: medication=$medDesc, schedules=$schedulesDesc, timeType=${state.defaultTimeType}")
+            }
+        }
+    }
+
     fun setMedicationId(id: Long) {
         if (savedStateHandle.get<Long>("medicationId") == null) {
             savedStateHandle["medicationId"] = id
@@ -78,6 +94,7 @@ class MedicationDetailViewModel(
     }
 
     fun onEvent(event: MedicationDetailEvent) {
+        com.yhdista.dosetracker.core.AppLogger.d("MedicationDetailViewModel", "onEvent: $event")
         when (event) {
             is MedicationDetailEvent.AddSchedule -> addSchedule(event)
             is MedicationDetailEvent.UpdateSchedule -> updateSchedule(event.schedule)

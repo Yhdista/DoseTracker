@@ -2,7 +2,9 @@ package com.yhdista.dosetracker.ui.report
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
@@ -66,7 +68,21 @@ class ReportViewModel(
             initialValue = ReportState()
         )
 
+    init {
+        viewModelScope.launch {
+            uiState.collect { state ->
+                val summariesDesc = state.summaries.describe { summaries ->
+                    summaries.joinToString(prefix = "[", postfix = "]") { sum ->
+                        "${sum.medicationName}: TAKEN=${sum.taken}, MISSED=${sum.missed}, SKIPPED=${sum.skipped}, UPCOMING=${sum.upcoming} (${sum.totalAmountTaken}/${sum.totalAmountScheduled} ${sum.unit})"
+                    }
+                }
+                com.yhdista.dosetracker.core.AppLogger.d("ReportViewModel", "State updated: weekStart=${state.weekStart}, summaries=$summariesDesc")
+            }
+        }
+    }
+
     fun onEvent(event: ReportEvent) {
+        com.yhdista.dosetracker.core.AppLogger.d("ReportViewModel", "onEvent: $event")
         when (event) {
             is ReportEvent.PreviousWeek -> _weekStart.update { it.minus(7, DateTimeUnit.DAY) }
             is ReportEvent.NextWeek -> _weekStart.update { it.plus(7, DateTimeUnit.DAY) }

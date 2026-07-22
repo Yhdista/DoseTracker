@@ -3,6 +3,7 @@ package com.yhdista.dosetracker.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.TimeType
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import com.yhdista.dosetracker.domain.repository.SettingsRepository
@@ -42,7 +43,20 @@ class SettingsViewModel(
         initialValue = SettingsState()
     )
 
+    init {
+        viewModelScope.launch {
+            uiState.collect { state ->
+                val periodTimesDesc = state.periodTimes.describe { it.toString() }
+                com.yhdista.dosetracker.core.AppLogger.d(
+                    "SettingsViewModel",
+                    "State updated: periodTimes=$periodTimesDesc, defaultTimeType=${state.defaultTimeType}"
+                )
+            }
+        }
+    }
+
     fun onEvent(event: SettingsEvent) {
+        com.yhdista.dosetracker.core.AppLogger.d("SettingsViewModel", "onEvent: $event")
         when (event) {
             is SettingsEvent.UpdatePeriodTime -> {
                 viewModelScope.launch {

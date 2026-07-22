@@ -21,11 +21,25 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.workmanager.factory.KoinWorkerFactory
 import org.koin.androidx.workmanager.koin.workManagerFactory
 import org.koin.core.context.startKoin
+import com.yhdista.dosetracker.core.AppLogger
+import com.yhdista.dosetracker.core.AndroidLogcatEngine
+import com.yhdista.dosetracker.core.FileLogEngine
 
 class DoseTrackerApp : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        
+        // Plant Timber DebugTree for console logging
+        timber.log.Timber.plant(timber.log.Timber.DebugTree())
+        
+        // Initialize Genius Log-Driven Development framework
+        AppLogger.init(
+            AndroidLogcatEngine(),
+            FileLogEngine(this)
+        )
+        AppLogger.i("DoseTrackerApp", "Application onCreate: Log System Initialized")
+
         startKoin {
             androidContext(this@DoseTrackerApp)
             workManagerFactory()
