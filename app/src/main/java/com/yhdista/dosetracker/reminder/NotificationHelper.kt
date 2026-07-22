@@ -52,7 +52,7 @@ class NotificationHelper(
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Medication Reminder")
             .setContentText("It's time to take your $medicationName ($dosage)")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
