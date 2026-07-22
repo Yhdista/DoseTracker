@@ -7,11 +7,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,8 +39,7 @@ fun TodayScreen(
     viewModel: TodayViewModel,
     onNavigateToConfirm: (Long) -> Unit,
     onNavigateToCreateCycle: () -> Unit,
-    onNavigateToCycleHistory: () -> Unit,
-    onNavigateToManageWeeks: (Long) -> Unit
+    onNavigateToCycleSettings: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -50,8 +48,7 @@ fun TodayScreen(
         onEvent = viewModel::onEvent,
         onNavigateToConfirm = onNavigateToConfirm,
         onCreateCycle = onNavigateToCreateCycle,
-        onOpenCycleHistory = onNavigateToCycleHistory,
-        onManageWeeks = onNavigateToManageWeeks
+        onNavigateToCycleSettings = onNavigateToCycleSettings
     )
 }
 
@@ -62,8 +59,7 @@ fun TodayContent(
     onEvent: (TodayEvent) -> Unit,
     onNavigateToConfirm: (Long) -> Unit,
     onCreateCycle: () -> Unit = {},
-    onOpenCycleHistory: () -> Unit = {},
-    onManageWeeks: (Long) -> Unit = {}
+    onNavigateToCycleSettings: () -> Unit = {}
 ) {
     val activeCycle = (state.activeCycle as? Data.Success)?.data
 
@@ -100,11 +96,7 @@ fun TodayContent(
                         if (activeCycle != null) {
                             CycleDashboardHeader(
                                 cycle = activeCycle,
-                                onOpenHistory = onOpenCycleHistory,
-                                onManageCycle = onCreateCycle,
-                                onManageWeeks = { onManageWeeks(activeCycle.id) },
-                                onEndCycle = { onEvent(TodayEvent.EndActiveCycle) },
-                                onRename = { newName -> onEvent(TodayEvent.RenameActiveCycle(newName)) }
+                                onOpenSettings = onNavigateToCycleSettings
                             )
                         } else {
                             NoCycleHeader(onCreateCycle = onCreateCycle)
@@ -162,66 +154,11 @@ fun TodayContent(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun CycleDashboardHeader(
     cycle: Cycle,
-    onOpenHistory: () -> Unit,
-    onManageCycle: () -> Unit,
-    onManageWeeks: () -> Unit,
-    onEndCycle: () -> Unit,
-    onRename: (String) -> Unit
+    onOpenSettings: () -> Unit
 ) {
-    var showEndConfirm by remember { mutableStateOf(false) }
-    var showRenameDialog by remember { mutableStateOf(false) }
-    var renameText by remember(cycle.id) { mutableStateOf(cycle.name) }
-
-    if (showEndConfirm) {
-        AlertDialog(
-            onDismissRequest = { showEndConfirm = false },
-            title = { Text("Ukončit cyklus?") },
-            text = { Text("Cyklus \"${cycle.name}\" bude ukončen a nebude žádný aktivní cyklus.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Confirm: Ukončit cyklus (cycleId=${cycle.id}, name='${cycle.name}')")
-                    showEndConfirm = false
-                    onEndCycle()
-                }) { Text("Ukončit") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEndConfirm = false }) { Text("Zrušit") }
-            }
-        )
-    }
-
-    if (showRenameDialog) {
-        AlertDialog(
-            onDismissRequest = { showRenameDialog = false },
-            title = { Text("Přejmenovat cyklus") },
-            text = {
-                OutlinedTextField(
-                    value = renameText,
-                    onValueChange = { renameText = it },
-                    label = { Text("Název") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = renameText.isNotBlank(),
-                    onClick = {
-                        com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Confirm: Přejmenovat cyklus (cycleId=${cycle.id}, oldName='${cycle.name}', newName='$renameText')")
-                        showRenameDialog = false
-                        onRename(renameText)
-                    }
-                ) { Text("Uložit") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRenameDialog = false }) { Text("Zrušit") }
-            }
-        )
-    }
-
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
     val elapsedDays = cycle.startDate.daysUntil(today)
     val typeLabel = when (cycle.type) {
@@ -232,7 +169,19 @@ private fun CycleDashboardHeader(
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(cycle.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(cycle.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                IconButton(onClick = {
+                    com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Click: Nastavení cyklu (cycleId=${cycle.id}, name='${cycle.name}')")
+                    onOpenSettings()
+                }) {
+                    Icon(Icons.Rounded.Settings, contentDescription = "Nastavení cyklu")
+                }
+            }
             Text(typeLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("Začátek: ${cycle.startDate}")
             Text("Běží $elapsedDays dní")
@@ -244,39 +193,6 @@ private fun CycleDashboardHeader(
                 Text("Zbývá $remainingDays dní (končí $endDate)")
             } else {
                 Text("Běží neomezeně")
-            }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = {
-                    com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Click: Přejmenovat (cycleId=${cycle.id}, name='${cycle.name}')")
-                    renameText = cycle.name
-                    showRenameDialog = true
-                }) {
-                    Text("Přejmenovat")
-                }
-                TextButton(onClick = {
-                    com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Click: Historie cyklu (cycleId=${cycle.id}, name='${cycle.name}')")
-                    onOpenHistory()
-                }) {
-                    Text("Historie cyklu")
-                }
-                TextButton(onClick = {
-                    com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Click: Přidat návazný cyklus (cycleId=${cycle.id}, name='${cycle.name}') -> opens CreateCycleScreen to attach a follow-up cycle")
-                    onManageCycle()
-                }) {
-                    Text("Přidat návazný cyklus")
-                }
-                TextButton(onClick = {
-                    com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Click: Upravit týdny (cycleId=${cycle.id}, name='${cycle.name}')")
-                    onManageWeeks()
-                }) {
-                    Text("Upravit týdny")
-                }
-                TextButton(onClick = {
-                    com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Click: Ukončit cyklus, opening confirm dialog (cycleId=${cycle.id}, name='${cycle.name}')")
-                    showEndConfirm = true
-                }) {
-                    Text("Ukončit cyklus")
-                }
             }
         }
     }

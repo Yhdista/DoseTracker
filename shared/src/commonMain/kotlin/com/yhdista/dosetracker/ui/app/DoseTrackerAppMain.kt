@@ -168,11 +168,8 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                             onNavigateToCreateCycle = {
                                 backstack.add(Destination.CreateCycle)
                             },
-                            onNavigateToCycleHistory = {
-                                backstack.add(Destination.CycleHistory)
-                            },
-                            onNavigateToManageWeeks = { cycleId ->
-                                backstack.add(Destination.CycleWeekList(cycleId))
+                            onNavigateToCycleSettings = {
+                                backstack.add(Destination.CycleSettings)
                             }
                         )
                     }
