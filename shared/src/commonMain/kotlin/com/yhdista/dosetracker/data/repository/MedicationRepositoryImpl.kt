@@ -163,6 +163,20 @@ class MedicationRepositoryImpl(
             }
     }
 
+    override fun getDosesInRange(start: LocalDate, endExclusive: LocalDate): Flow<Data<List<Dose>>> {
+        val zone = TimeZone.currentSystemDefault()
+        val startMillis = start.atStartOfDayIn(zone).toEpochMilliseconds()
+        val endMillis = endExclusive.atStartOfDayIn(zone).toEpochMilliseconds() - 1
+
+        return doseDao.getDosesInTimeRange(startMillis, endMillis)
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Dose>> }
+            .onStart { emit(Data.Loading) }
+            .catch { e ->
+                AppLogger.e("Database", "Failed to fetch doses in range $start..$endExclusive", e)
+                emit(Data.Error("Failed to fetch doses in range", e))
+            }
+    }
+
     override fun getAllDoses(): Flow<Data<List<Dose>>> {
         return doseDao.getAllDoses()
             .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Dose>> }
