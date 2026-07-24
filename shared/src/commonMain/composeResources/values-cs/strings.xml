@@ -36,11 +36,28 @@
     <string name="today_running_days_week">Běží %1$s dní · týden %2$s / %3$s</string>
     <string name="today_running_indefinitely">Běží neomezeně</string>
     <string name="today_scheduled_at">Naplánováno na %1$s</string>
+    <string name="today_starts_in_days">Začíná za %1$s dní (%2$s)</string>
     <string name="today_this_week">Tento týden</string>
-    <string name="today_timeline_header">Časová osa cyklů · −180 až +180 dní</string>
+    <string name="today_timeline_header">Časová osa cyklů · ±180 dní (detail: ±3 týdny kolem dneška)</string>
     <string name="today_title">Kalendář</string>
     <string name="today_toggle_status">Přepnout stav</string>
     <string name="today_within_cycle">V rámci cyklu %1$s</string>
+
+    <!-- osa času u cyklů: %1$s = den v měsíci, %2$s = číslo měsíce -->
+    <string name="timeline_date_short">%1$s. %2$s.</string>
+    <string name="timeline_today_label">Dnes</string>
+    <string name="month_abbrev_1">led</string>
+    <string name="month_abbrev_2">úno</string>
+    <string name="month_abbrev_3">bře</string>
+    <string name="month_abbrev_4">dub</string>
+    <string name="month_abbrev_5">kvě</string>
+    <string name="month_abbrev_6">čvn</string>
+    <string name="month_abbrev_7">čvc</string>
+    <string name="month_abbrev_8">srp</string>
+    <string name="month_abbrev_9">zář</string>
+    <string name="month_abbrev_10">říj</string>
+    <string name="month_abbrev_11">lis</string>
+    <string name="month_abbrev_12">pro</string>
 
     <!-- history -->
     <string name="history_amount_at_time">%1$s %2$s v %3$s</string>
@@ -100,6 +117,14 @@
     <string name="createcycle_title">Nový cyklus</string>
     <string name="createcycle_total_weeks">Počet týdnů</string>
     <string name="createcycle_type">Typ cyklu</string>
+    <string name="createcycle_start">Začátek</string>
+    <string name="createcycle_start_today">Dnes</string>
+    <string name="createcycle_start_week">Vybrat týden</string>
+    <!-- %1$s = číslo týdne, %2$s = pondělí, %3$s = neděle -->
+    <string name="createcycle_week_option">Týden %1$s · %2$s – %3$s</string>
+    <!-- %1$s = datum začátku, %2$s = rok -->
+    <string name="createcycle_starts_on">Začíná v pondělí %1$s %2$s</string>
+    <string name="createcycle_start_already_over">Tento cyklus by už skončil — vyber pozdější týden.</string>
 
     <!-- cycle history -->
     <string name="cycle_history_title">Historie cyklu</string>

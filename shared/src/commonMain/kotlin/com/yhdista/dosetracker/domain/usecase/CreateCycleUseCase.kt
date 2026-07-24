@@ -8,6 +8,7 @@ import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.repository.CycleRepository
 import com.yhdista.dosetracker.reminder.DoseGenerator
 import kotlin.time.Clock
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 
@@ -22,12 +23,18 @@ class CreateCycleUseCase(
     private val doseGenerator: DoseGenerator,
 ) {
 
-    /** @return the created/updated cycle id, or null for a combination the UI never offers. */
+    /**
+     * @param startDate first day of the new cycle, or null for "today". Only honoured on the path
+     *   where the cycle really starts (no active cycle): a STANDARD template and a chained POST
+     *   cycle both get their start date from activation, not from creation.
+     * @return the created/updated cycle id, or null for a combination the UI never offers.
+     */
     suspend operator fun invoke(
         name: String,
         type: CycleType,
         totalWeeks: Int,
         onCompleteAction: CycleCompleteAction,
+        startDate: LocalDate? = null,
     ): Data<Long>? {
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
         val active = cycleRepository.getActiveCycleOnce()
@@ -38,7 +45,7 @@ class CreateCycleUseCase(
                     name = name,
                     type = type,
                     totalWeeks = if (type == CycleType.STANDARD) null else totalWeeks,
-                    startDate = today,
+                    startDate = if (type == CycleType.STANDARD) today else (startDate ?: today),
                     status = CycleStatus.ACTIVE,
                     onCompleteAction = onCompleteAction
                 )

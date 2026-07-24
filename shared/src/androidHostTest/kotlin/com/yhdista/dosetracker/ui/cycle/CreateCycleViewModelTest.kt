@@ -15,7 +15,12 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atTime
+import kotlinx.datetime.toInstant
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -41,6 +46,19 @@ class CreateCycleViewModelTest {
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+    }
+
+    /** ViewModel whose "today" is pinned, so week-of-year selections are deterministic. */
+    private fun viewModelAt(today: LocalDate): CreateCycleViewModel {
+        val fixedClock = object : Clock {
+            override fun now(): Instant = today.atTime(12, 0).toInstant(TimeZone.UTC)
+        }
+        return CreateCycleViewModel(
+            repository,
+            CreateCycleUseCase(repository, doseGenerator),
+            clock = fixedClock,
+            zone = TimeZone.UTC,
+        )
     }
 
     @Test
@@ -85,6 +103,96 @@ class CreateCycleViewModelTest {
 
         verify(repository).updateCycle(existing.copy(name = "Novy nazev"))
         verify(repository, never()).createCycle(any())
+    }
+
+    @Test
+    fun `a picked start week sets the cycle's start date instead of today`() = runTest {
+        whenever(repository.getActiveCycleOnce()).thenReturn(null)
+        whenever(repository.createCycle(any())).thenReturn(Data.Success(2L))
+
+        val viewModel = viewModelAt(LocalDate(2026, 7, 24))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onEvent(CreateCycleEvent.NameChanged("Cyklus"))
+        viewModel.onEvent(CreateCycleEvent.TotalWeeksChanged(4))
+        viewModel.onEvent(CreateCycleEvent.StartModeChanged(CycleStartMode.WEEK))
+        viewModel.onEvent(CreateCycleEvent.StartWeekChanged(33))
+        viewModel.onEvent(CreateCycleEvent.Save)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Monday of ISO week 33 of 2026.
+        verify(repository).createCycle(argThat { startDate == LocalDate(2026, 8, 10) })
+    }
+
+    @Test
+    fun `defaults to today when the start mode is left on TODAY`() = runTest {
+        whenever(repository.getActiveCycleOnce()).thenReturn(null)
+        whenever(repository.createCycle(any())).thenReturn(Data.Success(3L))
+
+        val today = LocalDate(2026, 7, 24)
+        val viewModel = viewModelAt(today)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onEvent(CreateCycleEvent.NameChanged("Cyklus"))
+        viewModel.onEvent(CreateCycleEvent.StartWeekChanged(10)) // ignored while mode is TODAY
+        viewModel.onEvent(CreateCycleEvent.Save)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify(repository).createCycle(argThat { startDate == today })
+    }
+
+    @Test
+    fun `a start week whose whole cycle already elapsed is rejected`() = runTest {
+        whenever(repository.getActiveCycleOnce()).thenReturn(null)
+
+        val viewModel = viewModelAt(LocalDate(2026, 7, 24))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onEvent(CreateCycleEvent.NameChanged("Cyklus"))
+        viewModel.onEvent(CreateCycleEvent.TotalWeeksChanged(4))
+        viewModel.onEvent(CreateCycleEvent.StartModeChanged(CycleStartMode.WEEK))
+        viewModel.onEvent(CreateCycleEvent.StartWeekChanged(10)) // March 2026, long over
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assert(viewModel.uiState.value.startsInThePast)
+        assert(!viewModel.uiState.value.isValid)
+
+        viewModel.onEvent(CreateCycleEvent.Save)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify(repository, never()).createCycle(any())
+    }
+
+    @Test
+    fun `a backdated start week that is still running is accepted`() = runTest {
+        whenever(repository.getActiveCycleOnce()).thenReturn(null)
+        whenever(repository.createCycle(any())).thenReturn(Data.Success(4L))
+
+        val viewModel = viewModelAt(LocalDate(2026, 7, 24))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onEvent(CreateCycleEvent.NameChanged("Cyklus"))
+        viewModel.onEvent(CreateCycleEvent.TotalWeeksChanged(4))
+        viewModel.onEvent(CreateCycleEvent.StartModeChanged(CycleStartMode.WEEK))
+        viewModel.onEvent(CreateCycleEvent.StartWeekChanged(29)) // started 2026-07-13, 4 weeks
+        viewModel.onEvent(CreateCycleEvent.Save)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify(repository).createCycle(argThat { startDate == LocalDate(2026, 7, 13) })
+    }
+
+    @Test
+    fun `the week picker is not offered for a chained POST cycle`() = runTest {
+        val active = Cycle(
+            id = 1, name = "Cyklus", type = CycleType.NORMAL, totalWeeks = 4,
+            startDate = LocalDate(2026, 7, 1), status = CycleStatus.ACTIVE, onCompleteAction = CycleCompleteAction.TO_STANDARD
+        )
+        whenever(repository.getActiveCycleOnce()).thenReturn(active)
+
+        val viewModel = viewModelAt(LocalDate(2026, 7, 24))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assert(!viewModel.uiState.value.canPickStartWeek)
     }
 
     @Test

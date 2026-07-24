@@ -9,8 +9,11 @@ import com.yhdista.dosetracker.core.logEach
 import com.yhdista.dosetracker.domain.model.Cycle
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
+import com.yhdista.dosetracker.domain.model.PlannedDose
 import com.yhdista.dosetracker.domain.repository.CycleRepository
 import com.yhdista.dosetracker.domain.repository.DoseRepository
+import com.yhdista.dosetracker.domain.repository.ScheduleRepository
+import com.yhdista.dosetracker.domain.usecase.PlanAgendaUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
@@ -46,6 +49,8 @@ data class TodayState(
     val activeCycle: Data<Cycle?> = Data.Loading,
     val completedCycles: Data<List<Cycle>> = Data.Loading,
     val futureCycles: List<Cycle> = emptyList(),
+    /** Projected doses for the days ahead, which have no generated rows yet. */
+    val plannedInWindow: Map<LocalDate, List<PlannedDose>> = emptyMap(),
     val selectedDoseId: Long? = null,
 )
 
@@ -58,6 +63,8 @@ sealed interface TodayEvent {
 class TodayViewModel(
     private val doseRepository: DoseRepository,
     private val cycleRepository: CycleRepository,
+    private val scheduleRepository: ScheduleRepository,
+    private val planAgenda: PlanAgendaUseCase,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -82,6 +89,18 @@ class TodayViewModel(
         doseRepository.getDosesInRange(today, today.plus(AGENDA_WINDOW_DAYS, DateTimeUnit.DAY))
     }
 
+    /**
+     * Projection of the days ahead. Recomputed whenever the day rolls over, the schedules or their
+     * period times change, or the active cycle changes — anything that could move a future dose.
+     */
+    private val plannedInWindowFlow = combine(
+        todayFlow,
+        scheduleRepository.getAllSchedules(),
+        scheduleRepository.getPeriodTimes(),
+        cycleRepository.getActiveCycle(),
+    ) { today, _, _, _ -> today }
+        .mapLatest { today -> planAgenda(today, AGENDA_WINDOW_DAYS) }
+
     /** Resolve the chain of upcoming cycles (nextCycleId) so the timeline can draw them ahead of today. */
     private val futureCyclesFlow = cycleRepository.getActiveCycle().mapLatest { data ->
         val active = (data as? Data.Success)?.data
@@ -97,25 +116,27 @@ class TodayViewModel(
     }
 
     val uiState: StateFlow<TodayState> = combine(
-        combine(todayFlow, dosesInWindowFlow, ::Pair),
+        combine(todayFlow, dosesInWindowFlow, plannedInWindowFlow, ::Triple),
         cycleRepository.getActiveCycle(),
         cycleRepository.getCompletedCycles(),
         futureCyclesFlow,
         _selectedDoseId
-    ) { (today, doses), activeCycle, completedCycles, futureCycles, selectedId ->
+    ) { (today, doses, planned), activeCycle, completedCycles, futureCycles, selectedId ->
         TodayState(
             today = today,
             dosesInWindow = doses,
             activeCycle = activeCycle,
             completedCycles = completedCycles,
             futureCycles = futureCycles,
+            plannedInWindow = planned,
             selectedDoseId = selectedId
         )
     }.logEach("TodayViewModel") { state ->
         val dosesDesc = state.dosesInWindow.describe { doses -> "count=${doses.size}" }
+        val plannedDesc = "days=${state.plannedInWindow.size}, count=${state.plannedInWindow.values.sumOf { it.size }}"
         val cycleDesc = state.activeCycle.describe { cycle -> "name=${cycle?.name ?: "none"}" }
         val futureDesc = state.futureCycles.joinToString(prefix = "[", postfix = "]") { it.name }
-        "State updated: today=${state.today}, doses=$dosesDesc, activeCycle=$cycleDesc, futureCycles=$futureDesc, selectedDoseId=${state.selectedDoseId}"
+        "State updated: today=${state.today}, doses=$dosesDesc, planned=$plannedDesc, activeCycle=$cycleDesc, futureCycles=$futureDesc, selectedDoseId=${state.selectedDoseId}"
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),

@@ -64,14 +64,10 @@ class DoseGenerator(
         com.yhdista.dosetracker.core.AppLogger.d("DoseGenerator", "Running for ${schedules.size} enabled schedules. Active cycle: ${activeCycle?.id}, cycleWeekId: $activeCycleWeekId")
 
         for (schedule in schedules) {
-            val matches = matchesDate(schedule, date, activeCycleWeekId)
+            val matches = scheduleMatchesDate(schedule, date, activeCycleWeekId)
             if (!matches) continue
 
-            val minutes = if (schedule.timeType == TimeType.PERIOD) {
-                schedule.dayPeriod?.let { periodTimes[it] } ?: schedule.minutesOfDay
-            } else {
-                schedule.minutesOfDay
-            }
+            val minutes = effectiveMinutesOfDay(schedule, periodTimes)
 
             val hour = minutes / 60
             val minute = minutes % 60
@@ -141,24 +137,10 @@ class DoseGenerator(
 
     private suspend fun resolveActiveCycleWeekId(activeCycle: Cycle?, date: LocalDate): Long? {
         if (activeCycle == null) return null
-        val weekIndex = if (activeCycle.type == CycleType.STANDARD) {
-            0
-        } else {
-            activeCycle.startDate.daysUntil(date) / 7
-        }
+        // A cycle can be created with a start date in the future (picked by week); until that day
+        // arrives it has no current week, so its cycle-bound schedules must not fire.
+        val weekIndex = cycleWeekIndexFor(activeCycle, date) ?: return null
         return cycleRepository.getCycleWeek(activeCycle.id, weekIndex)?.id
-    }
-
-    private fun matchesDate(schedule: ReminderSchedule, date: LocalDate, activeCycleWeekId: Long?): Boolean {
-        if (schedule.cycleWeekId != null && schedule.cycleWeekId != activeCycleWeekId) return false
-        return when (schedule.scheduleType) {
-            ScheduleType.WEEKDAYS -> WeekDays.contains(schedule.daysOfWeek, date.dayOfWeek)
-            ScheduleType.INTERVAL -> {
-                val start = schedule.startDate ?: return false
-                val days = start.daysUntil(date)
-                days >= 0 && days % schedule.intervalDays == 0
-            }
-        }
     }
 
     private suspend fun createDose(medicationId: Long, scheduleId: Long, at: Instant, cycleId: Long?): Dose? {

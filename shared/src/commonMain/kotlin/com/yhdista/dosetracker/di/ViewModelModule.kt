@@ -22,7 +22,7 @@ val viewModelModule = module {
     viewModel { MedicationCatalogViewModel(get(), get()) }
     viewModel { (medicationId: Long) -> AddDoseViewModel(get(), get(), medicationId, get()) }
     viewModel { HistoryViewModel(get(), get()) }
-    viewModel { TodayViewModel(get(), get(), get()) }
+    viewModel { TodayViewModel(get(), get(), get(), get(), get()) }
     viewModel { (medicationId: Long) ->
         MedicationDetailViewModel(get(), get(), get(), get(), medicationId, get())
     }

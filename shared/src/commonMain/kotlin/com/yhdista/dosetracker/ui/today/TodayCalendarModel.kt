@@ -4,6 +4,7 @@ import com.yhdista.dosetracker.domain.model.Cycle
 import com.yhdista.dosetracker.domain.model.CycleStatus
 import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.model.Dose
+import com.yhdista.dosetracker.domain.model.PlannedDose
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -57,10 +58,28 @@ data class CycleBand(
     val fadeEnd: Boolean,
 )
 
-/** One day in the 14-day agenda. */
+/**
+ * One entry in a day's agenda: either a real [Dose] row, or a projected [PlannedDose] for a day
+ * the generator has not reached yet.
+ */
+data class AgendaEntry(
+    val minutesOfDay: Int,
+    val cycleId: Long?,
+    val dose: Dose?,
+)
+
+/**
+ * One day in the 14-day agenda.
+ *
+ * @param doses the real dose rows for that date — only ever populated for days the generator has
+ *   already run for (today, and past days still inside the window).
+ * @param entries what to render for the day: the real rows when the day has any (they are the
+ *   truth, statuses included), otherwise the projected plan.
+ */
 data class AgendaDay(
     val date: LocalDate,
     val doses: List<Dose>,
+    val entries: List<AgendaEntry>,
     val isToday: Boolean,
 )
 
@@ -158,20 +177,34 @@ fun buildTimelineBands(
  * Build the 14-day agenda: today plus the next [AGENDA_WINDOW_DAYS] - 1 days, each carrying the
  * doses scheduled on that local calendar day (time-sorted). Every day in the window is present,
  * including empty ones, so the agenda stays a fixed-length calendar rather than a variable list.
+ *
+ * Days with no generated doses fall back to [planned] — the projection of what the schedules will
+ * produce there. Without it every future day reads "no doses" even for a fully planned cycle.
  */
 fun buildAgenda(
     today: LocalDate,
     doses: List<Dose>,
     zone: TimeZone,
+    planned: Map<LocalDate, List<PlannedDose>> = emptyMap(),
 ): List<AgendaDay> {
     val byDate: Map<LocalDate, List<Dose>> = doses
         .groupBy { it.timestamp.toLocalDateTime(zone).date }
 
     return (0 until AGENDA_WINDOW_DAYS).map { offset ->
         val date = today.plus(offset, DateTimeUnit.DAY)
+        val dayDoses = (byDate[date] ?: emptyList()).sortedBy { it.timestamp }
+        val entries = if (dayDoses.isNotEmpty()) {
+            dayDoses.map { dose ->
+                val time = dose.timestamp.toLocalDateTime(zone).time
+                AgendaEntry(minutesOfDay = time.hour * 60 + time.minute, cycleId = dose.cycleId, dose = dose)
+            }
+        } else {
+            (planned[date] ?: emptyList()).map { AgendaEntry(it.minutesOfDay, it.cycleId, dose = null) }
+        }
         AgendaDay(
             date = date,
-            doses = (byDate[date] ?: emptyList()).sortedBy { it.timestamp },
+            doses = dayDoses,
+            entries = entries,
             isToday = offset == 0,
         )
     }

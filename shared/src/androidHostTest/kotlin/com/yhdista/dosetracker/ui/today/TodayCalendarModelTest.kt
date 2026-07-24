@@ -6,6 +6,7 @@ import com.yhdista.dosetracker.domain.model.CycleStatus
 import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
+import com.yhdista.dosetracker.domain.model.PlannedDose
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
@@ -120,5 +121,44 @@ class TodayCalendarModelTest {
         assertEquals(listOf(3L), agenda.first { it.date == LocalDate(2026, 7, 24) }.doses.map { it.id })
         // A day with nothing scheduled is still present, just empty.
         assertTrue(agenda.first { it.date == LocalDate(2026, 7, 23) }.doses.isEmpty())
+    }
+
+    @Test
+    fun `days without generated doses fall back to the projected plan`() {
+        val tomorrow = LocalDate(2026, 7, 23)
+        val planned = mapOf(
+            tomorrow to listOf(
+                PlannedDose(
+                    scheduleId = 1, medicationId = 1, medicationName = "Med",
+                    amount = 500.0, unit = "mg", minutesOfDay = 8 * 60, cycleId = 7L,
+                )
+            )
+        )
+
+        val agenda = buildAgenda(today, doses = listOf(doseAt(1, today, 8)), zone = zone, planned = planned)
+
+        val tomorrowDay = agenda.first { it.date == tomorrow }
+        assertTrue(tomorrowDay.doses.isEmpty())
+        assertEquals(listOf(8 * 60), tomorrowDay.entries.map { it.minutesOfDay })
+        assertEquals(listOf(7L), tomorrowDay.entries.map { it.cycleId })
+        assertNull(tomorrowDay.entries.single().dose)
+    }
+
+    @Test
+    fun `generated doses win over the projection for the same day`() {
+        val planned = mapOf(
+            today to listOf(
+                PlannedDose(
+                    scheduleId = 1, medicationId = 1, medicationName = "Med",
+                    amount = 500.0, unit = "mg", minutesOfDay = 21 * 60, cycleId = null,
+                )
+            )
+        )
+
+        val agenda = buildAgenda(today, doses = listOf(doseAt(1, today, 8)), zone = zone, planned = planned)
+
+        // The 08:00 real dose is shown, not the 21:00 projection.
+        assertEquals(listOf(8 * 60), agenda.first().entries.map { it.minutesOfDay })
+        assertEquals(1L, agenda.first().entries.single().dose?.id)
     }
 }

@@ -36,11 +36,28 @@
     <string name="today_running_days_week">Running %1$s days · week %2$s / %3$s</string>
     <string name="today_running_indefinitely">Runs indefinitely</string>
     <string name="today_scheduled_at">Scheduled at %1$s</string>
+    <string name="today_starts_in_days">Starts in %1$s days (%2$s)</string>
     <string name="today_this_week">This week</string>
-    <string name="today_timeline_header">Cycle timeline · −180 to +180 days</string>
+    <string name="today_timeline_header">Cycle timeline · ±180 days (detailed: ±3 weeks around today)</string>
     <string name="today_title">Calendar</string>
     <string name="today_toggle_status">Toggle status</string>
     <string name="today_within_cycle">Within cycle %1$s</string>
+
+    <!-- cycle timeline axis: %1$s = day of month, %2$s = month number -->
+    <string name="timeline_date_short">%2$s/%1$s</string>
+    <string name="timeline_today_label">Today</string>
+    <string name="month_abbrev_1">Jan</string>
+    <string name="month_abbrev_2">Feb</string>
+    <string name="month_abbrev_3">Mar</string>
+    <string name="month_abbrev_4">Apr</string>
+    <string name="month_abbrev_5">May</string>
+    <string name="month_abbrev_6">Jun</string>
+    <string name="month_abbrev_7">Jul</string>
+    <string name="month_abbrev_8">Aug</string>
+    <string name="month_abbrev_9">Sep</string>
+    <string name="month_abbrev_10">Oct</string>
+    <string name="month_abbrev_11">Nov</string>
+    <string name="month_abbrev_12">Dec</string>
 
     <!-- history -->
     <string name="history_amount_at_time">%1$s %2$s at %3$s</string>
@@ -100,6 +117,14 @@
     <string name="createcycle_title">New cycle</string>
     <string name="createcycle_total_weeks">Number of weeks</string>
     <string name="createcycle_type">Cycle type</string>
+    <string name="createcycle_start">Start</string>
+    <string name="createcycle_start_today">Today</string>
+    <string name="createcycle_start_week">Pick a week</string>
+    <!-- %1$s = week number, %2$s = Monday, %3$s = Sunday -->
+    <string name="createcycle_week_option">Week %1$s · %2$s – %3$s</string>
+    <!-- %1$s = start date, %2$s = year -->
+    <string name="createcycle_starts_on">Starts Monday %1$s/%2$s</string>
+    <string name="createcycle_start_already_over">This cycle would already be over — pick a later week.</string>
 
     <!-- cycle history -->
     <string name="cycle_history_title">Cycle history</string>

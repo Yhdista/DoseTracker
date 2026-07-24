@@ -10,6 +10,9 @@ import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.repository.CycleRepository
 import com.yhdista.dosetracker.domain.repository.DoseRepository
+import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.ScheduleRepository
+import com.yhdista.dosetracker.domain.usecase.PlanAgendaUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -32,7 +35,17 @@ class TodayViewModelTest {
 
     private val doseRepository = mock<DoseRepository>()
     private val cycleRepository = mock<CycleRepository>()
+    private val scheduleRepository = mock<ScheduleRepository>()
+    private val medicationRepository = mock<MedicationRepository>()
     private val testDispatcher = StandardTestDispatcher()
+
+    private fun viewModel() = TodayViewModel(
+        doseRepository,
+        cycleRepository,
+        scheduleRepository,
+        PlanAgendaUseCase(scheduleRepository, medicationRepository, cycleRepository),
+        SavedStateHandle(),
+    )
 
     @Before
     fun setup() {
@@ -48,6 +61,12 @@ class TodayViewModelTest {
         whenever(cycleRepository.getCompletedCycles()).thenReturn(flowOf(Data.Success(emptyList())))
     }
 
+    private suspend fun stubSchedulesEmpty() {
+        whenever(scheduleRepository.getAllSchedules()).thenReturn(flowOf(Data.Success(emptyList())))
+        whenever(scheduleRepository.getPeriodTimes()).thenReturn(flowOf(Data.Success(emptyMap())))
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(emptyList()))
+    }
+
     @Test
     fun `uiState emits success when repository returns data`() = runTest {
         val doses = listOf(
@@ -57,8 +76,9 @@ class TodayViewModelTest {
             .thenReturn(flowOf(Data.Success(doses)))
         whenever(cycleRepository.getActiveCycle()).thenReturn(flowOf(Data.Success(null)))
         stubCyclesEmpty()
+        stubSchedulesEmpty()
 
-        val viewModel = TodayViewModel(doseRepository, cycleRepository, SavedStateHandle())
+        val viewModel = viewModel()
 
         val job = launch { viewModel.uiState.collect {} }
 
@@ -81,8 +101,9 @@ class TodayViewModelTest {
             .thenReturn(flowOf(Data.Success(emptyList())))
         whenever(cycleRepository.getActiveCycle()).thenReturn(flowOf(Data.Success(cycle)))
         stubCyclesEmpty()
+        stubSchedulesEmpty()
 
-        val viewModel = TodayViewModel(doseRepository, cycleRepository, SavedStateHandle())
+        val viewModel = viewModel()
         val job = launch { viewModel.uiState.collect {} }
         testDispatcher.scheduler.runCurrent()
 

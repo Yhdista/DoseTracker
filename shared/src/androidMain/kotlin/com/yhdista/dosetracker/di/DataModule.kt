@@ -19,6 +19,7 @@ import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import com.yhdista.dosetracker.domain.repository.ScheduleRepository
 import com.yhdista.dosetracker.domain.repository.SettingsRepository
 import com.yhdista.dosetracker.domain.usecase.CreateCycleUseCase
+import com.yhdista.dosetracker.domain.usecase.PlanAgendaUseCase
 import com.yhdista.dosetracker.domain.usecase.ManageScheduleUseCase
 import com.yhdista.dosetracker.reminder.CycleLifecycleManager
 import com.yhdista.dosetracker.reminder.DoseGenerator
@@ -46,6 +47,7 @@ val dataModule = module {
 
     single { CycleLifecycleManager(get()) }
     single { CreateCycleUseCase(get(), get()) }
+    single { PlanAgendaUseCase(get(), get(), get()) }
     single { ManageScheduleUseCase(get(), get(), get(), get()) }
     single { DoseGenerator(get(), get(), get(), get(), get(), get()) }
 }

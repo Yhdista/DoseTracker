@@ -49,6 +49,7 @@ import com.yhdista.dosetracker.shared.resources.today_running_days
 import com.yhdista.dosetracker.shared.resources.today_running_days_week
 import com.yhdista.dosetracker.shared.resources.today_running_indefinitely
 import com.yhdista.dosetracker.shared.resources.today_scheduled_at
+import com.yhdista.dosetracker.shared.resources.today_starts_in_days
 import com.yhdista.dosetracker.shared.resources.today_this_week
 import com.yhdista.dosetracker.shared.resources.today_timeline_header
 import com.yhdista.dosetracker.shared.resources.today_title
@@ -162,7 +163,7 @@ fun TodayContent(
                     }
                 }
                 is Data.Success -> {
-                    val agenda = buildAgenda(today, doses.data, zone)
+                    val agenda = buildAgenda(today, doses.data, zone, state.plannedInWindow)
                     val activeCycleId = activeCycle?.id
 
                     // Week 1 (Tento týden): today card + the next 6 days.
@@ -215,6 +216,7 @@ private fun TimelineSection(
             outlineColor = MaterialTheme.colorScheme.outline,
             hatchColor = MaterialTheme.colorScheme.onSurfaceVariant,
             primaryColor = MaterialTheme.colorScheme.primary,
+            axisColor = MaterialTheme.colorScheme.onSurfaceVariant,
             onBandClick = onBandClick
         )
         TimelineLegend()
@@ -413,14 +415,14 @@ private fun DayRow(day: AgendaDay, activeCycleId: Long?) {
         }
 
         // Summary
-        if (day.doses.isEmpty()) {
+        if (day.entries.isEmpty()) {
             Text(
                 stringResource(Res.string.today_no_doses),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
-            val hasCycleDose = activeCycleId != null && day.doses.any { it.cycleId == activeCycleId }
+            val hasCycleDose = activeCycleId != null && day.entries.any { it.cycleId == activeCycleId }
             FlowRowSummary(day = day, cycleTinted = hasCycleDose)
         }
     }
@@ -435,12 +437,12 @@ private fun FlowRowSummary(day: AgendaDay, cycleTinted: Boolean) {
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
-            doseCountLabel(day.doses.size),
+            doseCountLabel(day.entries.size),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.align(Alignment.CenterVertically)
         )
-        val times = day.doses.map { formatTimeOnly(it) }
+        val times = day.entries.map { formatMinutesOfDay(it.minutesOfDay) }
         val shown = times.take(3)
         shown.forEach { t -> TimeChip(t, cycleTinted) }
         if (times.size > 3) {
@@ -494,7 +496,11 @@ private fun CycleDashboardHeader(
             }
             Text(typeLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             val totalWeeks = cycle.totalWeeks
-            if (totalWeeks != null) {
+            if (elapsedDays < 0) {
+                // Cycle created with a start date in the future (picked by week) — it is active
+                // but not running yet, so "running N days" would be nonsense.
+                Text(stringResource(Res.string.today_starts_in_days, (-elapsedDays).toString(), formatFullDate(cycle.startDate)))
+            } else if (totalWeeks != null) {
                 val totalDays = totalWeeks * 7
                 val elapsedWeeks = (elapsedDays / 7) + 1
                 val remainingDays = (totalDays - elapsedDays).coerceAtLeast(0)
@@ -564,6 +570,13 @@ private fun doseTitle(dose: Dose): String {
 
 private fun formatTimeOnly(dose: Dose): String =
     dose.timestamp.toLocalDateTime(TimeZone.currentSystemDefault()).format(timeOnlyFormat)
+
+/** Agenda entries carry a plain minutes-of-day, since a projected dose has no timestamp yet. */
+private fun formatMinutesOfDay(minutes: Int): String {
+    val hour = (minutes / 60).toString().padStart(2, '0')
+    val minute = (minutes % 60).toString().padStart(2, '0')
+    return "$hour:$minute"
+}
 
 @Composable
 private fun doseCountLabel(count: Int): String = when (count) {
