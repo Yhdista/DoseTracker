@@ -15,7 +15,7 @@ interface MedicationDao {
     @Query("SELECT * FROM medications WHERE name LIKE '%' || :query || '%'")
     fun searchMedications(query: String): Flow<List<MedicationEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert
     suspend fun insertMedication(medication: MedicationEntity): Long
 
     @Update

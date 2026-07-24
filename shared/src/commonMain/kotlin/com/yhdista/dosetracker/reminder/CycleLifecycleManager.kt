@@ -18,24 +18,23 @@ class CycleLifecycleManager(
         if (weekIndex < totalWeeks) return
 
         com.yhdista.dosetracker.core.AppLogger.i("CycleLifecycleManager", "Active cycle expired: id=${cycle.id}, name='${cycle.name}', totalWeeks=$totalWeeks, completed on=$today")
-        repository.updateCycle(cycle.copy(status = CycleStatus.COMPLETED))
 
         com.yhdista.dosetracker.core.AppLogger.i("CycleLifecycleManager", "Executing on-complete action: ${cycle.onCompleteAction}")
-        when (cycle.onCompleteAction) {
-            CycleCompleteAction.TO_STANDARD -> {
-                val standard = repository.getStandardCycle() ?: return
-                com.yhdista.dosetracker.core.AppLogger.i("CycleLifecycleManager", "Activating standard cycle: id=${standard.id}")
-                repository.updateCycle(standard.copy(status = CycleStatus.ACTIVE, startDate = today))
-            }
-            CycleCompleteAction.TO_POST -> {
-                val nextId = cycle.nextCycleId ?: return
-                val next = repository.getCycleById(nextId) ?: return
-                com.yhdista.dosetracker.core.AppLogger.i("CycleLifecycleManager", "Activating post cycle: id=${next.id}, name='${next.name}'")
-                repository.updateCycle(next.copy(status = CycleStatus.ACTIVE, startDate = today))
-            }
-            CycleCompleteAction.TO_NONE -> {
-                com.yhdista.dosetracker.core.AppLogger.i("CycleLifecycleManager", "No cycle transition configured.")
-            }
+        val next = when (cycle.onCompleteAction) {
+            CycleCompleteAction.TO_STANDARD -> repository.getStandardCycle()
+            CycleCompleteAction.TO_POST -> cycle.nextCycleId?.let { repository.getCycleById(it) }
+            CycleCompleteAction.TO_NONE -> null
         }
+        if (next != null) {
+            com.yhdista.dosetracker.core.AppLogger.i("CycleLifecycleManager", "Activating next cycle: id=${next.id}, name='${next.name}'")
+        } else {
+            com.yhdista.dosetracker.core.AppLogger.i("CycleLifecycleManager", "No follow-up cycle to activate.")
+        }
+        // Single atomic write: a crash between "complete" and "activate" must not
+        // leave the app without an active cycle.
+        repository.completeAndActivateCycle(
+            cycle.copy(status = CycleStatus.COMPLETED),
+            next?.copy(status = CycleStatus.ACTIVE, startDate = today)
+        )
     }
 }

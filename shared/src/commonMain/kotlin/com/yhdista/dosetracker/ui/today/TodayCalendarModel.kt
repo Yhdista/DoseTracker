@@ -1,6 +1,7 @@
 package com.yhdista.dosetracker.ui.today
 
 import com.yhdista.dosetracker.domain.model.Cycle
+import com.yhdista.dosetracker.domain.model.CycleStatus
 import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.model.Dose
 import kotlinx.datetime.DateTimeUnit
@@ -107,8 +108,13 @@ fun buildTimelineBands(
     for (cycle in otherCycles) {
         if (activeCycle != null && cycle.id == activeCycle.id) continue
         val concreteEnd = cycleEndExclusive(cycle)
-        val reachesFuture = concreteEnd == null || concreteEnd > today
-        val kind = if (reachesFuture) BandKind.FUTURE else BandKind.COMPLETED
+        // Status wins over the computed end: a manually-ended cycle has no reliable
+        // concreteEnd (or one lying in the future) yet is definitively over.
+        val kind = when {
+            cycle.status == CycleStatus.COMPLETED -> BandKind.COMPLETED
+            concreteEnd != null && concreteEnd <= today -> BandKind.COMPLETED
+            else -> BandKind.FUTURE
+        }
 
         // A completed cycle with no computable end (manually-ended STANDARD, unknown end date):
         // cap it at today and fade, since we genuinely don't know when it stopped.

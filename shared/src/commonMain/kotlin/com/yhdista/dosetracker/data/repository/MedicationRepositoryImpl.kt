@@ -6,7 +6,6 @@ import com.yhdista.dosetracker.data.local.dao.CycleDao
 import com.yhdista.dosetracker.data.local.dao.DoseDao
 import com.yhdista.dosetracker.data.local.dao.MedicationDao
 import com.yhdista.dosetracker.data.local.dao.ReminderScheduleDao
-import com.yhdista.dosetracker.data.local.entity.CycleWeekEntity
 import com.yhdista.dosetracker.data.mapper.toDomain
 import com.yhdista.dosetracker.data.mapper.toEntity
 import com.yhdista.dosetracker.domain.model.Cycle
@@ -371,16 +370,24 @@ class MedicationRepositoryImpl(
 
     override suspend fun createCycle(cycle: Cycle): Data<Long> {
         return try {
-            val cycleId = cycleDao.insertCycle(cycle.toEntity())
             val weekCount = cycle.totalWeeks ?: 1
-            for (weekIndex in 0 until weekCount) {
-                cycleDao.insertCycleWeek(CycleWeekEntity(cycleId = cycleId, weekIndex = weekIndex))
-            }
+            val cycleId = cycleDao.insertCycleWithWeeks(cycle.toEntity(), weekCount)
             AppLogger.i("Database", "Created cycle: id=$cycleId, name='${cycle.name}', weeks=$weekCount")
             Data.Success(cycleId)
         } catch (e: Exception) {
             AppLogger.e("Database", "Failed to create cycle '${cycle.name}'", e)
             Data.Error("Failed to create cycle", e)
+        }
+    }
+
+    override suspend fun completeAndActivateCycle(completed: Cycle, activated: Cycle?): Data<Unit> {
+        return try {
+            cycleDao.completeAndActivate(completed.toEntity(), activated?.toEntity())
+            AppLogger.i("Database", "Completed cycle id=${completed.id}, activated cycle id=${activated?.id}")
+            Data.Success(Unit)
+        } catch (e: Exception) {
+            AppLogger.e("Database", "Failed to complete cycle id=${completed.id}", e)
+            Data.Error("Failed to complete cycle", e)
         }
     }
 

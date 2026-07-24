@@ -25,7 +25,7 @@ import com.yhdista.dosetracker.data.local.entity.PeriodTimeEntity
         PeriodTimeEntity::class, CycleEntity::class, CycleWeekEntity::class
     ],
     version = 5,
-    exportSchema = false
+    exportSchema = true
 )
 @TypeConverters(Converters::class)
 @ConstructedBy(AppDatabaseConstructor::class)

@@ -14,6 +14,8 @@ import com.yhdista.dosetracker.domain.model.ReminderSchedule
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -27,9 +29,11 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doSuspendableAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -208,6 +212,36 @@ class DoseGeneratorTest {
         verify(repository).insertDose(
             Dose(medicationId = 10, scheduleId = 1, timestamp = expectedInstant, amount = 100.0, unit = "mg", status = DoseStatus.PENDING)
         )
+    }
+
+    @Test
+    fun `two concurrent runs do not create a duplicate dose for the same schedule and date`() = runTest {
+        val schedule = ReminderSchedule(
+            id = 1, medicationId = 10, minutesOfDay = 480,
+            daysOfWeek = WeekDays.toBitmask(setOf(today.dayOfWeek))
+        )
+        var insertedDose: Dose? = null
+        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        // Models the real DB race: the existence check reads its result, then suspends
+        // before returning, so two unsynchronized runs both observe "no dose yet".
+        whenever(repository.getDoseForScheduleOnDate(eq(1L), eq(today))).doSuspendableAnswer {
+            val current = insertedDose
+            delay(10)
+            current
+        }
+        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
+        whenever(repository.insertDose(any())).doSuspendableAnswer { invocation ->
+            insertedDose = (invocation.arguments[0] as Dose).copy(id = 99L)
+            Data.Success(99L)
+        }
+
+        val first = launch { generator.runForDate(today) }
+        val second = launch { generator.runForDate(today) }
+        first.join()
+        second.join()
+
+        verify(repository, times(1)).insertDose(any())
     }
 
     @Test

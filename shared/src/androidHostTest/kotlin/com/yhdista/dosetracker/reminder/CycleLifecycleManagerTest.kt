@@ -16,6 +16,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -46,7 +47,7 @@ class CycleLifecycleManagerTest {
 
         manager.advance(today)
 
-        verify(repository, never()).updateCycle(any())
+        verify(repository, never()).completeAndActivateCycle(any(), anyOrNull())
     }
 
     @Test
@@ -59,7 +60,7 @@ class CycleLifecycleManagerTest {
 
         manager.advance(today)
 
-        verify(repository, never()).updateCycle(any())
+        verify(repository, never()).completeAndActivateCycle(any(), anyOrNull())
     }
 
     @Test
@@ -72,11 +73,11 @@ class CycleLifecycleManagerTest {
 
         manager.advance(today)
 
-        verify(repository, never()).updateCycle(any())
+        verify(repository, never()).completeAndActivateCycle(any(), anyOrNull())
     }
 
     @Test
-    fun `completes a NORMAL cycle and activates the STANDARD cycle`() = runTest {
+    fun `completes a NORMAL cycle and activates the STANDARD cycle in one atomic call`() = runTest {
         val startDate = LocalDate(2026, 6, 22) // 4 full weeks (28 days) before today
         val cycle = Cycle(
             id = 1, name = "Cyklus", type = CycleType.NORMAL, totalWeeks = 4,
@@ -91,12 +92,15 @@ class CycleLifecycleManagerTest {
 
         manager.advance(today)
 
-        verify(repository).updateCycle(cycle.copy(status = CycleStatus.COMPLETED))
-        verify(repository).updateCycle(standard.copy(status = CycleStatus.ACTIVE, startDate = today))
+        verify(repository).completeAndActivateCycle(
+            cycle.copy(status = CycleStatus.COMPLETED),
+            standard.copy(status = CycleStatus.ACTIVE, startDate = today)
+        )
+        verify(repository, never()).updateCycle(any())
     }
 
     @Test
-    fun `completes a cycle and activates its attached POST cycle`() = runTest {
+    fun `completes a cycle and activates its attached POST cycle in one atomic call`() = runTest {
         val startDate = LocalDate(2026, 6, 22)
         val cycle = Cycle(
             id = 1, name = "Cyklus", type = CycleType.NORMAL, totalWeeks = 4,
@@ -112,8 +116,10 @@ class CycleLifecycleManagerTest {
 
         manager.advance(today)
 
-        verify(repository).updateCycle(cycle.copy(status = CycleStatus.COMPLETED))
-        verify(repository).updateCycle(post.copy(status = CycleStatus.ACTIVE, startDate = today))
+        verify(repository).completeAndActivateCycle(
+            cycle.copy(status = CycleStatus.COMPLETED),
+            post.copy(status = CycleStatus.ACTIVE, startDate = today)
+        )
     }
 
     @Test
@@ -127,9 +133,24 @@ class CycleLifecycleManagerTest {
 
         manager.advance(today)
 
-        verify(repository).updateCycle(post.copy(status = CycleStatus.COMPLETED))
+        verify(repository).completeAndActivateCycle(post.copy(status = CycleStatus.COMPLETED), null)
         verify(repository, never()).getStandardCycle()
         verify(repository, never()).getCycleById(any())
+    }
+
+    @Test
+    fun `completes the cycle even when the TO_STANDARD target is missing`() = runTest {
+        val startDate = LocalDate(2026, 6, 22)
+        val cycle = Cycle(
+            id = 1, name = "Cyklus", type = CycleType.NORMAL, totalWeeks = 4,
+            startDate = startDate, status = CycleStatus.ACTIVE, onCompleteAction = CycleCompleteAction.TO_STANDARD
+        )
+        whenever(repository.getActiveCycleOnce()).thenReturn(cycle)
+        whenever(repository.getStandardCycle()).thenReturn(null)
+
+        manager.advance(today)
+
+        verify(repository).completeAndActivateCycle(cycle.copy(status = CycleStatus.COMPLETED), null)
     }
 
     @Test
@@ -148,6 +169,9 @@ class CycleLifecycleManagerTest {
 
         manager.advance(today)
 
-        verify(repository).updateCycle(standard.copy(status = CycleStatus.ACTIVE, startDate = today))
+        verify(repository).completeAndActivateCycle(
+            cycle.copy(status = CycleStatus.COMPLETED),
+            standard.copy(status = CycleStatus.ACTIVE, startDate = today)
+        )
     }
 }

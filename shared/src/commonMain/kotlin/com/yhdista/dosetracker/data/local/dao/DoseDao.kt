@@ -52,7 +52,9 @@ interface DoseDao {
     """)
     fun getAllDoses(): Flow<List<DoseWithMedication>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    // ABORT (default): a conflict on the unique (scheduleId, timestamp) index must fail
+    // loudly instead of silently replacing the row under a new id and orphaning alarms.
+    @Insert
     suspend fun insertDose(dose: DoseEntity): Long
 
     @Update

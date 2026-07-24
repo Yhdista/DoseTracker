@@ -7,6 +7,8 @@ import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.time.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
@@ -22,11 +24,15 @@ class DoseGenerator(
     private val scheduler: DoseReminderScheduler,
     private val cycleLifecycleManager: CycleLifecycleManager
 ) {
+    // Generation is check-then-insert; concurrent runs (midnight worker, boot worker,
+    // ViewModel triggers) must not interleave or they both pass the existence check.
+    private val runMutex = Mutex()
+
     suspend fun runForToday() {
         runForDate(Clock.System.todayIn(TimeZone.currentSystemDefault()))
     }
 
-    suspend fun runForDate(date: LocalDate) {
+    suspend fun runForDate(date: LocalDate): Unit = runMutex.withLock {
         com.yhdista.dosetracker.core.AppLogger.i("DoseGenerator", "runForDate(date=$date) starting...")
         cycleLifecycleManager.advance(date)
 
