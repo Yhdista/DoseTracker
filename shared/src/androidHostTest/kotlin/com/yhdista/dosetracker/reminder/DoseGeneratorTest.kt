@@ -20,6 +20,9 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -29,6 +32,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doSuspendableAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -212,6 +216,86 @@ class DoseGeneratorTest {
         verify(repository).insertDose(
             Dose(medicationId = 10, scheduleId = 1, timestamp = expectedInstant, amount = 100.0, unit = "mg", status = DoseStatus.PENDING)
         )
+    }
+
+    private fun fixedClock(at: Instant): Clock = object : Clock {
+        override fun now(): Instant = at
+    }
+
+    private val zone = TimeZone.currentSystemDefault()
+
+    @Test
+    fun `sweeps overdue PENDING doses to MISSED before generating`() = runTest {
+        val now = today.atTime(9, 0).toInstant(zone)
+        val gen = DoseGenerator(repository, scheduler, cycleLifecycleManager, fixedClock(now))
+        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(emptyList()))
+        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
+
+        gen.runForDate(today)
+
+        verify(repository).markPendingDosesMissedBefore(now - DoseReminderScheduler.MISSED_TIMEOUT_MINUTES.minutes)
+    }
+
+    @Test
+    fun `arms an immediate reminder for a dose created after its time but still inside the missed window`() = runTest {
+        val schedule = ReminderSchedule(
+            id = 1, medicationId = 10, minutesOfDay = 480,
+            daysOfWeek = WeekDays.toBitmask(setOf(today.dayOfWeek))
+        )
+        val scheduledInstant = today.atTime(8, 0).toInstant(zone)
+        val now = today.atTime(9, 0).toInstant(zone)
+        val gen = DoseGenerator(repository, scheduler, cycleLifecycleManager, fixedClock(now))
+        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(repository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
+        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
+        whenever(repository.insertDose(any())).thenReturn(Data.Success(99L))
+
+        gen.runForDate(today)
+
+        verify(scheduler).scheduleReminder(99, now)
+        verify(scheduler).scheduleMissedTimeout(99, scheduledInstant + DoseReminderScheduler.MISSED_TIMEOUT_MINUTES.minutes)
+    }
+
+    @Test
+    fun `marks a dose created past the missed window as MISSED with no alarms`() = runTest {
+        val schedule = ReminderSchedule(
+            id = 1, medicationId = 10, minutesOfDay = 480,
+            daysOfWeek = WeekDays.toBitmask(setOf(today.dayOfWeek))
+        )
+        val now = today.atTime(11, 0).toInstant(zone) // 8:00 dose + 120 min window ended 10:00
+        val gen = DoseGenerator(repository, scheduler, cycleLifecycleManager, fixedClock(now))
+        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(repository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
+        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
+        whenever(repository.insertDose(any())).thenReturn(Data.Success(99L))
+
+        gen.runForDate(today)
+
+        verify(repository).updateDose(argThat { id == 99L && status == DoseStatus.MISSED })
+        verify(scheduler, never()).scheduleReminder(any(), any())
+        verify(scheduler, never()).scheduleMissedTimeout(any(), any())
+    }
+
+    @Test
+    fun `re-arms an immediate reminder for an existing PENDING dose still inside the missed window`() = runTest {
+        val schedule = ReminderSchedule(
+            id = 1, medicationId = 10, minutesOfDay = 480,
+            daysOfWeek = WeekDays.toBitmask(setOf(today.dayOfWeek))
+        )
+        val scheduledInstant = today.atTime(8, 0).toInstant(zone)
+        val now = today.atTime(9, 0).toInstant(zone)
+        val existing = Dose(id = 5, medicationId = 10, scheduleId = 1, timestamp = scheduledInstant, amount = 100.0, unit = "mg", status = DoseStatus.PENDING)
+        val gen = DoseGenerator(repository, scheduler, cycleLifecycleManager, fixedClock(now))
+        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(repository.getDoseForScheduleOnDate(1, today)).thenReturn(existing)
+
+        gen.runForDate(today)
+
+        verify(scheduler).scheduleReminder(5, now)
+        verify(scheduler).scheduleMissedTimeout(5, scheduledInstant + DoseReminderScheduler.MISSED_TIMEOUT_MINUTES.minutes)
     }
 
     @Test

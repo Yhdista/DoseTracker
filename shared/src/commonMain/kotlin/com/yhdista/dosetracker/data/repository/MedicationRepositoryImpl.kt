@@ -229,6 +229,17 @@ class MedicationRepositoryImpl(
         }
     }
 
+    override suspend fun markPendingDosesMissedBefore(cutoff: Instant): Data<Int> {
+        return try {
+            val count = doseDao.markPendingDosesMissedBefore(cutoff)
+            if (count > 0) AppLogger.i("Database", "Swept $count overdue PENDING doses to MISSED (cutoff=$cutoff)")
+            Data.Success(count)
+        } catch (e: Exception) {
+            AppLogger.e("Database", "Failed to sweep overdue doses", e)
+            Data.Error("Failed to sweep overdue doses", e)
+        }
+    }
+
     override fun getSchedulesForMedication(medicationId: Long): Flow<Data<List<ReminderSchedule>>> {
         return scheduleDao.getSchedulesForMedication(medicationId)
             .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<ReminderSchedule>> }

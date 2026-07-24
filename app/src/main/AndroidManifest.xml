@@ -58,6 +58,9 @@
                 <!-- API 31-32: fired when the user re-grants SCHEDULE_EXACT_ALARM;
                      revocation cancelled all alarms, so re-arm everything. -->
                 <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+                <!-- RTC alarms point at wrong wall-clock times after these. -->
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
             </intent-filter>
         </receiver>
 

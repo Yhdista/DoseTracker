@@ -11,6 +11,7 @@ import com.yhdista.dosetracker.di.appModule
 import com.yhdista.dosetracker.di.dataModule
 import com.yhdista.dosetracker.di.viewModelModule
 import com.yhdista.dosetracker.reminder.RescheduleWorker
+import com.yhdista.dosetracker.reminder.scheduleNextMidnightAlarm
 import kotlin.time.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
@@ -46,6 +47,9 @@ class DoseTrackerApp : Application(), Configuration.Provider {
             workManagerFactory()
             modules(appModule, dataModule, viewModelModule)
         }
+        // Exact midnight alarm is the primary daily-generation trigger; the periodic
+        // worker below stays as a drift-tolerant fallback.
+        scheduleNextMidnightAlarm(this)
         scheduleDailyDoseGeneration(this)
     }
 

@@ -22,19 +22,25 @@ import kotlin.time.Duration.Companion.minutes
 class DoseGenerator(
     private val repository: MedicationRepository,
     private val scheduler: DoseReminderScheduler,
-    private val cycleLifecycleManager: CycleLifecycleManager
+    private val cycleLifecycleManager: CycleLifecycleManager,
+    private val clock: Clock = Clock.System
 ) {
     // Generation is check-then-insert; concurrent runs (midnight worker, boot worker,
     // ViewModel triggers) must not interleave or they both pass the existence check.
     private val runMutex = Mutex()
 
     suspend fun runForToday() {
-        runForDate(Clock.System.todayIn(TimeZone.currentSystemDefault()))
+        runForDate(clock.todayIn(TimeZone.currentSystemDefault()))
     }
 
     suspend fun runForDate(date: LocalDate): Unit = runMutex.withLock {
         com.yhdista.dosetracker.core.AppLogger.i("DoseGenerator", "runForDate(date=$date) starting...")
+        val now = clock.now()
         cycleLifecycleManager.advance(date)
+
+        // Doses whose missed window already closed (lost alarms, delayed generation runs)
+        // would otherwise stay PENDING forever — nothing else ever revisits them.
+        repository.markPendingDosesMissedBefore(now - DoseReminderScheduler.MISSED_TIMEOUT_MINUTES.minutes)
 
         val schedulesData = repository.getEnabledSchedules()
         if (schedulesData !is Data.Success) {
@@ -44,7 +50,6 @@ class DoseGenerator(
         val schedules = schedulesData.data
         val periodTimes = repository.getPeriodTimesOnce()
         val zone = TimeZone.currentSystemDefault()
-        val now = Clock.System.now()
         val activeCycle = repository.getActiveCycleOnce()
         val activeCycleWeekId = resolveActiveCycleWeekId(activeCycle, date)
 
@@ -73,13 +78,8 @@ class DoseGenerator(
                 val newDose = createDose(schedule.medicationId, schedule.id, scheduledInstant, cycleId)
                 if (newDose != null) {
                     com.yhdista.dosetracker.core.AppLogger.i("DoseGenerator", "Created new dose: id=${newDose.id}, medicationId=${newDose.medicationId}, time=$scheduledInstant")
-                    if (newDose.status == DoseStatus.PENDING && scheduledInstant > now) {
-                        com.yhdista.dosetracker.core.AppLogger.d("DoseGenerator", "Scheduling reminder and missed timeout alarms for new dose id=${newDose.id}")
-                        scheduler.scheduleReminder(newDose.id, scheduledInstant)
-                        scheduler.scheduleMissedTimeout(
-                            newDose.id,
-                            scheduledInstant + DoseReminderScheduler.MISSED_TIMEOUT_MINUTES.minutes
-                        )
+                    if (newDose.status == DoseStatus.PENDING) {
+                        armAlarms(newDose, scheduledInstant, now)
                     }
                 }
             } else {
@@ -95,27 +95,40 @@ class DoseGenerator(
                         val updatedDose = existingDose.copy(timestamp = scheduledInstant)
                         repository.updateDose(updatedDose)
 
-                        // Schedule new alarms
-                        if (scheduledInstant > now) {
-                            scheduler.scheduleReminder(existingDose.id, scheduledInstant)
-                            scheduler.scheduleMissedTimeout(
-                                existingDose.id,
-                                scheduledInstant + DoseReminderScheduler.MISSED_TIMEOUT_MINUTES.minutes
-                            )
-                        }
-                    } else if (scheduledInstant > now) {
-                        // Just make sure it is scheduled (for boot or re-arm)
+                        armAlarms(updatedDose, scheduledInstant, now)
+                    } else {
+                        // Make sure alarms exist (boot, lost alarms, late generation).
                         com.yhdista.dosetracker.core.AppLogger.d("DoseGenerator", "Verifying scheduling for pending dose id=${existingDose.id} at time=$scheduledInstant")
-                        scheduler.scheduleReminder(existingDose.id, scheduledInstant)
-                        scheduler.scheduleMissedTimeout(
-                            existingDose.id,
-                            scheduledInstant + DoseReminderScheduler.MISSED_TIMEOUT_MINUTES.minutes
-                        )
+                        armAlarms(existingDose, scheduledInstant, now)
                     }
                 }
             }
         }
         com.yhdista.dosetracker.core.AppLogger.i("DoseGenerator", "runForDate(date=$date) finished")
+    }
+
+    /**
+     * Future dose: exact alarms at its time and at the missed deadline. Past dose still
+     * inside the missed window: remind immediately, keep the original deadline. Past the
+     * window: mark MISSED — no alarm will ever fire for it.
+     */
+    private suspend fun armAlarms(dose: Dose, scheduledInstant: Instant, now: Instant) {
+        val missedAt = scheduledInstant + DoseReminderScheduler.MISSED_TIMEOUT_MINUTES.minutes
+        when {
+            scheduledInstant > now -> {
+                scheduler.scheduleReminder(dose.id, scheduledInstant)
+                scheduler.scheduleMissedTimeout(dose.id, missedAt)
+            }
+            missedAt > now -> {
+                com.yhdista.dosetracker.core.AppLogger.i("DoseGenerator", "Dose id=${dose.id} is late but inside the missed window; reminding now")
+                scheduler.scheduleReminder(dose.id, now)
+                scheduler.scheduleMissedTimeout(dose.id, missedAt)
+            }
+            else -> {
+                com.yhdista.dosetracker.core.AppLogger.i("DoseGenerator", "Dose id=${dose.id} missed its window; marking MISSED")
+                repository.updateDose(dose.copy(status = DoseStatus.MISSED))
+            }
+        }
     }
 
     private suspend fun resolveActiveCycleWeekId(activeCycle: Cycle?, date: LocalDate): Long? {

@@ -32,6 +32,9 @@ interface MedicationRepository {
     suspend fun insertDose(dose: Dose): Data<Long>
     suspend fun updateDose(dose: Dose): Data<Unit>
 
+    /** Marks every PENDING dose scheduled at or before [cutoff] as MISSED; returns the count. */
+    suspend fun markPendingDosesMissedBefore(cutoff: Instant): Data<Int>
+
     fun getSchedulesForMedication(medicationId: Long): Flow<Data<List<ReminderSchedule>>>
     fun getSchedulesForCycleWeek(cycleWeekId: Long): Flow<Data<List<ReminderSchedule>>>
     suspend fun getEnabledSchedules(): Data<List<ReminderSchedule>>
