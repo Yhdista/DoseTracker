@@ -37,8 +37,13 @@ sealed interface AddDoseEvent {
 class AddDoseViewModel(
     private val medicationRepository: MedicationRepository,
     private val doseRepository: DoseRepository,
+    medicationId: Long,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    init {
+        savedStateHandle["medicationId"] = medicationId
+    }
 
     private val medicationIdFlow = savedStateHandle.getStateFlow<Long?>("medicationId", null)
 
@@ -67,12 +72,6 @@ class AddDoseViewModel(
                     "State updated: medication=$medDesc, amount=${s.amount}, time=${s.time}, isSuccess=${s.isSuccess}, error=${s.error}"
                 )
             }
-        }
-    }
-
-    fun setMedicationId(id: Long) {
-        if (savedStateHandle.get<Long>("medicationId") == null) {
-            savedStateHandle["medicationId"] = id
         }
     }
 

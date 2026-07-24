@@ -56,6 +56,7 @@ import com.yhdista.dosetracker.ui.settings.SettingsScreen
 import com.yhdista.dosetracker.ui.settings.SettingsViewModel
 import com.yhdista.dosetracker.ui.debug.*
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class, ExperimentalMaterial3AdaptiveNavigationSuiteApi::class)
 @Composable
@@ -218,7 +219,7 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                     ) {
                         AddDoseScreen(
                             medicationId = destination.medicationId,
-                            viewModel = koinViewModel<AddDoseViewModel>(),
+                            viewModel = koinViewModel<AddDoseViewModel> { parametersOf(destination.medicationId) },
                             onBack = { backstack.removeLastOrNull() }
                         )
                     }
@@ -230,7 +231,7 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                     ) {
                         MedicationDetailScreen(
                             medicationId = destination.id,
-                            viewModel = koinViewModel<MedicationDetailViewModel>(),
+                            viewModel = koinViewModel<MedicationDetailViewModel> { parametersOf(destination.id) },
                             onBack = { backstack.removeLastOrNull() }
                         )
                     }
@@ -242,7 +243,7 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                     ) {
                         ConfirmDoseScreen(
                             doseId = destination.doseId,
-                            viewModel = koinViewModel<ConfirmDoseViewModel>(),
+                            viewModel = koinViewModel<ConfirmDoseViewModel> { parametersOf(destination.doseId) },
                             onBack = { backstack.removeLastOrNull() },
                             onNavigateToMedicationDetail = { medicationId ->
                                 backstack.removeLastOrNull()
@@ -258,7 +259,7 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                     ) {
                         MedicationReportScreen(
                             medicationId = destination.medicationId,
-                            viewModel = koinViewModel<MedicationReportViewModel>(),
+                            viewModel = koinViewModel<MedicationReportViewModel> { parametersOf(destination.medicationId) },
                             onBack = { backstack.removeLastOrNull() }
                         )
                     }
@@ -288,7 +289,7 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                         CycleWeekEditorScreen(
                             cycleId = destination.cycleId,
                             weekIndex = destination.weekIndex,
-                            viewModel = koinViewModel<CycleWeekEditorViewModel>(),
+                            viewModel = koinViewModel<CycleWeekEditorViewModel> { parametersOf(destination.cycleId, destination.weekIndex) },
                             onBack = { backstack.removeLastOrNull() }
                         )
                     }
@@ -300,7 +301,7 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                     ) {
                         CycleWeekListScreen(
                             cycleId = destination.cycleId,
-                            viewModel = koinViewModel<CycleWeekListViewModel>(),
+                            viewModel = koinViewModel<CycleWeekListViewModel> { parametersOf(destination.cycleId) },
                             onBack = { backstack.removeLastOrNull() },
                             onWeekClick = { weekIndex ->
                                 backstack.add(Destination.CycleWeekEditor(destination.cycleId, weekIndex))

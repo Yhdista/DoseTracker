@@ -15,7 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.ui.common.DataContent
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.format
@@ -52,30 +52,18 @@ fun ReportScreen(viewModel: ReportViewModel, onMedicationClick: (Long) -> Unit) 
                 }
             }
 
-            when (val result = state.summaries) {
-                is Data.Loading -> {
+            DataContent(state.summaries) { summaries ->
+                if (summaries.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        Text("No doses this week")
                     }
-                }
-                is Data.Error -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Error: ${result.message}")
-                    }
-                }
-                is Data.Success -> {
-                    if (result.data.isEmpty()) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No doses this week")
-                        }
-                    } else {
-                        LazyColumn(
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(result.data) { summary ->
-                                MedicationSummaryCard(summary, onClick = { onMedicationClick(summary.medicationId) })
-                            }
+                } else {
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(summaries) { summary ->
+                            MedicationSummaryCard(summary, onClick = { onMedicationClick(summary.medicationId) })
                         }
                     }
                 }

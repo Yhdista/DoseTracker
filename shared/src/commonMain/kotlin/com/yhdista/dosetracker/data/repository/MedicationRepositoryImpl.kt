@@ -8,10 +8,8 @@ import com.yhdista.dosetracker.data.mapper.toEntity
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 
 internal class MedicationRepositoryImpl(
     private val medicationDao: MedicationDao
@@ -19,25 +17,17 @@ internal class MedicationRepositoryImpl(
 
     override fun getMedications(): Flow<Data<List<Medication>>> {
         return medicationDao.getAllMedications()
-            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Medication>> }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to fetch medications", e)
-                emit(Data.Error("Failed to fetch medications", e))
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) }
+            .withLoadingAndErrors("Failed to fetch medications")
     }
 
     override fun getMedicationById(id: Long): Flow<Data<Medication>> {
         return medicationDao.getMedicationById(id)
             .map { entity ->
-                if (entity != null) Data.Success(entity.toDomain()) as Data<Medication>
+                if (entity != null) Data.Success(entity.toDomain())
                 else Data.Error("Medication not found")
             }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to fetch medication $id", e)
-                emit(Data.Error("Failed to fetch medication", e))
-            }
+            .withLoadingAndErrors("Failed to fetch medication")
     }
 
     override suspend fun getMedicationOnce(id: Long): Medication? {
@@ -79,11 +69,7 @@ internal class MedicationRepositoryImpl(
 
     override fun searchMedications(query: String): Flow<Data<List<Medication>>> {
         return medicationDao.searchMedications(query)
-            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Medication>> }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to search medications with query '$query'", e)
-                emit(Data.Error("Failed to search medications", e))
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) }
+            .withLoadingAndErrors("Failed to search medications")
     }
 }

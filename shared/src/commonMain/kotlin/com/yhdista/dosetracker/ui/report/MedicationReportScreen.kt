@@ -35,10 +35,6 @@ fun MedicationReportScreen(
     val state by viewModel.uiState.collectAsState()
     var selectedWeek by remember { mutableStateOf<LocalDate?>(null) }
 
-    LaunchedEffect(medicationId) {
-        viewModel.setMedicationId(medicationId)
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(

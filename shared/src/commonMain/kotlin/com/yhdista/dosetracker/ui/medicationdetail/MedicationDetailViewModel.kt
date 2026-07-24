@@ -53,8 +53,13 @@ class MedicationDetailViewModel(
     private val settingsRepository: SettingsRepository,
     private val scheduler: DoseReminderScheduler,
     private val doseGenerator: DoseGenerator,
+    medicationId: Long,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    init {
+        savedStateHandle["medicationId"] = medicationId
+    }
 
     private val medicationIdFlow = savedStateHandle.getStateFlow<Long?>("medicationId", null)
 
@@ -88,12 +93,6 @@ class MedicationDetailViewModel(
                 }
                 com.yhdista.dosetracker.core.AppLogger.d("MedicationDetailViewModel", "State updated: medication=$medDesc, schedules=$schedulesDesc, timeType=${state.defaultTimeType}")
             }
-        }
-    }
-
-    fun setMedicationId(id: Long) {
-        if (savedStateHandle.get<Long>("medicationId") == null) {
-            savedStateHandle["medicationId"] = id
         }
     }
 

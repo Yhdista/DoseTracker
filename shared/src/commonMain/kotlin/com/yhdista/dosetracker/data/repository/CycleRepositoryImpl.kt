@@ -9,9 +9,7 @@ import com.yhdista.dosetracker.domain.model.Cycle
 import com.yhdista.dosetracker.domain.model.CycleWeek
 import com.yhdista.dosetracker.domain.repository.CycleRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 
 internal class CycleRepositoryImpl(
     private val cycleDao: CycleDao
@@ -19,12 +17,8 @@ internal class CycleRepositoryImpl(
 
     override fun getActiveCycle(): Flow<Data<Cycle?>> {
         return cycleDao.getActiveCycleFlow()
-            .map { entity -> Data.Success(entity?.toDomain()) as Data<Cycle?> }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to fetch active cycle", e)
-                emit(Data.Error("Failed to fetch active cycle", e))
-            }
+            .map { entity -> Data.Success(entity?.toDomain()) }
+            .withLoadingAndErrors("Failed to fetch active cycle")
     }
 
     override suspend fun getActiveCycleOnce(): Cycle? {
@@ -41,12 +35,8 @@ internal class CycleRepositoryImpl(
 
     override fun getCompletedCycles(): Flow<Data<List<Cycle>>> {
         return cycleDao.getCompletedCycles()
-            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Cycle>> }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to fetch completed cycles", e)
-                emit(Data.Error("Failed to fetch completed cycles", e))
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) }
+            .withLoadingAndErrors("Failed to fetch completed cycles")
     }
 
     override suspend fun createCycle(cycle: Cycle): Data<Long> {
@@ -85,12 +75,8 @@ internal class CycleRepositoryImpl(
 
     override fun getWeeksForCycle(cycleId: Long): Flow<Data<List<CycleWeek>>> {
         return cycleDao.getWeeksForCycle(cycleId)
-            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<CycleWeek>> }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to fetch cycle weeks for cycleId=$cycleId", e)
-                emit(Data.Error("Failed to fetch cycle weeks", e))
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) }
+            .withLoadingAndErrors("Failed to fetch cycle weeks")
     }
 
     override suspend fun getCycleWeek(cycleId: Long, weekIndex: Int): CycleWeek? {

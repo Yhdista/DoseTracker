@@ -32,8 +32,13 @@ sealed interface ConfirmDoseEvent {
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConfirmDoseViewModel(
     private val doseRepository: DoseRepository,
+    doseId: Long,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    init {
+        savedStateHandle["doseId"] = doseId
+    }
 
     private val doseIdFlow = savedStateHandle.getStateFlow<Long?>("doseId", null)
 
@@ -71,12 +76,6 @@ class ConfirmDoseViewModel(
                 }
                 com.yhdista.dosetracker.core.AppLogger.d("ConfirmDoseViewModel", "State updated: dose=$doseDesc, amount=${s.amount}, time=${s.time}, isSuccess=${s.isSuccess}, error=${s.error}")
             }
-        }
-    }
-
-    fun setDoseId(id: Long) {
-        if (savedStateHandle.get<Long>("doseId") == null) {
-            savedStateHandle["doseId"] = id
         }
     }
 

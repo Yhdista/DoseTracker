@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
 import com.yhdista.dosetracker.reminder.WeekDays
+import com.yhdista.dosetracker.ui.common.DataContent
 import com.yhdista.dosetracker.ui.schedule.ScheduleDialog
 import com.yhdista.dosetracker.ui.schedule.formatMinutes
 import kotlin.time.Clock
@@ -44,10 +45,6 @@ fun MedicationDetailScreen(
     var showPeriodSettings by remember { mutableStateOf(false) }
 
     val periodTimes = (state.periodTimes as? Data.Success)?.data ?: emptyMap()
-
-    LaunchedEffect(medicationId) {
-        viewModel.setMedicationId(medicationId)
-    }
 
     Scaffold(
         topBar = {
@@ -128,36 +125,26 @@ fun MedicationDetailScreen(
             )
         }
 
-        when (val result = state.schedules) {
-            is Data.Loading -> {
+        DataContent(state.schedules, Modifier.padding(padding)) { schedules ->
+            if (schedules.isEmpty()) {
                 Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    Text("No reminders yet")
                 }
-            }
-            is Data.Error -> {
-                Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Error: ${result.message}")
-                }
-            }
-            is Data.Success -> {
-                if (result.data.isEmpty()) {
-                    Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No reminders yet")
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.padding(padding).fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(result.data, key = { it.id }) { schedule ->
-                            ScheduleRow(
-                                schedule = schedule,
-                                periodTimes = periodTimes,
-                                onClick = { editingSchedule = schedule },
-                                onDelete = { viewModel.onEvent(MedicationDetailEvent.DeleteSchedule(schedule)) }
-                            )
-                        }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .padding(padding)
+                        .fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(schedules, key = { it.id }) { schedule ->
+                        ScheduleRow(
+                            schedule = schedule,
+                            periodTimes = periodTimes,
+                            onClick = { editingSchedule = schedule },
+                            onDelete = { viewModel.onEvent(MedicationDetailEvent.DeleteSchedule(schedule)) }
+                        )
                     }
                 }
             }

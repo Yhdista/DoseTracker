@@ -52,8 +52,15 @@ class CycleWeekEditorViewModel(
     private val cycleRepository: CycleRepository,
     private val settingsRepository: SettingsRepository,
     private val doseGenerator: DoseGenerator,
+    cycleId: Long,
+    weekIndex: Int,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    init {
+        savedStateHandle["cycleId"] = cycleId
+        savedStateHandle["weekIndex"] = weekIndex
+    }
 
     private val cycleIdFlow = savedStateHandle.getStateFlow<Long?>("cycleId", null)
     private val weekIndexFlow = savedStateHandle.getStateFlow<Int?>("weekIndex", null)
@@ -118,13 +125,6 @@ class CycleWeekEditorViewModel(
                     "State updated: weekId=${state.weekId}, weekIndex=${weekIndexFlow.value}, cycle=$cycleDesc, schedules=$schedulesDesc, medications=$medicationsDesc, periodTimes=$periodTimesDesc, defaultTimeType=${state.defaultTimeType}"
                 )
             }
-        }
-    }
-
-    fun setCycleWeek(cycleId: Long, weekIndex: Int) {
-        if (savedStateHandle.get<Long>("cycleId") == null) {
-            savedStateHandle["cycleId"] = cycleId
-            savedStateHandle["weekIndex"] = weekIndex
         }
     }
 

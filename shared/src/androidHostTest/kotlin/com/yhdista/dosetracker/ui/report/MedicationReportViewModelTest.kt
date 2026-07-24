@@ -72,9 +72,8 @@ class MedicationReportViewModelTest {
         whenever(medicationRepository.getMedicationById(10)).thenReturn(flowOf(Data.Success(Medication(id = 10, name = "Aspirin", dosage = 500.0, unit = MedicationUnit.MG))))
         whenever(doseRepository.getDosesForMedicationInRange(eq(10L), any(), any())).thenReturn(flowOf(Data.Success(doses)))
 
-        val viewModel = MedicationReportViewModel(medicationRepository, doseRepository, SavedStateHandle())
+        val viewModel = MedicationReportViewModel(medicationRepository, doseRepository, 10, SavedStateHandle())
         val job = launch { viewModel.uiState.collect {} }
-        viewModel.setMedicationId(10)
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -96,9 +95,8 @@ class MedicationReportViewModelTest {
         whenever(medicationRepository.getMedicationById(any())).thenReturn(flowOf(Data.Success(Medication(id = 10, name = "Aspirin", dosage = 500.0, unit = MedicationUnit.MG))))
         whenever(doseRepository.getDosesForMedicationInRange(any(), any(), any())).thenReturn(flowOf(Data.Success(emptyList())))
 
-        val viewModel = MedicationReportViewModel(medicationRepository, doseRepository, SavedStateHandle())
+        val viewModel = MedicationReportViewModel(medicationRepository, doseRepository, 10, SavedStateHandle())
         val job = launch { viewModel.uiState.collect {} }
-        viewModel.setMedicationId(10)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(ReportRangeMode.MONTH, viewModel.uiState.value.mode)

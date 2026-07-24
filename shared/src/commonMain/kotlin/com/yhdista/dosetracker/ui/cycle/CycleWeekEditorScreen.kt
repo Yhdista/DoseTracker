@@ -35,10 +35,6 @@ fun CycleWeekEditorScreen(
     var editingSchedule by remember { mutableStateOf<ReminderSchedule?>(null) }
     var pickingMedication by remember { mutableStateOf(false) }
 
-    LaunchedEffect(cycleId, weekIndex) {
-        viewModel.setCycleWeek(cycleId, weekIndex)
-    }
-
     val periodTimes = (state.periodTimes as? Data.Success)?.data ?: emptyMap()
     val medications = (state.medications as? Data.Success)?.data ?: emptyList()
     val medicationNames = medications.associate { it.id to it.name }

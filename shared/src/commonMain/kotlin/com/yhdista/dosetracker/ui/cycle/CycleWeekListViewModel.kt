@@ -22,8 +22,13 @@ data class CycleWeekListState(
 @OptIn(ExperimentalCoroutinesApi::class)
 class CycleWeekListViewModel(
     private val cycleRepository: CycleRepository,
+    cycleId: Long,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    init {
+        savedStateHandle["cycleId"] = cycleId
+    }
 
     private val cycleIdFlow = savedStateHandle.getStateFlow<Long?>("cycleId", null)
 
@@ -38,9 +43,4 @@ class CycleWeekListViewModel(
             initialValue = CycleWeekListState()
         )
 
-    fun setCycleId(cycleId: Long) {
-        if (savedStateHandle.get<Long>("cycleId") == null) {
-            savedStateHandle["cycleId"] = cycleId
-        }
-    }
 }

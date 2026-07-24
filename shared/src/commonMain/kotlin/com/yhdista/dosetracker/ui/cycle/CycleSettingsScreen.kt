@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.Cycle
+import com.yhdista.dosetracker.ui.common.DataContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,34 +51,21 @@ fun CycleSettingsScreen(
             )
         }
     ) { padding ->
-        when (val result = state) {
-            is Data.Loading -> {
+        DataContent(state, Modifier.padding(padding)) { cycle ->
+            if (cycle == null) {
                 Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
-            }
-            is Data.Error -> {
-                Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Chyba: ${result.message}")
-                }
-            }
-            is Data.Success -> {
-                val cycle = result.data
-                if (cycle == null) {
-                    Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                } else {
-                    CycleSettingsList(
-                        cycle = cycle,
-                        modifier = Modifier.padding(padding),
-                        onRename = viewModel::rename,
-                        onOpenHistory = onNavigateToCycleHistory,
-                        onAddFollowUp = onNavigateToCreateCycle,
-                        onManageWeeks = { onNavigateToManageWeeks(cycle.id) },
-                        onEndCycle = { viewModel.endCycle() }
-                    )
-                }
+            } else {
+                CycleSettingsList(
+                    cycle = cycle,
+                    modifier = Modifier.padding(padding),
+                    onRename = viewModel::rename,
+                    onOpenHistory = onNavigateToCycleHistory,
+                    onAddFollowUp = onNavigateToCreateCycle,
+                    onManageWeeks = { onNavigateToManageWeeks(cycle.id) },
+                    onEndCycle = { viewModel.endCycle() }
+                )
             }
         }
     }

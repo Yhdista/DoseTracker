@@ -20,16 +20,20 @@ import org.koin.dsl.module
 
 val viewModelModule = module {
     viewModel { MedicationCatalogViewModel(get(), get()) }
-    viewModel { AddDoseViewModel(get(), get(), get()) }
+    viewModel { (medicationId: Long) -> AddDoseViewModel(get(), get(), medicationId, get()) }
     viewModel { HistoryViewModel(get(), get()) }
     viewModel { TodayViewModel(get(), get(), get()) }
-    viewModel { MedicationDetailViewModel(get(), get(), get(), get(), get(), get(), get()) }
-    viewModel { ConfirmDoseViewModel(get(), get()) }
+    viewModel { (medicationId: Long) ->
+        MedicationDetailViewModel(get(), get(), get(), get(), get(), get(), medicationId, get())
+    }
+    viewModel { (doseId: Long) -> ConfirmDoseViewModel(get(), doseId, get()) }
     viewModel { ReportViewModel(get()) }
-    viewModel { MedicationReportViewModel(get(), get(), get()) }
+    viewModel { (medicationId: Long) -> MedicationReportViewModel(get(), get(), medicationId, get()) }
     viewModel { CreateCycleViewModel(get(), get()) }
-    viewModel { CycleWeekEditorViewModel(get(), get(), get(), get(), get(), get()) }
-    viewModel { CycleWeekListViewModel(get(), get()) }
+    viewModel { (cycleId: Long, weekIndex: Int) ->
+        CycleWeekEditorViewModel(get(), get(), get(), get(), get(), cycleId, weekIndex, get())
+    }
+    viewModel { (cycleId: Long) -> CycleWeekListViewModel(get(), cycleId, get()) }
     viewModel { CycleHistoryViewModel(get()) }
     viewModel { CycleSettingsViewModel(get()) }
     viewModel { SettingsViewModel(get(), get()) }

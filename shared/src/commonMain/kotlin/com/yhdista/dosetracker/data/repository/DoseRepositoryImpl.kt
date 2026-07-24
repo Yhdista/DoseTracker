@@ -8,9 +8,7 @@ import com.yhdista.dosetracker.data.mapper.toEntity
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.repository.DoseRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
@@ -27,12 +25,8 @@ internal class DoseRepositoryImpl(
 
     override fun getDosesForMedication(medicationId: Long): Flow<Data<List<Dose>>> {
         return doseDao.getDosesForMedication(medicationId)
-            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Dose>> }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to fetch doses for medication $medicationId", e)
-                emit(Data.Error("Failed to fetch doses", e))
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) }
+            .withLoadingAndErrors("Failed to fetch doses")
     }
 
     override fun getDosesForDate(date: LocalDate): Flow<Data<List<Dose>>> {
@@ -41,12 +35,8 @@ internal class DoseRepositoryImpl(
         val endOfDay = date.atTime(LocalTime(23, 59, 59, 999_000_000)).toInstant(zone).toEpochMilliseconds()
 
         return doseDao.getDosesInTimeRange(startOfDay, endOfDay)
-            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Dose>> }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to fetch doses for date $date", e)
-                emit(Data.Error("Failed to fetch doses for date", e))
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) }
+            .withLoadingAndErrors("Failed to fetch doses for date")
     }
 
     override fun getDosesInWeek(weekStart: LocalDate): Flow<Data<List<Dose>>> {
@@ -55,12 +45,8 @@ internal class DoseRepositoryImpl(
         val endOfWeek = weekStart.plus(7, DateTimeUnit.DAY).atStartOfDayIn(zone).toEpochMilliseconds() - 1
 
         return doseDao.getDosesInTimeRange(startOfWeek, endOfWeek)
-            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Dose>> }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to fetch doses for week starting $weekStart", e)
-                emit(Data.Error("Failed to fetch doses for week", e))
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) }
+            .withLoadingAndErrors("Failed to fetch doses for week")
     }
 
     override fun getDosesForMedicationInRange(medicationId: Long, start: LocalDate, endExclusive: LocalDate): Flow<Data<List<Dose>>> {
@@ -69,12 +55,8 @@ internal class DoseRepositoryImpl(
         val endMillis = endExclusive.atStartOfDayIn(zone).toEpochMilliseconds() - 1
 
         return doseDao.getDosesForMedicationInTimeRange(medicationId, startMillis, endMillis)
-            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Dose>> }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to fetch doses for medication $medicationId in range $start..$endExclusive", e)
-                emit(Data.Error("Failed to fetch doses for medication in range", e))
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) }
+            .withLoadingAndErrors("Failed to fetch doses for medication in range")
     }
 
     override fun getDosesInRange(start: LocalDate, endExclusive: LocalDate): Flow<Data<List<Dose>>> {
@@ -83,22 +65,14 @@ internal class DoseRepositoryImpl(
         val endMillis = endExclusive.atStartOfDayIn(zone).toEpochMilliseconds() - 1
 
         return doseDao.getDosesInTimeRange(startMillis, endMillis)
-            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Dose>> }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to fetch doses in range $start..$endExclusive", e)
-                emit(Data.Error("Failed to fetch doses in range", e))
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) }
+            .withLoadingAndErrors("Failed to fetch doses in range")
     }
 
     override fun getAllDoses(): Flow<Data<List<Dose>>> {
         return doseDao.getAllDoses()
-            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<Dose>> }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to fetch all doses", e)
-                emit(Data.Error("Failed to fetch all doses", e))
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) }
+            .withLoadingAndErrors("Failed to fetch all doses")
     }
 
     override suspend fun getDoseOnce(id: Long): Dose? {
@@ -108,14 +82,10 @@ internal class DoseRepositoryImpl(
     override fun getDoseById(id: Long): Flow<Data<Dose>> {
         return doseDao.getDoseWithMedicationByIdFlow(id)
             .map { entity ->
-                if (entity != null) Data.Success(entity.toDomain()) as Data<Dose>
+                if (entity != null) Data.Success(entity.toDomain())
                 else Data.Error("Dose not found")
             }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to fetch dose by id $id", e)
-                emit(Data.Error("Failed to fetch dose", e))
-            }
+            .withLoadingAndErrors("Failed to fetch dose")
     }
 
     override suspend fun getDoseForSchedule(scheduleId: Long, timestamp: Instant): Dose? {

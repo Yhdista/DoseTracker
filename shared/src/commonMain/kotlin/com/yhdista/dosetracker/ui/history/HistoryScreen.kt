@@ -11,7 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.ui.common.DataContent
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
@@ -30,33 +30,20 @@ fun HistoryScreen(
             TopAppBar(title = { Text("Dose History", fontWeight = FontWeight.Bold) })
         }
     ) { padding ->
-        when (val result = state.dosesWithMeds) {
-            is Data.Loading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+        DataContent(state.dosesWithMeds, Modifier.padding(padding)) { items ->
+            if (items.isEmpty()) {
+                Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No history found")
                 }
-            }
-            is Data.Error -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Error: ${result.message}")
-                }
-            }
-            is Data.Success -> {
-                val items = result.data
-                if (items.isEmpty()) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No history found")
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .padding(padding)
-                            .fillMaxSize()
-                    ) {
-                        items(items) { item ->
-                            HistoryItem(item)
-                            HorizontalDivider()
-                        }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .padding(padding)
+                        .fillMaxSize()
+                ) {
+                    items(items) { item ->
+                        HistoryItem(item)
+                        HorizontalDivider()
                     }
                 }
             }

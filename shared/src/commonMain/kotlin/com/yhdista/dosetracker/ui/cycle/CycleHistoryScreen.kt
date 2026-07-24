@@ -13,8 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.CycleType
+import com.yhdista.dosetracker.ui.common.DataContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,34 +36,22 @@ fun CycleHistoryScreen(
             )
         }
     ) { padding ->
-        when (val result = state) {
-            is Data.Loading -> {
+        DataContent(state, Modifier.padding(padding)) { cycles ->
+            if (cycles.isEmpty()) {
                 Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    Text("Žádný dokončený cyklus")
                 }
-            }
-            is Data.Error -> {
-                Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Chyba: ${result.message}")
-                }
-            }
-            is Data.Success -> {
-                if (result.data.isEmpty()) {
-                    Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Žádný dokončený cyklus")
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.padding(padding).fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(result.data, key = { it.id }) { cycle ->
-                            ListItem(
-                                headlineContent = { Text(cycle.name) },
-                                supportingContent = { Text("${cycleTypeLabel(cycle.type)} - začátek ${cycle.startDate}") }
-                            )
-                        }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.padding(padding).fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(cycles, key = { it.id }) { cycle ->
+                        ListItem(
+                            headlineContent = { Text(cycle.name) },
+                            supportingContent = { Text("${cycleTypeLabel(cycle.type)} - začátek ${cycle.startDate}") }
+                        )
                     }
                 }
             }

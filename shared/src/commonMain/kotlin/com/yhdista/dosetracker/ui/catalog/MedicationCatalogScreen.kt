@@ -16,9 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.model.MedicationUnit
+import com.yhdista.dosetracker.ui.common.DataContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,34 +76,21 @@ fun MedicationCatalogScreen(
                 )
             }
 
-            when (val result = state.medications) {
-                is Data.Loading -> {
+            DataContent(state.medications) { medications ->
+                if (medications.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        Text("No medications found")
                     }
-                }
-                is Data.Error -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Error: ${result.message}")
-                    }
-                }
-                is Data.Success -> {
-                    val medications = result.data
-                    if (medications.isEmpty()) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No medications found")
-                        }
-                    } else {
-                        LazyColumn {
-                            items(medications) { medication ->
-                                MedicationItem(
-                                    medication = medication,
-                                    isActive = medication.id in state.activeMedicationIds,
-                                    onClick = { onMedicationClick(medication.id) },
-                                    onLogAdHocDose = { onManageRemindersClick(medication.id) }
-                                )
-                                HorizontalDivider()
-                            }
+                } else {
+                    LazyColumn {
+                        items(medications) { medication ->
+                            MedicationItem(
+                                medication = medication,
+                                isActive = medication.id in state.activeMedicationIds,
+                                onClick = { onMedicationClick(medication.id) },
+                                onLogAdHocDose = { onManageRemindersClick(medication.id) }
+                            )
+                            HorizontalDivider()
                         }
                     }
                 }

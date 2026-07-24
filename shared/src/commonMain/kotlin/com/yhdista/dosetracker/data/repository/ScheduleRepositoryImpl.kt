@@ -10,9 +10,7 @@ import com.yhdista.dosetracker.data.mapper.toEntity
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
 import com.yhdista.dosetracker.domain.repository.ScheduleRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 
 internal class ScheduleRepositoryImpl(
     private val scheduleDao: ReminderScheduleDao,
@@ -21,22 +19,14 @@ internal class ScheduleRepositoryImpl(
 
     override fun getSchedulesForMedication(medicationId: Long): Flow<Data<List<ReminderSchedule>>> {
         return scheduleDao.getSchedulesForMedication(medicationId)
-            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<ReminderSchedule>> }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to fetch schedules for medication $medicationId", e)
-                emit(Data.Error("Failed to fetch schedules", e))
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) }
+            .withLoadingAndErrors("Failed to fetch schedules")
     }
 
     override fun getSchedulesForCycleWeek(cycleWeekId: Long): Flow<Data<List<ReminderSchedule>>> {
         return scheduleDao.getSchedulesForCycleWeek(cycleWeekId)
-            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<ReminderSchedule>> }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to fetch schedules for cycle week $cycleWeekId", e)
-                emit(Data.Error("Failed to fetch schedules for cycle week", e))
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) }
+            .withLoadingAndErrors("Failed to fetch schedules for cycle week")
     }
 
     override suspend fun getEnabledSchedules(): Data<List<ReminderSchedule>> {
@@ -50,12 +40,8 @@ internal class ScheduleRepositoryImpl(
 
     override fun getAllSchedules(): Flow<Data<List<ReminderSchedule>>> {
         return scheduleDao.getAllSchedulesFlow()
-            .map { entities -> Data.Success(entities.map { it.toDomain() }) as Data<List<ReminderSchedule>> }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to fetch all schedules", e)
-                emit(Data.Error("Failed to fetch all schedules", e))
-            }
+            .map { entities -> Data.Success(entities.map { it.toDomain() }) }
+            .withLoadingAndErrors("Failed to fetch all schedules")
     }
 
     override suspend fun insertSchedule(schedule: ReminderSchedule): Data<Long> {
@@ -95,13 +81,9 @@ internal class ScheduleRepositoryImpl(
         return periodTimeDao.getAllPeriodTimesFlow()
             .map { entities ->
                 val map = entities.associate { it.period to it.minutesOfDay }
-                Data.Success(map) as Data<Map<String, Int>>
+                Data.Success(map)
             }
-            .onStart { emit(Data.Loading) }
-            .catch { e ->
-                AppLogger.e("Database", "Failed to fetch period times", e)
-                emit(Data.Error("Failed to fetch period times", e))
-            }
+            .withLoadingAndErrors("Failed to fetch period times")
     }
 
     override suspend fun getPeriodTimesOnce(): Map<String, Int> {

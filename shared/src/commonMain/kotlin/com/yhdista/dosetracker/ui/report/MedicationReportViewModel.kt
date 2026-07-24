@@ -82,8 +82,13 @@ private fun bucketDosesByWeek(
 class MedicationReportViewModel(
     private val medicationRepository: MedicationRepository,
     private val doseRepository: DoseRepository,
+    medicationId: Long,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    init {
+        savedStateHandle["medicationId"] = medicationId
+    }
 
     private val medicationIdFlow = savedStateHandle.getStateFlow<Long?>("medicationId", null)
     private val _selection = MutableStateFlow(
@@ -132,12 +137,6 @@ class MedicationReportViewModel(
                     "State updated: medicationName='${state.medicationName}', unit='${state.unit}', mode=${state.mode}, periodStart=${state.periodStart}, weeks=$weeksDesc"
                 )
             }
-        }
-    }
-
-    fun setMedicationId(id: Long) {
-        if (savedStateHandle.get<Long>("medicationId") == null) {
-            savedStateHandle["medicationId"] = id
         }
     }
 
