@@ -1,5 +1,6 @@
 package com.yhdista.dosetracker
 
+import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -14,9 +15,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val doseId = intent.getLongExtra("doseId", -1L).takeIf { it != -1L }
+        val isDebugBuild = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
         setContent {
             DoseTrackerTheme {
-                DoseTrackerAppMain(initialConfirmDoseId = doseId)
+                DoseTrackerAppMain(
+                    initialConfirmDoseId = doseId,
+                    isDebugBuild = isDebugBuild,
+                )
             }
         }
     }

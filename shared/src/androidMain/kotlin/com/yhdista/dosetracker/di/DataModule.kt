@@ -1,6 +1,7 @@
 package com.yhdista.dosetracker.di
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import androidx.datastore.preferences.preferencesDataStore
 import com.yhdista.dosetracker.data.local.AppDatabase
 import com.yhdista.dosetracker.data.local.getDatabaseBuilder
@@ -26,7 +27,11 @@ private val Context.dataStore by preferencesDataStore(name = "app_settings")
 val dataModule = module {
     single { get<Context>().dataStore }
     single<SettingsRepository> { SettingsRepositoryImpl(get()) }
-    single { getRoomDatabase(getDatabaseBuilder(get<Context>())) }
+    single {
+        val context = get<Context>()
+        val debuggable = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        getRoomDatabase(getDatabaseBuilder(context), debugTooling = debuggable)
+    }
 
     // DAOs stay private to the data layer: repositories are the only consumers.
     single<MedicationRepository> { MedicationRepositoryImpl(get<AppDatabase>().medicationDao()) }

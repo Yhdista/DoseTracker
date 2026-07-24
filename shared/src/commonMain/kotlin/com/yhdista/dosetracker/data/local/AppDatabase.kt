@@ -39,14 +39,21 @@ internal abstract class AppDatabase : RoomDatabase() {
     companion object {
         const val DATABASE_NAME = "dosetracker_db"
 
-        val seedCallback = object : RoomDatabase.Callback() {
+        /** Essential defaults every install needs: the four day-period times. */
+        val defaultsCallback = object : RoomDatabase.Callback() {
             override fun onCreate(connection: SQLiteConnection) {
                 super.onCreate(connection)
-                seedDatabase(connection)
+                connection.execSQL("INSERT INTO period_times (period, minutesOfDay) VALUES ('MORNING', 480)")
+                connection.execSQL("INSERT INTO period_times (period, minutesOfDay) VALUES ('NOON', 720)")
+                connection.execSQL("INSERT INTO period_times (period, minutesOfDay) VALUES ('EVENING', 1080)")
+                connection.execSQL("INSERT INTO period_times (period, minutesOfDay) VALUES ('NIGHT', 1320)")
             }
+        }
 
-            override fun onDestructiveMigration(connection: SQLiteConnection) {
-                super.onDestructiveMigration(connection)
+        /** Demo medications and schedules — debug builds only, never production data. */
+        val demoSeedCallback = object : RoomDatabase.Callback() {
+            override fun onCreate(connection: SQLiteConnection) {
+                super.onCreate(connection)
                 seedDatabase(connection)
             }
 
@@ -71,11 +78,6 @@ internal abstract class AppDatabase : RoomDatabase() {
                 connection.execSQL("INSERT INTO reminder_schedules (medicationId, minutesOfDay, daysOfWeek, enabled, scheduleType, intervalDays, startDate, timeType, dayPeriod) VALUES (3, 420, 127, 1, 'WEEKDAYS', 1, NULL, 'EXACT', NULL)")
                 connection.execSQL("INSERT INTO reminder_schedules (medicationId, minutesOfDay, daysOfWeek, enabled, scheduleType, intervalDays, startDate, timeType, dayPeriod) VALUES (4, 600, 127, 1, 'WEEKDAYS', 1, NULL, 'EXACT', NULL)")
                 connection.execSQL("INSERT INTO reminder_schedules (medicationId, minutesOfDay, daysOfWeek, enabled, scheduleType, intervalDays, startDate, timeType, dayPeriod) VALUES (5, 510, 127, 1, 'WEEKDAYS', 1, NULL, 'EXACT', NULL)")
-
-                connection.execSQL("INSERT INTO period_times (period, minutesOfDay) VALUES ('MORNING', 480)")
-                connection.execSQL("INSERT INTO period_times (period, minutesOfDay) VALUES ('NOON', 720)")
-                connection.execSQL("INSERT INTO period_times (period, minutesOfDay) VALUES ('EVENING', 1080)")
-                connection.execSQL("INSERT INTO period_times (period, minutesOfDay) VALUES ('NIGHT', 1320)")
             }
         }
     }

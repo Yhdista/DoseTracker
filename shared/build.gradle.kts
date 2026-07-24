@@ -31,9 +31,9 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            api(libs.kotlinx.coroutines.core)
-            api(libs.kotlinx.datetime)
-            api(libs.kotlinx.serialization.core)
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.datetime)
+            implementation(libs.kotlinx.serialization.core)
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
@@ -51,7 +51,7 @@ kotlin {
             implementation(libs.androidx.compose.adaptive.navigation3)
             implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
             implementation(libs.androidx.room.runtime)
-            implementation("androidx.sqlite:sqlite-bundled:2.7.0")
+            implementation(libs.androidx.sqlite.bundled)
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
@@ -60,7 +60,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.core.ktx)
             implementation(libs.accompanist.permissions)
-            api(libs.timber)
+            implementation(libs.timber)
         }
         commonTest.dependencies {
             implementation(libs.kotlinx.coroutines.test)

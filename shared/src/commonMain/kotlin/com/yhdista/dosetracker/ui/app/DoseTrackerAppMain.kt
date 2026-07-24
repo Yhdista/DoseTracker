@@ -60,7 +60,10 @@ import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class, ExperimentalMaterial3AdaptiveNavigationSuiteApi::class)
 @Composable
-fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
+fun DoseTrackerAppMain(
+    initialConfirmDoseId: Long? = null,
+    isDebugBuild: Boolean = false,
+) {
     RequestNotificationPermissionEffect()
 
     val backstack = rememberNavBackStack(Destination.Today)
@@ -131,17 +134,19 @@ fun DoseTrackerAppMain(initialConfirmDoseId: Long? = null) {
                 icon = { Icon(Icons.Rounded.Settings, contentDescription = "Settings") },
                 label = { Text("Settings") }
             )
-            item(
-                selected = backstack.last() is Destination.Debug,
-                onClick = {
-                    if (backstack.last() !is Destination.Debug) {
-                        backstack.clear()
-                        backstack.add(Destination.Debug)
-                    }
-                },
-                icon = { Icon(Icons.Rounded.BugReport, contentDescription = "Debug") },
-                label = { Text("Debug") }
-            )
+            if (isDebugBuild) {
+                item(
+                    selected = backstack.last() is Destination.Debug,
+                    onClick = {
+                        if (backstack.last() !is Destination.Debug) {
+                            backstack.clear()
+                            backstack.add(Destination.Debug)
+                        }
+                    },
+                    icon = { Icon(Icons.Rounded.BugReport, contentDescription = "Debug") },
+                    label = { Text("Debug") }
+                )
+            }
         }
     ) {
         NavDisplay(
