@@ -15,6 +15,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.shared.resources.Res
+import com.yhdista.dosetracker.shared.resources.back
+import com.yhdista.dosetracker.shared.resources.cycle_week_number
+import com.yhdista.dosetracker.shared.resources.cycleweeklist_title
+import com.yhdista.dosetracker.shared.resources.error_prefix
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,10 +35,10 @@ fun CycleWeekListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Týdny cyklu", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(Res.string.cycleweeklist_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(Res.string.back))
                     }
                 }
             )
@@ -46,7 +52,7 @@ fun CycleWeekListScreen(
             }
             is Data.Error -> {
                 Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Chyba: ${result.message}")
+                    Text(stringResource(Res.string.error_prefix, result.message))
                 }
             }
             is Data.Success -> {
@@ -57,7 +63,7 @@ fun CycleWeekListScreen(
                 ) {
                     items(result.data, key = { it.id }) { week ->
                         ListItem(
-                            headlineContent = { Text("Týden ${week.weekIndex + 1}") },
+                            headlineContent = { Text(stringResource(Res.string.cycle_week_number, week.weekIndex + 1)) },
                             modifier = Modifier.clickable { onWeekClick(week.weekIndex) }
                         )
                     }

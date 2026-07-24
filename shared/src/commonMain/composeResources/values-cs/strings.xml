@@ -1,0 +1,156 @@
+<resources>
+    <string name="error_prefix">Chyba: %1$s</string>
+    <string name="back">Zpět</string>
+    <string name="cancel">Zrušit</string>
+    <string name="ok">OK</string>
+    <string name="save">Uložit</string>
+    <string name="add">Přidat</string>
+    <string name="delete">Smazat</string>
+    <string name="done">Hotovo</string>
+    <string name="period_morning">Ráno</string>
+    <string name="period_noon">Poledne</string>
+    <string name="period_evening">Večer</string>
+    <string name="period_night">Noc</string>
+
+    <!-- today -->
+    <string name="cycle_type_normal">Cyklus</string>
+    <string name="cycle_type_post">Post-cyklus</string>
+    <string name="cycle_type_standard">Standardní cyklus</string>
+    <string name="today_badge">DNES</string>
+    <string name="today_cycle_settings">Nastavení cyklu</string>
+    <string name="today_dose_count_few">%1$s dávky</string>
+    <string name="today_dose_count_many">%1$s dávek</string>
+    <string name="today_dose_count_one">1 dávka</string>
+    <string name="today_legend_post">Post</string>
+    <string name="today_legend_standard">Standardní</string>
+    <string name="today_legend_unplanned">Neplánováno</string>
+    <string name="today_more_times">… a další %1$s</string>
+    <string name="today_new_cycle">+ Nový cyklus</string>
+    <string name="today_next_week">Příští týden</string>
+    <string name="today_no_active_cycle">Žádný aktivní cyklus</string>
+    <string name="today_no_doses">Žádné dávky</string>
+    <string name="today_no_doses_today">Dnes nejsou naplánovány žádné dávky</string>
+    <string name="today_other_doses">Ostatní</string>
+    <string name="today_remaining_days">Zbývá %1$s dní (končí %2$s)</string>
+    <string name="today_running_days">Běží %1$s dní</string>
+    <string name="today_running_days_week">Běží %1$s dní · týden %2$s / %3$s</string>
+    <string name="today_running_indefinitely">Běží neomezeně</string>
+    <string name="today_scheduled_at">Naplánováno na %1$s</string>
+    <string name="today_this_week">Tento týden</string>
+    <string name="today_timeline_header">Časová osa cyklů · −180 až +180 dní</string>
+    <string name="today_title">Kalendář</string>
+    <string name="today_toggle_status">Přepnout stav</string>
+    <string name="today_within_cycle">V rámci cyklu %1$s</string>
+
+    <!-- history -->
+    <string name="history_amount_at_time">%1$s %2$s v %3$s</string>
+    <string name="history_empty">Žádná historie</string>
+    <string name="history_title">Historie dávek</string>
+    <string name="history_unknown_medication">Neznámý lék</string>
+
+    <!-- report -->
+    <string name="report_empty">Tento týden žádné dávky</string>
+    <string name="report_next_week">Následující týden</string>
+    <string name="report_previous_week">Předchozí týden</string>
+    <string name="report_taken_missed_skipped">Užito: %1$s  Vynecháno: %2$s  Přeskočeno: %3$s</string>
+    <string name="report_title">Týdenní přehled</string>
+    <string name="report_upcoming">Nadcházející: %1$s</string>
+
+    <!-- medication report -->
+    <string name="medreport_month">Měsíc</string>
+    <string name="medreport_next_period">Následující období</string>
+    <string name="medreport_previous_period">Předchozí období</string>
+    <string name="medreport_title_fallback">Lék</string>
+    <string name="medreport_year">Rok</string>
+
+    <!-- settings -->
+    <string name="settings_about">O aplikaci</string>
+    <string name="settings_about_desc">Jednoduchá aplikace na připomínání léků, která vám pomůže sledovat dávky a zůstat zdraví.</string>
+    <string name="settings_app_version">DoseTracker v1.0.0</string>
+    <string name="settings_change">Změnit</string>
+    <string name="settings_day_period">Denní doba</string>
+    <string name="settings_day_period_times">Časy denních dob</string>
+    <string name="settings_default_time_type">Výchozí typ času</string>
+    <string name="settings_default_time_type_desc">Zvolte, zda mají nové připomínky používat přesný čas, nebo denní dobu.</string>
+    <string name="settings_exact_time">Přesný čas</string>
+    <string name="settings_reminders">Nastavení připomínek</string>
+    <string name="settings_set_time_for">Nastavit čas pro %1$s</string>
+    <string name="settings_title">Nastavení</string>
+
+    <!-- catalog -->
+    <string name="catalog_active_badge">Užívaný</string>
+    <string name="catalog_add_medication">Přidat lék</string>
+    <string name="catalog_dosage">Dávkování</string>
+    <string name="catalog_empty">Žádné léky</string>
+    <string name="catalog_log_manual_dose">Zaznamenat ruční dávku</string>
+    <string name="catalog_name">Název</string>
+    <string name="catalog_only_active">Pouze užívané</string>
+    <string name="catalog_search_hint">Hledat léky...</string>
+    <string name="catalog_title">Katalog léků</string>
+    <string name="catalog_unit">Jednotka</string>
+
+    <!-- add dose -->
+    <string name="adddose_amount_label">Množství (%1$s)</string>
+    <string name="adddose_medication">Lék: %1$s</string>
+    <string name="adddose_time">Čas: %1$s</string>
+    <string name="adddose_title">Zaznamenat dávku</string>
+
+    <!-- create cycle -->
+    <string name="createcycle_on_complete">Po skončení přejde do</string>
+    <string name="createcycle_title">Nový cyklus</string>
+    <string name="createcycle_total_weeks">Počet týdnů</string>
+    <string name="createcycle_type">Typ cyklu</string>
+
+    <!-- cycle history -->
+    <string name="cycle_history_title">Historie cyklu</string>
+    <string name="cyclehistory_empty">Žádný dokončený cyklus</string>
+    <string name="cyclehistory_type_started">%1$s - začátek %2$s</string>
+
+    <!-- cycle settings -->
+    <string name="cyclesettings_add_follow_up">Přidat návazný cyklus</string>
+    <string name="cyclesettings_end">Ukončit</string>
+    <string name="cyclesettings_end_cycle">Ukončit cyklus</string>
+    <string name="cyclesettings_end_cycle_confirm_text">Cyklus \"%1$s\" bude ukončen a nebude žádný aktivní cyklus.</string>
+    <string name="cyclesettings_end_cycle_confirm_title">Ukončit cyklus?</string>
+    <string name="cyclesettings_manage_weeks">Upravit týdny</string>
+    <string name="cyclesettings_rename">Přejmenovat</string>
+    <string name="cyclesettings_rename_cycle">Přejmenovat cyklus</string>
+
+    <!-- cycle weeks -->
+    <string name="cycle_week_number">Týden %1$d</string>
+    <string name="cycleweek_empty">Žádný lék pro tento týden</string>
+    <string name="cycleweek_pick_medication">Vyber lék</string>
+    <string name="cycleweeklist_title">Týdny cyklu</string>
+
+    <!-- confirm dose -->
+    <string name="confirm_edit_schedule">Upravit rozvrh léku</string>
+    <string name="confirm_title">Potvrdit dávku</string>
+
+    <!-- medication detail -->
+    <string name="meddetail_add_reminder">Přidat připomínku</string>
+    <string name="meddetail_delete_reminder">Smazat připomínku</string>
+    <string name="meddetail_no_reminders">Zatím žádné připomínky</string>
+    <string name="meddetail_period_settings">Nastavení denních dob</string>
+    <string name="meddetail_period_times">Časy oznámení denních dob</string>
+
+    <!-- schedule dialog -->
+    <string name="schedule_add_reminder">Přidat připomínku</string>
+    <string name="schedule_choose">Vybrat</string>
+    <string name="schedule_days_of_week">Dny v týdnu</string>
+    <string name="schedule_edit_reminder">Upravit připomínku</string>
+    <string name="schedule_every_day">Každý den</string>
+    <string name="schedule_every_n_days_from">Každých %1$d dní (od %2$s)</string>
+    <string name="schedule_frequency_setting">Nastavení frekvence</string>
+    <string name="schedule_interval">Interval</string>
+    <string name="schedule_repeat_every_x_days">Opakovat každých X dní</string>
+    <string name="schedule_specific_days">Konkrétní dny</string>
+    <string name="schedule_start_date">Datum zahájení: %1$s</string>
+    <string name="schedule_time_setting">Nastavení času</string>
+
+    <!-- tabs -->
+    <string name="tab_debug">Debug</string>
+    <string name="tab_history">Historie</string>
+    <string name="tab_meds">Léky</string>
+    <string name="tab_report">Přehled</string>
+    <string name="tab_today">Dnes</string>
+</resources>

@@ -15,6 +15,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yhdista.dosetracker.domain.model.CycleCompleteAction
 import com.yhdista.dosetracker.domain.model.CycleType
+import com.yhdista.dosetracker.shared.resources.Res
+import com.yhdista.dosetracker.shared.resources.back
+import com.yhdista.dosetracker.shared.resources.catalog_name
+import com.yhdista.dosetracker.shared.resources.createcycle_on_complete
+import com.yhdista.dosetracker.shared.resources.createcycle_title
+import com.yhdista.dosetracker.shared.resources.createcycle_total_weeks
+import com.yhdista.dosetracker.shared.resources.createcycle_type
+import com.yhdista.dosetracker.shared.resources.cycle_type_normal
+import com.yhdista.dosetracker.shared.resources.cycle_type_post
+import com.yhdista.dosetracker.shared.resources.cycle_type_standard
+import com.yhdista.dosetracker.shared.resources.save
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,10 +46,10 @@ fun CreateCycleScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Nový cyklus", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(Res.string.createcycle_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Zpět")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(Res.string.back))
                     }
                 }
             )
@@ -65,30 +77,30 @@ fun CreateCycleScreen(
                 OutlinedTextField(
                     value = state.name,
                     onValueChange = { viewModel.onEvent(CreateCycleEvent.NameChanged(it)) },
-                    label = { Text("Název") },
+                    label = { Text(stringResource(Res.string.catalog_name)) },
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 // Type selector
-                Text("Typ cyklu", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(stringResource(Res.string.createcycle_type), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (state.hasActiveCycle == false) {
                         FilterChip(
                             selected = state.type == CycleType.NORMAL,
                             onClick = { viewModel.onEvent(CreateCycleEvent.TypeChanged(CycleType.NORMAL)) },
-                            label = { Text("Cyklus") }
+                            label = { Text(stringResource(Res.string.cycle_type_normal)) }
                         )
                     }
                     FilterChip(
                         selected = state.type == CycleType.STANDARD,
                         onClick = { viewModel.onEvent(CreateCycleEvent.TypeChanged(CycleType.STANDARD)) },
-                        label = { Text("Standardní cyklus") }
+                        label = { Text(stringResource(Res.string.cycle_type_standard)) }
                     )
                     if (state.hasActiveCycle == true) {
                         FilterChip(
                             selected = state.type == CycleType.POST,
                             onClick = { viewModel.onEvent(CreateCycleEvent.TypeChanged(CycleType.POST)) },
-                            label = { Text("Post-cyklus") }
+                            label = { Text(stringResource(Res.string.cycle_type_post)) }
                         )
                     }
                 }
@@ -102,24 +114,24 @@ fun CreateCycleScreen(
                                 viewModel.onEvent(CreateCycleEvent.TotalWeeksChanged(it))
                             }
                         },
-                        label = { Text("Počet týdnů") },
+                        label = { Text(stringResource(Res.string.createcycle_total_weeks)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
 
                 // On complete action selector
                 if (state.type != CycleType.STANDARD && state.hasActiveCycle == false) {
-                    Text("Po skončení přejde do", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(stringResource(Res.string.createcycle_on_complete), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(
                             selected = state.onCompleteAction == CycleCompleteAction.TO_STANDARD,
                             onClick = { viewModel.onEvent(CreateCycleEvent.OnCompleteActionChanged(CycleCompleteAction.TO_STANDARD)) },
-                            label = { Text("Standardní cyklus") }
+                            label = { Text(stringResource(Res.string.cycle_type_standard)) }
                         )
                         FilterChip(
                             selected = state.onCompleteAction == CycleCompleteAction.TO_POST,
                             onClick = { viewModel.onEvent(CreateCycleEvent.OnCompleteActionChanged(CycleCompleteAction.TO_POST)) },
-                            label = { Text("Post-cyklus") }
+                            label = { Text(stringResource(Res.string.cycle_type_post)) }
                         )
                     }
                 }
@@ -130,7 +142,7 @@ fun CreateCycleScreen(
                     enabled = isValid,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Uložit")
+                    Text(stringResource(Res.string.save))
                 }
             }
         }

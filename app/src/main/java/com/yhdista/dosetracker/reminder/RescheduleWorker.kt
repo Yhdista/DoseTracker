@@ -5,7 +5,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.ListenableWorker.Result
 import androidx.work.WorkerParameters
 
-class RescheduleWorker(
+internal class RescheduleWorker(
     context: Context,
     params: WorkerParameters,
     private val doseGenerator: DoseGenerator

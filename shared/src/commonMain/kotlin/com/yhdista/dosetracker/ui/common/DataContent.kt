@@ -8,6 +8,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.shared.resources.Res
+import com.yhdista.dosetracker.shared.resources.error_prefix
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Standard scaffold body for a [Data]-bearing screen: centered spinner while Loading,
@@ -26,7 +29,7 @@ fun <T> DataContent(
             CircularProgressIndicator()
         }
         is Data.Error -> Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Error: ${data.message}")
+            Text(stringResource(Res.string.error_prefix, data.message))
         }
         is Data.Success -> content(data.data)
     }

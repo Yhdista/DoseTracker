@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">DoseTracker</string>
+    <string name="notification_channel_name">Medication Reminders</string>
+    <string name="notification_channel_description">Notifications for medication dose reminders</string>
+    <string name="notification_title">Medication Reminder</string>
+    <string name="notification_text">It\'s time to take your %1$s (%2$s)</string>
+    <string name="notification_action_taken">Taken</string>
+    <string name="notification_action_skip">Skip</string>
+    <string name="notification_action_snooze">Snooze</string>
 </resources>

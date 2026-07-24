@@ -18,8 +18,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.Cycle
+import com.yhdista.dosetracker.shared.resources.Res
+import com.yhdista.dosetracker.shared.resources.back
+import com.yhdista.dosetracker.shared.resources.cancel
+import com.yhdista.dosetracker.shared.resources.catalog_name
+import com.yhdista.dosetracker.shared.resources.cycle_history_title
+import com.yhdista.dosetracker.shared.resources.cyclesettings_add_follow_up
+import com.yhdista.dosetracker.shared.resources.cyclesettings_end
+import com.yhdista.dosetracker.shared.resources.cyclesettings_end_cycle
+import com.yhdista.dosetracker.shared.resources.cyclesettings_end_cycle_confirm_text
+import com.yhdista.dosetracker.shared.resources.cyclesettings_end_cycle_confirm_title
+import com.yhdista.dosetracker.shared.resources.cyclesettings_manage_weeks
+import com.yhdista.dosetracker.shared.resources.cyclesettings_rename
+import com.yhdista.dosetracker.shared.resources.cyclesettings_rename_cycle
+import com.yhdista.dosetracker.shared.resources.save
+import com.yhdista.dosetracker.shared.resources.today_cycle_settings
+import com.yhdista.dosetracker.shared.resources.today_no_active_cycle
 import com.yhdista.dosetracker.ui.common.DataContent
 import com.yhdista.dosetracker.ui.common.ObserveAsEvents
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,10 +59,10 @@ fun CycleSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Nastavení cyklu", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(Res.string.today_cycle_settings), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(Res.string.back))
                     }
                 }
             )
@@ -54,7 +71,7 @@ fun CycleSettingsScreen(
         DataContent(state, Modifier.padding(padding)) { cycle ->
             if (cycle == null) {
                 Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Žádný aktivní cyklus")
+                    Text(stringResource(Res.string.today_no_active_cycle))
                 }
             } else {
                 CycleSettingsList(
@@ -88,12 +105,12 @@ private fun CycleSettingsList(
     if (showRenameDialog) {
         AlertDialog(
             onDismissRequest = { showRenameDialog = false },
-            title = { Text("Přejmenovat cyklus") },
+            title = { Text(stringResource(Res.string.cyclesettings_rename_cycle)) },
             text = {
                 OutlinedTextField(
                     value = renameText,
                     onValueChange = { renameText = it },
-                    label = { Text("Název") },
+                    label = { Text(stringResource(Res.string.catalog_name)) },
                     modifier = Modifier.fillMaxWidth()
                 )
             },
@@ -105,10 +122,10 @@ private fun CycleSettingsList(
                         showRenameDialog = false
                         onRename(renameText)
                     }
-                ) { Text("Uložit") }
+                ) { Text(stringResource(Res.string.save)) }
             },
             dismissButton = {
-                TextButton(onClick = { showRenameDialog = false }) { Text("Zrušit") }
+                TextButton(onClick = { showRenameDialog = false }) { Text(stringResource(Res.string.cancel)) }
             }
         )
     }
@@ -116,17 +133,17 @@ private fun CycleSettingsList(
     if (showEndConfirm) {
         AlertDialog(
             onDismissRequest = { showEndConfirm = false },
-            title = { Text("Ukončit cyklus?") },
-            text = { Text("Cyklus \"${cycle.name}\" bude ukončen a nebude žádný aktivní cyklus.") },
+            title = { Text(stringResource(Res.string.cyclesettings_end_cycle_confirm_title)) },
+            text = { Text(stringResource(Res.string.cyclesettings_end_cycle_confirm_text, cycle.name)) },
             confirmButton = {
                 TextButton(onClick = {
                     com.yhdista.dosetracker.core.AppLogger.d("CycleSettingsScreen", "Confirm: Ukončit cyklus (cycleId=${cycle.id}, name='${cycle.name}')")
                     showEndConfirm = false
                     onEndCycle()
-                }) { Text("Ukončit") }
+                }) { Text(stringResource(Res.string.cyclesettings_end)) }
             },
             dismissButton = {
-                TextButton(onClick = { showEndConfirm = false }) { Text("Zrušit") }
+                TextButton(onClick = { showEndConfirm = false }) { Text(stringResource(Res.string.cancel)) }
             }
         )
     }
@@ -134,7 +151,7 @@ private fun CycleSettingsList(
     LazyColumn(modifier = modifier.fillMaxSize()) {
         item {
             ListItem(
-                headlineContent = { Text("Přejmenovat") },
+                headlineContent = { Text(stringResource(Res.string.cyclesettings_rename)) },
                 modifier = Modifier.clickable {
                     com.yhdista.dosetracker.core.AppLogger.d("CycleSettingsScreen", "Click: Přejmenovat (cycleId=${cycle.id}, name='${cycle.name}')")
                     renameText = cycle.name
@@ -144,7 +161,7 @@ private fun CycleSettingsList(
         }
         item {
             ListItem(
-                headlineContent = { Text("Historie cyklu") },
+                headlineContent = { Text(stringResource(Res.string.cycle_history_title)) },
                 modifier = Modifier.clickable {
                     com.yhdista.dosetracker.core.AppLogger.d("CycleSettingsScreen", "Click: Historie cyklu (cycleId=${cycle.id}, name='${cycle.name}')")
                     onOpenHistory()
@@ -153,7 +170,7 @@ private fun CycleSettingsList(
         }
         item {
             ListItem(
-                headlineContent = { Text("Přidat návazný cyklus") },
+                headlineContent = { Text(stringResource(Res.string.cyclesettings_add_follow_up)) },
                 modifier = Modifier.clickable {
                     com.yhdista.dosetracker.core.AppLogger.d("CycleSettingsScreen", "Click: Přidat návazný cyklus (cycleId=${cycle.id}, name='${cycle.name}') -> opens CreateCycleScreen to attach a follow-up cycle")
                     onAddFollowUp()
@@ -162,7 +179,7 @@ private fun CycleSettingsList(
         }
         item {
             ListItem(
-                headlineContent = { Text("Upravit týdny") },
+                headlineContent = { Text(stringResource(Res.string.cyclesettings_manage_weeks)) },
                 modifier = Modifier.clickable {
                     com.yhdista.dosetracker.core.AppLogger.d("CycleSettingsScreen", "Click: Upravit týdny (cycleId=${cycle.id}, name='${cycle.name}')")
                     onManageWeeks()
@@ -171,7 +188,7 @@ private fun CycleSettingsList(
         }
         item {
             ListItem(
-                headlineContent = { Text("Ukončit cyklus", color = MaterialTheme.colorScheme.error) },
+                headlineContent = { Text(stringResource(Res.string.cyclesettings_end_cycle), color = MaterialTheme.colorScheme.error) },
                 modifier = Modifier.clickable {
                     com.yhdista.dosetracker.core.AppLogger.d("CycleSettingsScreen", "Click: Ukončit cyklus, opening confirm dialog (cycleId=${cycle.id}, name='${cycle.name}')")
                     showEndConfirm = true

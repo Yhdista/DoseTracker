@@ -15,8 +15,16 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.yhdista.dosetracker.shared.resources.Res
+import com.yhdista.dosetracker.shared.resources.report_empty
+import com.yhdista.dosetracker.shared.resources.report_next_week
+import com.yhdista.dosetracker.shared.resources.report_previous_week
+import com.yhdista.dosetracker.shared.resources.report_taken_missed_skipped
+import com.yhdista.dosetracker.shared.resources.report_title
+import com.yhdista.dosetracker.shared.resources.report_upcoming
 import com.yhdista.dosetracker.ui.common.DataContent
 import kotlinx.datetime.DateTimeUnit
+import org.jetbrains.compose.resources.stringResource
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.format
 import kotlinx.datetime.format.char
@@ -30,7 +38,7 @@ fun ReportScreen(viewModel: ReportViewModel, onMedicationClick: (Long) -> Unit) 
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Weekly Report", fontWeight = FontWeight.Bold) })
+            TopAppBar(title = { Text(stringResource(Res.string.report_title), fontWeight = FontWeight.Bold) })
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
@@ -40,7 +48,7 @@ fun ReportScreen(viewModel: ReportViewModel, onMedicationClick: (Long) -> Unit) 
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = { viewModel.onEvent(ReportEvent.PreviousWeek) }) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Previous week")
+                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(Res.string.report_previous_week))
                 }
                 Text(
                     text = "${state.weekStart.format(weekLabelFormat)} - " +
@@ -48,14 +56,14 @@ fun ReportScreen(viewModel: ReportViewModel, onMedicationClick: (Long) -> Unit) 
                     style = MaterialTheme.typography.titleMedium
                 )
                 IconButton(onClick = { viewModel.onEvent(ReportEvent.NextWeek) }) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = "Next week")
+                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = stringResource(Res.string.report_next_week))
                 }
             }
 
             DataContent(state.summaries) { summaries ->
                 if (summaries.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No doses this week")
+                        Text(stringResource(Res.string.report_empty))
                     }
                 } else {
                     LazyColumn(
@@ -77,10 +85,17 @@ private fun MedicationSummaryCard(summary: MedicationWeekSummary, onClick: () ->
     Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(summary.medicationName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Text("Taken: ${summary.taken}  Missed: ${summary.missed}  Skipped: ${summary.skipped}")
+            Text(
+                stringResource(
+                    Res.string.report_taken_missed_skipped,
+                    summary.taken.toString(),
+                    summary.missed.toString(),
+                    summary.skipped.toString()
+                )
+            )
             if (summary.upcoming > 0) {
                 Text(
-                    "Upcoming: ${summary.upcoming}",
+                    stringResource(Res.string.report_upcoming, summary.upcoming.toString()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

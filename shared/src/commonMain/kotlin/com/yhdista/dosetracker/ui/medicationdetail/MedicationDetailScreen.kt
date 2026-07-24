@@ -23,11 +23,27 @@ import com.yhdista.dosetracker.domain.model.DayPeriod
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
 import com.yhdista.dosetracker.domain.model.ScheduleType
 import com.yhdista.dosetracker.domain.model.TimeType
+import com.yhdista.dosetracker.shared.resources.Res
+import com.yhdista.dosetracker.shared.resources.back
+import com.yhdista.dosetracker.shared.resources.cancel
+import com.yhdista.dosetracker.shared.resources.done
+import com.yhdista.dosetracker.shared.resources.meddetail_add_reminder
+import com.yhdista.dosetracker.shared.resources.meddetail_delete_reminder
+import com.yhdista.dosetracker.shared.resources.meddetail_no_reminders
+import com.yhdista.dosetracker.shared.resources.meddetail_period_settings
+import com.yhdista.dosetracker.shared.resources.meddetail_period_times
+import com.yhdista.dosetracker.shared.resources.medreport_title_fallback
+import com.yhdista.dosetracker.shared.resources.ok
+import com.yhdista.dosetracker.shared.resources.schedule_every_day
+import com.yhdista.dosetracker.shared.resources.schedule_every_n_days_from
+import com.yhdista.dosetracker.shared.resources.settings_change
+import com.yhdista.dosetracker.shared.resources.settings_set_time_for
 import com.yhdista.dosetracker.ui.common.label
 import com.yhdista.dosetracker.reminder.WeekDays
 import com.yhdista.dosetracker.ui.common.DataContent
 import com.yhdista.dosetracker.ui.schedule.ScheduleDialog
 import com.yhdista.dosetracker.ui.schedule.formatMinutes
+import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Clock
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.Instant
@@ -54,22 +70,22 @@ fun MedicationDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text((state.medication as? Data.Success)?.data?.name ?: "Medication", fontWeight = FontWeight.Bold) },
+                title = { Text((state.medication as? Data.Success)?.data?.name ?: stringResource(Res.string.medreport_title_fallback), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(Res.string.back))
                     }
                 },
                 actions = {
                     IconButton(onClick = { showPeriodSettings = true }) {
-                        Icon(Icons.Rounded.Settings, contentDescription = "Period settings")
+                        Icon(Icons.Rounded.Settings, contentDescription = stringResource(Res.string.meddetail_period_settings))
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Rounded.Add, contentDescription = "Add reminder")
+                Icon(Icons.Rounded.Add, contentDescription = stringResource(Res.string.meddetail_add_reminder))
             }
         }
     ) { padding ->
@@ -133,7 +149,7 @@ fun MedicationDetailScreen(
         DataContent(state.schedules, Modifier.padding(padding)) { schedules ->
             if (schedules.isEmpty()) {
                 Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No reminders yet")
+                    Text(stringResource(Res.string.meddetail_no_reminders))
                 }
             } else {
                 LazyColumn(
@@ -173,10 +189,10 @@ private fun ScheduleRow(
     }
 
     val freqLabel = if (schedule.scheduleType == ScheduleType.INTERVAL) {
-        "Every ${schedule.intervalDays} days (from ${schedule.startDate})"
+        stringResource(Res.string.schedule_every_n_days_from, schedule.intervalDays, schedule.startDate.toString())
     } else {
         val days = WeekDays.fromBitmask(schedule.daysOfWeek)
-        if (days.size == 7) "Every day" else days.joinToString { it.name.take(3) }
+        if (days.size == 7) stringResource(Res.string.schedule_every_day) else days.joinToString { it.name.take(3) }
     }
 
     ListItem(
@@ -184,7 +200,7 @@ private fun ScheduleRow(
         supportingContent = { Text(freqLabel) },
         trailingContent = {
             IconButton(onClick = onDelete) {
-                Icon(Icons.Rounded.Delete, contentDescription = "Delete reminder")
+                Icon(Icons.Rounded.Delete, contentDescription = stringResource(Res.string.meddetail_delete_reminder))
             }
         },
         modifier = Modifier.clickable(onClick = onClick)
@@ -216,7 +232,7 @@ fun PeriodSettingsDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Period Notification Times") },
+        title = { Text(stringResource(Res.string.meddetail_period_times)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 DayPeriod.entries.forEach { key ->
@@ -226,7 +242,7 @@ fun PeriodSettingsDialog(
                         supportingContent = { Text(formatMinutes(minutes)) },
                         trailingContent = {
                             TextButton(onClick = { editingPeriod = key }) {
-                                Text("Change")
+                                Text(stringResource(Res.string.settings_change))
                             }
                         }
                     )
@@ -234,7 +250,7 @@ fun PeriodSettingsDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onDismiss) { Text("Done") }
+            Button(onClick = onDismiss) { Text(stringResource(Res.string.done)) }
         }
     )
 }
@@ -254,17 +270,17 @@ fun PeriodTimePickerDialog(
     )
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Set Time for ${periodName.lowercase().replaceFirstChar { it.uppercase() }}") },
+        title = { Text(stringResource(Res.string.settings_set_time_for, periodName.lowercase().replaceFirstChar { it.uppercase() })) },
         text = {
             TimePicker(state = timePickerState)
         },
         confirmButton = {
             Button(onClick = { onConfirm(timePickerState.hour * 60 + timePickerState.minute) }) {
-                Text("OK")
+                Text(stringResource(Res.string.ok))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
         }
     )
 }

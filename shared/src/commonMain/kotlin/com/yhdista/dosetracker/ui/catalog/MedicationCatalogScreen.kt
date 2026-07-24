@@ -19,7 +19,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.model.MedicationUnit
+import com.yhdista.dosetracker.shared.resources.Res
+import com.yhdista.dosetracker.shared.resources.add
+import com.yhdista.dosetracker.shared.resources.cancel
+import com.yhdista.dosetracker.shared.resources.catalog_active_badge
+import com.yhdista.dosetracker.shared.resources.catalog_add_medication
+import com.yhdista.dosetracker.shared.resources.catalog_dosage
+import com.yhdista.dosetracker.shared.resources.catalog_empty
+import com.yhdista.dosetracker.shared.resources.catalog_log_manual_dose
+import com.yhdista.dosetracker.shared.resources.catalog_name
+import com.yhdista.dosetracker.shared.resources.catalog_only_active
+import com.yhdista.dosetracker.shared.resources.catalog_search_hint
+import com.yhdista.dosetracker.shared.resources.catalog_title
+import com.yhdista.dosetracker.shared.resources.catalog_unit
 import com.yhdista.dosetracker.ui.common.DataContent
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,11 +48,11 @@ fun MedicationCatalogScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Medication Catalog", fontWeight = FontWeight.Bold) })
+            TopAppBar(title = { Text(stringResource(Res.string.catalog_title), fontWeight = FontWeight.Bold) })
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Add Medication")
+                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.catalog_add_medication))
             }
         }
     ) { padding ->
@@ -63,7 +77,7 @@ fun MedicationCatalogScreen(
                 FilterChip(
                     selected = state.showOnlyActive,
                     onClick = { viewModel.onEvent(CatalogEvent.ToggleOnlyActive(!state.showOnlyActive)) },
-                    label = { Text("Pouze užívané") }
+                    label = { Text(stringResource(Res.string.catalog_only_active)) }
                 )
             }
 
@@ -80,7 +94,7 @@ fun MedicationCatalogScreen(
             DataContent(state.medications) { medications ->
                 if (medications.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No medications found")
+                        Text(stringResource(Res.string.catalog_empty))
                     }
                 } else {
                     LazyColumn {
@@ -111,24 +125,24 @@ fun AddMedicationDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Medication") },
+        title = { Text(stringResource(Res.string.catalog_add_medication)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name") },
+                    label = { Text(stringResource(Res.string.catalog_name)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = dosage,
                     onValueChange = { dosage = it },
-                    label = { Text("Dosage") },
+                    label = { Text(stringResource(Res.string.catalog_dosage)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Jednotka",
+                    text = stringResource(Res.string.catalog_unit),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -153,12 +167,12 @@ fun AddMedicationDialog(
                 onClick = { onConfirm(name, dosage, selectedUnit.symbol) },
                 enabled = name.isNotBlank() && dosage.isNotBlank()
             ) {
-                Text("Add")
+                Text(stringResource(Res.string.add))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(Res.string.cancel))
             }
         }
     )
@@ -174,7 +188,7 @@ fun SearchBar(
         value = query,
         onValueChange = onQueryChange,
         modifier = modifier,
-        placeholder = { Text("Search medications...") },
+        placeholder = { Text(stringResource(Res.string.catalog_search_hint)) },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         singleLine = true,
         shape = MaterialTheme.shapes.medium
@@ -201,7 +215,7 @@ fun MedicationItem(
                         color = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         Text(
-                            text = "Užívaný",
+                            text = stringResource(Res.string.catalog_active_badge),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -213,7 +227,7 @@ fun MedicationItem(
         supportingContent = { Text("${medication.dosage} ${medication.unit}") },
         trailingContent = {
             IconButton(onClick = onLogAdHocDose) {
-                Icon(Icons.Default.Add, contentDescription = "Log manual dose")
+                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.catalog_log_manual_dose))
             }
         },
         modifier = Modifier.clickable(onClick = onClick)

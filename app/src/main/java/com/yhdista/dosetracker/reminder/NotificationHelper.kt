@@ -5,12 +5,11 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.yhdista.dosetracker.MainActivity
 import com.yhdista.dosetracker.R
 
-class NotificationHelper(
+internal class NotificationHelper(
     private val context: Context
 ) {
     private val notificationManager =
@@ -18,8 +17,6 @@ class NotificationHelper(
 
     companion object {
         const val CHANNEL_ID = "medication_reminders"
-        const val CHANNEL_NAME = "Medication Reminders"
-        const val CHANNEL_DESCRIPTION = "Notifications for medication dose reminders"
     }
 
     init {
@@ -27,16 +24,14 @@ class NotificationHelper(
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = CHANNEL_DESCRIPTION
-            }
-            notificationManager.createNotificationChannel(channel)
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            context.getString(R.string.notification_channel_name),
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = context.getString(R.string.notification_channel_description)
         }
+        notificationManager.createNotificationChannel(channel)
     }
 
     fun showNotification(doseId: Long, medicationName: String, dosage: String) {
@@ -53,14 +48,14 @@ class NotificationHelper(
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Medication Reminder")
-            .setContentText("It's time to take your $medicationName ($dosage)")
+            .setContentTitle(context.getString(R.string.notification_title))
+            .setContentText(context.getString(R.string.notification_text, medicationName, dosage))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(contentPendingIntent)
-            .addAction(0, "Taken", doseActionIntent(doseId, DoseActionReceiver.ACTION_TAKEN))
-            .addAction(0, "Skip", doseActionIntent(doseId, DoseActionReceiver.ACTION_SKIPPED))
-            .addAction(0, "Snooze", doseActionIntent(doseId, DoseActionReceiver.ACTION_SNOOZE))
+            .addAction(0, context.getString(R.string.notification_action_taken), doseActionIntent(doseId, DoseActionReceiver.ACTION_TAKEN))
+            .addAction(0, context.getString(R.string.notification_action_skip), doseActionIntent(doseId, DoseActionReceiver.ACTION_SKIPPED))
+            .addAction(0, context.getString(R.string.notification_action_snooze), doseActionIntent(doseId, DoseActionReceiver.ACTION_SNOOZE))
             .build()
 
         notificationManager.notify(doseId.toInt(), notification)

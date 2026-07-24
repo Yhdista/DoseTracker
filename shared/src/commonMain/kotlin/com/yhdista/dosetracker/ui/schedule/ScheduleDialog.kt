@@ -15,7 +15,25 @@ import com.yhdista.dosetracker.domain.model.ReminderSchedule
 import com.yhdista.dosetracker.domain.model.ScheduleType
 import com.yhdista.dosetracker.domain.model.TimeType
 import com.yhdista.dosetracker.reminder.WeekDays
+import com.yhdista.dosetracker.shared.resources.Res
+import com.yhdista.dosetracker.shared.resources.add
+import com.yhdista.dosetracker.shared.resources.cancel
+import com.yhdista.dosetracker.shared.resources.ok
+import com.yhdista.dosetracker.shared.resources.save
+import com.yhdista.dosetracker.shared.resources.schedule_add_reminder
+import com.yhdista.dosetracker.shared.resources.schedule_choose
+import com.yhdista.dosetracker.shared.resources.schedule_days_of_week
+import com.yhdista.dosetracker.shared.resources.schedule_edit_reminder
+import com.yhdista.dosetracker.shared.resources.schedule_frequency_setting
+import com.yhdista.dosetracker.shared.resources.schedule_interval
+import com.yhdista.dosetracker.shared.resources.schedule_repeat_every_x_days
+import com.yhdista.dosetracker.shared.resources.schedule_specific_days
+import com.yhdista.dosetracker.shared.resources.schedule_start_date
+import com.yhdista.dosetracker.shared.resources.schedule_time_setting
+import com.yhdista.dosetracker.shared.resources.settings_day_period
+import com.yhdista.dosetracker.shared.resources.settings_exact_time
 import com.yhdista.dosetracker.ui.common.label
+import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Clock
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.Instant
@@ -80,10 +98,10 @@ fun ScheduleDialog(
                             .toLocalDateTime(TimeZone.currentSystemDefault()).date
                     }
                     showDatePicker = false
-                }) { Text("OK") }
+                }) { Text(stringResource(Res.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showDatePicker = false }) { Text(stringResource(Res.string.cancel)) }
             }
         ) {
             DatePicker(state = datePickerState)
@@ -92,13 +110,13 @@ fun ScheduleDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (isEdit) "Edit Reminder" else "Add Reminder") },
+        title = { Text(if (isEdit) stringResource(Res.string.schedule_edit_reminder) else stringResource(Res.string.schedule_add_reminder)) },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Time Setting", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(stringResource(Res.string.schedule_time_setting), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -107,12 +125,12 @@ fun ScheduleDialog(
                     FilterChip(
                         selected = timeType == TimeType.EXACT,
                         onClick = { timeType = TimeType.EXACT },
-                        label = { Text("Exact Time") }
+                        label = { Text(stringResource(Res.string.settings_exact_time)) }
                     )
                     FilterChip(
                         selected = timeType == TimeType.PERIOD,
                         onClick = { timeType = TimeType.PERIOD },
-                        label = { Text("Day Period") }
+                        label = { Text(stringResource(Res.string.settings_day_period)) }
                     )
                 }
 
@@ -139,7 +157,7 @@ fun ScheduleDialog(
 
                 HorizontalDivider()
 
-                Text("Frequency Setting", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(stringResource(Res.string.schedule_frequency_setting), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -148,17 +166,17 @@ fun ScheduleDialog(
                     FilterChip(
                         selected = scheduleType == ScheduleType.WEEKDAYS,
                         onClick = { scheduleType = ScheduleType.WEEKDAYS },
-                        label = { Text("Specific Days") }
+                        label = { Text(stringResource(Res.string.schedule_specific_days)) }
                     )
                     FilterChip(
                         selected = scheduleType == ScheduleType.INTERVAL,
                         onClick = { scheduleType = ScheduleType.INTERVAL },
-                        label = { Text("Interval") }
+                        label = { Text(stringResource(Res.string.schedule_interval)) }
                     )
                 }
 
                 if (scheduleType == ScheduleType.WEEKDAYS) {
-                    Text("Days of week", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(Res.string.schedule_days_of_week), style = MaterialTheme.typography.labelLarge)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         DayOfWeek.entries.forEach { day ->
                             FilterChip(
@@ -179,7 +197,7 @@ fun ScheduleDialog(
                                     intervalDaysStr = newValue
                                 }
                             },
-                            label = { Text("Repeat every X days") },
+                            label = { Text(stringResource(Res.string.schedule_repeat_every_x_days)) },
                             modifier = Modifier.fillMaxWidth()
                         )
 
@@ -188,9 +206,9 @@ fun ScheduleDialog(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Start Date: $startDate", style = MaterialTheme.typography.bodyLarge)
+                            Text(stringResource(Res.string.schedule_start_date, startDate.toString()), style = MaterialTheme.typography.bodyLarge)
                             Button(onClick = { showDatePicker = true }) {
-                                Text("Choose")
+                                Text(stringResource(Res.string.schedule_choose))
                             }
                         }
                     }
@@ -215,11 +233,11 @@ fun ScheduleDialog(
                 },
                 enabled = isValid
             ) {
-                Text(if (isEdit) "Save" else "Add")
+                Text(if (isEdit) stringResource(Res.string.save) else stringResource(Res.string.add))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
         }
     )
 }

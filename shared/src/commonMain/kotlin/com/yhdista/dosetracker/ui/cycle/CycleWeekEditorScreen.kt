@@ -22,8 +22,20 @@ import com.yhdista.dosetracker.domain.model.TimeType
 import com.yhdista.dosetracker.ui.common.label
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
 import com.yhdista.dosetracker.reminder.WeekDays
+import com.yhdista.dosetracker.shared.resources.Res
+import com.yhdista.dosetracker.shared.resources.back
+import com.yhdista.dosetracker.shared.resources.cancel
+import com.yhdista.dosetracker.shared.resources.catalog_add_medication
+import com.yhdista.dosetracker.shared.resources.cycle_week_number
+import com.yhdista.dosetracker.shared.resources.cycleweek_empty
+import com.yhdista.dosetracker.shared.resources.cycleweek_pick_medication
+import com.yhdista.dosetracker.shared.resources.delete
+import com.yhdista.dosetracker.shared.resources.error_prefix
+import com.yhdista.dosetracker.shared.resources.schedule_every_day
+import com.yhdista.dosetracker.shared.resources.schedule_every_n_days_from
 import com.yhdista.dosetracker.ui.schedule.ScheduleDialog
 import com.yhdista.dosetracker.ui.schedule.formatMinutes
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,17 +57,17 @@ fun CycleWeekEditorScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Týden ${weekIndex + 1}", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(Res.string.cycle_week_number, weekIndex + 1), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(Res.string.back))
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { pickingMedication = true }) {
-                Icon(Icons.Rounded.Add, contentDescription = "Přidat lék")
+                Icon(Icons.Rounded.Add, contentDescription = stringResource(Res.string.catalog_add_medication))
             }
         }
     ) { padding ->
@@ -126,13 +138,13 @@ fun CycleWeekEditorScreen(
             }
             is Data.Error -> {
                 Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Chyba: ${result.message}")
+                    Text(stringResource(Res.string.error_prefix, result.message))
                 }
             }
             is Data.Success -> {
                 if (result.data.isEmpty()) {
                     Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Žádný lék pro tento týden")
+                        Text(stringResource(Res.string.cycleweek_empty))
                     }
                 } else {
                     LazyColumn(
@@ -172,10 +184,10 @@ private fun CycleScheduleRow(
         formatMinutes(schedule.minutesOfDay)
     }
     val freqLabel = if (schedule.scheduleType == ScheduleType.INTERVAL) {
-        "Každých ${schedule.intervalDays} dní (od ${schedule.startDate})"
+        stringResource(Res.string.schedule_every_n_days_from, schedule.intervalDays, schedule.startDate.toString())
     } else {
         val days = WeekDays.fromBitmask(schedule.daysOfWeek)
-        if (days.size == 7) "Každý den" else days.joinToString { it.name.take(3) }
+        if (days.size == 7) stringResource(Res.string.schedule_every_day) else days.joinToString { it.name.take(3) }
     }
 
     ListItem(
@@ -183,7 +195,7 @@ private fun CycleScheduleRow(
         supportingContent = { Text("$timeLabel - $freqLabel") },
         trailingContent = {
             IconButton(onClick = onDelete) {
-                Icon(Icons.Rounded.Delete, contentDescription = "Smazat")
+                Icon(Icons.Rounded.Delete, contentDescription = stringResource(Res.string.delete))
             }
         },
         modifier = Modifier.clickable(onClick = onClick)
@@ -198,7 +210,7 @@ private fun MedicationPickerDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Vyber lék") },
+        title = { Text(stringResource(Res.string.cycleweek_pick_medication)) },
         text = {
             LazyColumn {
                 items(medications, key = { it.id }) { medication ->
@@ -210,7 +222,7 @@ private fun MedicationPickerDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Zrušit") }
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
         }
     )
 }

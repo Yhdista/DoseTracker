@@ -25,7 +25,37 @@ import com.yhdista.dosetracker.domain.model.Cycle
 import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
+import com.yhdista.dosetracker.shared.resources.Res
+import com.yhdista.dosetracker.shared.resources.cycle_type_normal
+import com.yhdista.dosetracker.shared.resources.cycle_type_post
+import com.yhdista.dosetracker.shared.resources.cycle_type_standard
+import com.yhdista.dosetracker.shared.resources.today_badge
+import com.yhdista.dosetracker.shared.resources.today_cycle_settings
+import com.yhdista.dosetracker.shared.resources.today_dose_count_few
+import com.yhdista.dosetracker.shared.resources.today_dose_count_many
+import com.yhdista.dosetracker.shared.resources.today_dose_count_one
+import com.yhdista.dosetracker.shared.resources.today_legend_post
+import com.yhdista.dosetracker.shared.resources.today_legend_standard
+import com.yhdista.dosetracker.shared.resources.today_legend_unplanned
+import com.yhdista.dosetracker.shared.resources.today_more_times
+import com.yhdista.dosetracker.shared.resources.today_new_cycle
+import com.yhdista.dosetracker.shared.resources.today_next_week
+import com.yhdista.dosetracker.shared.resources.today_no_active_cycle
+import com.yhdista.dosetracker.shared.resources.today_no_doses
+import com.yhdista.dosetracker.shared.resources.today_no_doses_today
+import com.yhdista.dosetracker.shared.resources.today_other_doses
+import com.yhdista.dosetracker.shared.resources.today_remaining_days
+import com.yhdista.dosetracker.shared.resources.today_running_days
+import com.yhdista.dosetracker.shared.resources.today_running_days_week
+import com.yhdista.dosetracker.shared.resources.today_running_indefinitely
+import com.yhdista.dosetracker.shared.resources.today_scheduled_at
+import com.yhdista.dosetracker.shared.resources.today_this_week
+import com.yhdista.dosetracker.shared.resources.today_timeline_header
+import com.yhdista.dosetracker.shared.resources.today_title
+import com.yhdista.dosetracker.shared.resources.today_toggle_status
+import com.yhdista.dosetracker.shared.resources.today_within_cycle
 import com.yhdista.dosetracker.ui.theme.DoseTrackerTheme
+import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
@@ -84,7 +114,7 @@ fun TodayContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Kalendář", fontWeight = FontWeight.Bold) }
+                title = { Text(stringResource(Res.string.today_title), fontWeight = FontWeight.Bold) }
             )
         }
     ) { padding ->
@@ -136,7 +166,7 @@ fun TodayContent(
                     val activeCycleId = activeCycle?.id
 
                     // Week 1 (Tento týden): today card + the next 6 days.
-                    stickyHeader { WeekHeader("Tento týden") }
+                    stickyHeader { WeekHeader(stringResource(Res.string.today_this_week)) }
                     item {
                         TodayCard(
                             day = agenda.first(),
@@ -153,7 +183,7 @@ fun TodayContent(
                     }
 
                     // Week 2 (Příští týden): the remaining 7 days.
-                    stickyHeader { WeekHeader("Příští týden") }
+                    stickyHeader { WeekHeader(stringResource(Res.string.today_next_week)) }
                     items(agenda.subList(7, 14), key = { it.date.toString() }) { day ->
                         DayRow(day = day, activeCycleId = activeCycleId)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -172,7 +202,7 @@ private fun TimelineSection(
 ) {
     Column(modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)) {
         Text(
-            "Časová osa cyklů · −180 až +180 dní",
+            stringResource(Res.string.today_timeline_header),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.SemiBold,
@@ -199,10 +229,10 @@ private fun TimelineLegend() {
             .padding(start = 20.dp, end = 20.dp, top = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        LegendDot(com.yhdista.dosetracker.ui.theme.CycleColors.Normal, "Cyklus")
-        LegendDot(com.yhdista.dosetracker.ui.theme.CycleColors.Standard, "Standardní")
-        LegendDot(com.yhdista.dosetracker.ui.theme.CycleColors.Post, "Post")
-        LegendDot(MaterialTheme.colorScheme.outline, "Neplánováno")
+        LegendDot(com.yhdista.dosetracker.ui.theme.CycleColors.Normal, stringResource(Res.string.cycle_type_normal))
+        LegendDot(com.yhdista.dosetracker.ui.theme.CycleColors.Standard, stringResource(Res.string.today_legend_standard))
+        LegendDot(com.yhdista.dosetracker.ui.theme.CycleColors.Post, stringResource(Res.string.today_legend_post))
+        LegendDot(MaterialTheme.colorScheme.outline, stringResource(Res.string.today_legend_unplanned))
     }
 }
 
@@ -268,7 +298,7 @@ private fun TodayCard(
                     shape = RoundedCornerShape(20.dp)
                 ) {
                     Text(
-                        "DNES",
+                        stringResource(Res.string.today_badge),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp)
@@ -288,14 +318,14 @@ private fun TodayCard(
             ) {
                 if (day.doses.isEmpty()) {
                     Text(
-                        "Dnes nejsou naplánovány žádné dávky",
+                        stringResource(Res.string.today_no_doses_today),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 if (cycleDoses.isNotEmpty()) {
                     Text(
-                        "V rámci cyklu ${cycleName ?: ""}".trimEnd(),
+                        stringResource(Res.string.today_within_cycle, cycleName ?: "").trimEnd(),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -307,7 +337,7 @@ private fun TodayCard(
                 if (otherDoses.isNotEmpty()) {
                     if (cycleDoses.isNotEmpty()) {
                         Text(
-                            "Ostatní",
+                            stringResource(Res.string.today_other_doses),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -341,7 +371,7 @@ private fun CompactDoseRow(dose: Dose, onClick: () -> Unit, onToggle: () -> Unit
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                formatTime(dose),
+                stringResource(Res.string.today_scheduled_at, formatTimeOnly(dose)),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -349,7 +379,7 @@ private fun CompactDoseRow(dose: Dose, onClick: () -> Unit, onToggle: () -> Unit
         IconButton(onClick = onToggle) {
             Icon(
                 imageVector = if (dose.status == DoseStatus.TAKEN) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
-                contentDescription = "Přepnout stav",
+                contentDescription = stringResource(Res.string.today_toggle_status),
                 tint = if (dose.status == DoseStatus.TAKEN) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
             )
         }
@@ -385,7 +415,7 @@ private fun DayRow(day: AgendaDay, activeCycleId: Long?) {
         // Summary
         if (day.doses.isEmpty()) {
             Text(
-                "Žádné dávky",
+                stringResource(Res.string.today_no_doses),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -414,7 +444,7 @@ private fun FlowRowSummary(day: AgendaDay, cycleTinted: Boolean) {
         val shown = times.take(3)
         shown.forEach { t -> TimeChip(t, cycleTinted) }
         if (times.size > 3) {
-            TimeChip("… a další ${times.size - 3}", cycleTinted = false)
+            TimeChip(stringResource(Res.string.today_more_times, (times.size - 3).toString()), cycleTinted = false)
         }
     }
 }
@@ -442,9 +472,9 @@ private fun CycleDashboardHeader(
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
     val elapsedDays = cycle.startDate.daysUntil(today)
     val typeLabel = when (cycle.type) {
-        CycleType.NORMAL -> "Cyklus"
-        CycleType.STANDARD -> "Standardní cyklus"
-        CycleType.POST -> "Post-cyklus"
+        CycleType.NORMAL -> stringResource(Res.string.cycle_type_normal)
+        CycleType.STANDARD -> stringResource(Res.string.cycle_type_standard)
+        CycleType.POST -> stringResource(Res.string.cycle_type_post)
     }
 
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -459,7 +489,7 @@ private fun CycleDashboardHeader(
                     com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Click: Nastavení cyklu (cycleId=${cycle.id}, name='${cycle.name}')")
                     onOpenSettings()
                 }) {
-                    Icon(Icons.Rounded.Settings, contentDescription = "Nastavení cyklu")
+                    Icon(Icons.Rounded.Settings, contentDescription = stringResource(Res.string.today_cycle_settings))
                 }
             }
             Text(typeLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -478,11 +508,18 @@ private fun CycleDashboardHeader(
                     trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
                 Spacer(Modifier.height(2.dp))
-                Text("Běží $elapsedDays dní · týden ${elapsedWeeks.coerceAtMost(totalWeeks)} / $totalWeeks")
-                Text("Zbývá $remainingDays dní (končí $endDate)")
+                Text(
+                    stringResource(
+                        Res.string.today_running_days_week,
+                        elapsedDays.toString(),
+                        elapsedWeeks.coerceAtMost(totalWeeks).toString(),
+                        totalWeeks.toString()
+                    )
+                )
+                Text(stringResource(Res.string.today_remaining_days, remainingDays.toString(), endDate.toString()))
             } else {
-                Text("Běží $elapsedDays dní")
-                Text("Běží neomezeně")
+                Text(stringResource(Res.string.today_running_days, elapsedDays.toString()))
+                Text(stringResource(Res.string.today_running_indefinitely))
             }
         }
     }
@@ -498,12 +535,12 @@ private fun NoCycleHeader(onCreateCycle: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Žádný aktivní cyklus", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(Res.string.today_no_active_cycle), style = MaterialTheme.typography.bodyMedium)
             Button(onClick = {
                 com.yhdista.dosetracker.core.AppLogger.d("TodayScreen", "Click: + Nový cyklus (no active cycle)")
                 onCreateCycle()
             }) {
-                Text("+ Nový cyklus")
+                Text(stringResource(Res.string.today_new_cycle))
             }
         }
     }
@@ -525,16 +562,14 @@ private fun doseTitle(dose: Dose): String {
     }
 }
 
-private fun formatTime(dose: Dose): String =
-    "Naplánováno na ${formatTimeOnly(dose)}"
-
 private fun formatTimeOnly(dose: Dose): String =
     dose.timestamp.toLocalDateTime(TimeZone.currentSystemDefault()).format(timeOnlyFormat)
 
+@Composable
 private fun doseCountLabel(count: Int): String = when (count) {
-    1 -> "1 dávka"
-    in 2..4 -> "$count dávky"
-    else -> "$count dávek"
+    1 -> stringResource(Res.string.today_dose_count_one)
+    in 2..4 -> stringResource(Res.string.today_dose_count_few, count.toString())
+    else -> stringResource(Res.string.today_dose_count_many, count.toString())
 }
 
 private fun czechDayAbbrev(dow: DayOfWeek): String = when (dow) {
@@ -604,7 +639,7 @@ fun DoseItem(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "Scheduled at ${dose.timestamp.toLocalDateTime(TimeZone.currentSystemDefault()).format(timeOnlyFormat)}",
+                    text = stringResource(Res.string.today_scheduled_at, formatTimeOnly(dose)),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -616,7 +651,7 @@ fun DoseItem(
                         Icons.Rounded.CheckCircle
                     else
                         Icons.Rounded.RadioButtonUnchecked,
-                    contentDescription = "Toggle Status",
+                    contentDescription = stringResource(Res.string.today_toggle_status),
                     tint = if (dose.status == DoseStatus.TAKEN)
                         MaterialTheme.colorScheme.primary
                     else

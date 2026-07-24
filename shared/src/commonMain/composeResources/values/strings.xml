@@ -1,0 +1,156 @@
+<resources>
+    <string name="error_prefix">Error: %1$s</string>
+    <string name="back">Back</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="save">Save</string>
+    <string name="add">Add</string>
+    <string name="delete">Delete</string>
+    <string name="done">Done</string>
+    <string name="period_morning">Morning</string>
+    <string name="period_noon">Noon</string>
+    <string name="period_evening">Evening</string>
+    <string name="period_night">Night</string>
+
+    <!-- today -->
+    <string name="cycle_type_normal">Cycle</string>
+    <string name="cycle_type_post">Post-cycle</string>
+    <string name="cycle_type_standard">Standard cycle</string>
+    <string name="today_badge">TODAY</string>
+    <string name="today_cycle_settings">Cycle settings</string>
+    <string name="today_dose_count_few">%1$s doses</string>
+    <string name="today_dose_count_many">%1$s doses</string>
+    <string name="today_dose_count_one">1 dose</string>
+    <string name="today_legend_post">Post</string>
+    <string name="today_legend_standard">Standard</string>
+    <string name="today_legend_unplanned">Unplanned</string>
+    <string name="today_more_times">… and %1$s more</string>
+    <string name="today_new_cycle">+ New cycle</string>
+    <string name="today_next_week">Next week</string>
+    <string name="today_no_active_cycle">No active cycle</string>
+    <string name="today_no_doses">No doses</string>
+    <string name="today_no_doses_today">No doses scheduled today</string>
+    <string name="today_other_doses">Other</string>
+    <string name="today_remaining_days">%1$s days left (ends %2$s)</string>
+    <string name="today_running_days">Running %1$s days</string>
+    <string name="today_running_days_week">Running %1$s days · week %2$s / %3$s</string>
+    <string name="today_running_indefinitely">Runs indefinitely</string>
+    <string name="today_scheduled_at">Scheduled at %1$s</string>
+    <string name="today_this_week">This week</string>
+    <string name="today_timeline_header">Cycle timeline · −180 to +180 days</string>
+    <string name="today_title">Calendar</string>
+    <string name="today_toggle_status">Toggle status</string>
+    <string name="today_within_cycle">Within cycle %1$s</string>
+
+    <!-- history -->
+    <string name="history_amount_at_time">%1$s %2$s at %3$s</string>
+    <string name="history_empty">No history found</string>
+    <string name="history_title">Dose History</string>
+    <string name="history_unknown_medication">Unknown Medication</string>
+
+    <!-- report -->
+    <string name="report_empty">No doses this week</string>
+    <string name="report_next_week">Next week</string>
+    <string name="report_previous_week">Previous week</string>
+    <string name="report_taken_missed_skipped">Taken: %1$s  Missed: %2$s  Skipped: %3$s</string>
+    <string name="report_title">Weekly Report</string>
+    <string name="report_upcoming">Upcoming: %1$s</string>
+
+    <!-- medication report -->
+    <string name="medreport_month">Month</string>
+    <string name="medreport_next_period">Next period</string>
+    <string name="medreport_previous_period">Previous period</string>
+    <string name="medreport_title_fallback">Medication</string>
+    <string name="medreport_year">Year</string>
+
+    <!-- settings -->
+    <string name="settings_about">About</string>
+    <string name="settings_about_desc">A simple medication reminder app to help you track your doses and stay healthy.</string>
+    <string name="settings_app_version">DoseTracker v1.0.0</string>
+    <string name="settings_change">Change</string>
+    <string name="settings_day_period">Day Period</string>
+    <string name="settings_day_period_times">Day Period Times</string>
+    <string name="settings_default_time_type">Default Time Type</string>
+    <string name="settings_default_time_type_desc">Select whether new reminders default to exact times or day periods.</string>
+    <string name="settings_exact_time">Exact Time</string>
+    <string name="settings_reminders">Reminder Settings</string>
+    <string name="settings_set_time_for">Set Time for %1$s</string>
+    <string name="settings_title">Settings</string>
+
+    <!-- catalog -->
+    <string name="catalog_active_badge">Active</string>
+    <string name="catalog_add_medication">Add Medication</string>
+    <string name="catalog_dosage">Dosage</string>
+    <string name="catalog_empty">No medications found</string>
+    <string name="catalog_log_manual_dose">Log manual dose</string>
+    <string name="catalog_name">Name</string>
+    <string name="catalog_only_active">Active only</string>
+    <string name="catalog_search_hint">Search medications...</string>
+    <string name="catalog_title">Medication Catalog</string>
+    <string name="catalog_unit">Unit</string>
+
+    <!-- add dose -->
+    <string name="adddose_amount_label">Amount (%1$s)</string>
+    <string name="adddose_medication">Medication: %1$s</string>
+    <string name="adddose_time">Time: %1$s</string>
+    <string name="adddose_title">Log Dose</string>
+
+    <!-- create cycle -->
+    <string name="createcycle_on_complete">After completion switches to</string>
+    <string name="createcycle_title">New cycle</string>
+    <string name="createcycle_total_weeks">Number of weeks</string>
+    <string name="createcycle_type">Cycle type</string>
+
+    <!-- cycle history -->
+    <string name="cycle_history_title">Cycle history</string>
+    <string name="cyclehistory_empty">No completed cycle</string>
+    <string name="cyclehistory_type_started">%1$s - started %2$s</string>
+
+    <!-- cycle settings -->
+    <string name="cyclesettings_add_follow_up">Add follow-up cycle</string>
+    <string name="cyclesettings_end">End</string>
+    <string name="cyclesettings_end_cycle">End cycle</string>
+    <string name="cyclesettings_end_cycle_confirm_text">Cycle \"%1$s\" will be ended and there will be no active cycle.</string>
+    <string name="cyclesettings_end_cycle_confirm_title">End cycle?</string>
+    <string name="cyclesettings_manage_weeks">Edit weeks</string>
+    <string name="cyclesettings_rename">Rename</string>
+    <string name="cyclesettings_rename_cycle">Rename cycle</string>
+
+    <!-- cycle weeks -->
+    <string name="cycle_week_number">Week %1$d</string>
+    <string name="cycleweek_empty">No medication for this week</string>
+    <string name="cycleweek_pick_medication">Choose medication</string>
+    <string name="cycleweeklist_title">Cycle weeks</string>
+
+    <!-- confirm dose -->
+    <string name="confirm_edit_schedule">Edit Medication Schedule</string>
+    <string name="confirm_title">Confirm Dose</string>
+
+    <!-- medication detail -->
+    <string name="meddetail_add_reminder">Add reminder</string>
+    <string name="meddetail_delete_reminder">Delete reminder</string>
+    <string name="meddetail_no_reminders">No reminders yet</string>
+    <string name="meddetail_period_settings">Period settings</string>
+    <string name="meddetail_period_times">Period Notification Times</string>
+
+    <!-- schedule dialog -->
+    <string name="schedule_add_reminder">Add Reminder</string>
+    <string name="schedule_choose">Choose</string>
+    <string name="schedule_days_of_week">Days of week</string>
+    <string name="schedule_edit_reminder">Edit Reminder</string>
+    <string name="schedule_every_day">Every day</string>
+    <string name="schedule_every_n_days_from">Every %1$d days (from %2$s)</string>
+    <string name="schedule_frequency_setting">Frequency Setting</string>
+    <string name="schedule_interval">Interval</string>
+    <string name="schedule_repeat_every_x_days">Repeat every X days</string>
+    <string name="schedule_specific_days">Specific Days</string>
+    <string name="schedule_start_date">Start Date: %1$s</string>
+    <string name="schedule_time_setting">Time Setting</string>
+
+    <!-- tabs -->
+    <string name="tab_debug">Debug</string>
+    <string name="tab_history">History</string>
+    <string name="tab_meds">Meds</string>
+    <string name="tab_report">Report</string>
+    <string name="tab_today">Today</string>
+</resources>

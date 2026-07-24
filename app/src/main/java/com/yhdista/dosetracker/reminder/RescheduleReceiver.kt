@@ -10,7 +10,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
 
-class RescheduleReceiver : BroadcastReceiver() {
+internal class RescheduleReceiver : BroadcastReceiver() {
 
     private val acceptedActions = setOf(
         Intent.ACTION_BOOT_COMPLETED,

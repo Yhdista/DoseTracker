@@ -1,0 +1,9 @@
+<resources>
+    <string name="notification_channel_name">Připomínky léků</string>
+    <string name="notification_channel_description">Upozornění na dávky léků</string>
+    <string name="notification_title">Připomínka léku</string>
+    <string name="notification_text">Je čas užít %1$s (%2$s)</string>
+    <string name="notification_action_taken">Vzato</string>
+    <string name="notification_action_skip">Přeskočit</string>
+    <string name="notification_action_snooze">Odložit</string>
+</resources>

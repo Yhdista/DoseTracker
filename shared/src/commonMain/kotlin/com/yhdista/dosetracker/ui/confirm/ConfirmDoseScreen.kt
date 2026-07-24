@@ -9,10 +9,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.unit.dp
+import com.yhdista.dosetracker.shared.resources.Res
+import com.yhdista.dosetracker.shared.resources.adddose_amount_label
+import com.yhdista.dosetracker.shared.resources.adddose_medication
+import com.yhdista.dosetracker.shared.resources.adddose_time
+import com.yhdista.dosetracker.shared.resources.back
+import com.yhdista.dosetracker.shared.resources.confirm_edit_schedule
+import com.yhdista.dosetracker.shared.resources.confirm_title
+import com.yhdista.dosetracker.shared.resources.save
 import com.yhdista.dosetracker.ui.common.DataContent
 import com.yhdista.dosetracker.ui.common.ObserveAsEvents
 import kotlinx.datetime.format
 import kotlinx.datetime.format.char
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,10 +42,10 @@ fun ConfirmDoseScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Confirm Dose", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(Res.string.confirm_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(Res.string.back))
                     }
                 }
             )
@@ -48,18 +57,18 @@ fun ConfirmDoseScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Medication: ${dose.medicationName}",
+                    text = stringResource(Res.string.adddose_medication, dose.medicationName),
                     style = MaterialTheme.typography.headlineSmall
                 )
                 OutlinedTextField(
                     value = state.amount,
                     onValueChange = { viewModel.onEvent(ConfirmDoseEvent.UpdateAmount(it)) },
-                    label = { Text("Amount (${dose.unit ?: ""})") },
+                    label = { Text(stringResource(Res.string.adddose_amount_label, dose.unit ?: "")) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 state.time?.let { time ->
                     Text(
-                        text = "Time: ${time.format(confirmTimeFormat)}",
+                        text = stringResource(Res.string.adddose_time, time.format(confirmTimeFormat)),
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
@@ -67,13 +76,13 @@ fun ConfirmDoseScreen(
                     onClick = { viewModel.onEvent(ConfirmDoseEvent.Save) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Save")
+                    Text(stringResource(Res.string.save))
                 }
                 OutlinedButton(
                     onClick = { onNavigateToMedicationDetail(dose.medicationId) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Edit Medication Schedule")
+                    Text(stringResource(Res.string.confirm_edit_schedule))
                 }
                 if (state.error != null) {
                     Text(text = state.error!!, color = MaterialTheme.colorScheme.error)

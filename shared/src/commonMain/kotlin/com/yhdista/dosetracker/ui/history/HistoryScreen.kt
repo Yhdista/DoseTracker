@@ -11,8 +11,14 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.yhdista.dosetracker.shared.resources.Res
+import com.yhdista.dosetracker.shared.resources.history_amount_at_time
+import com.yhdista.dosetracker.shared.resources.history_empty
+import com.yhdista.dosetracker.shared.resources.history_title
+import com.yhdista.dosetracker.shared.resources.history_unknown_medication
 import com.yhdista.dosetracker.ui.common.DataContent
 import kotlinx.datetime.LocalDateTime
+import org.jetbrains.compose.resources.stringResource
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.toLocalDateTime
@@ -27,13 +33,13 @@ fun HistoryScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Dose History", fontWeight = FontWeight.Bold) })
+            TopAppBar(title = { Text(stringResource(Res.string.history_title), fontWeight = FontWeight.Bold) })
         }
     ) { padding ->
         DataContent(state.dosesWithMeds, Modifier.padding(padding)) { items ->
             if (items.isEmpty()) {
                 Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No history found")
+                    Text(stringResource(Res.string.history_empty))
                 }
             } else {
                 LazyColumn(
@@ -62,11 +68,11 @@ fun HistoryItem(item: DoseWithMedication) {
     val timeStr = item.dose.timestamp.toLocalDateTime(TimeZone.currentSystemDefault()).format(historyTimeFormat)
 
     ListItem(
-        headlineContent = { Text(item.medication?.name ?: "Unknown Medication") },
+        headlineContent = { Text(item.medication?.name ?: stringResource(Res.string.history_unknown_medication)) },
         supportingContent = {
             val amountStr = item.dose.amount?.toString() ?: item.medication?.dosage?.toString() ?: ""
             val unitStr = item.dose.unit ?: item.medication?.unit ?: ""
-            Text("$amountStr $unitStr at $timeStr")
+            Text(stringResource(Res.string.history_amount_at_time, amountStr, unitStr, timeStr))
         },
         trailingContent = {
             Text(

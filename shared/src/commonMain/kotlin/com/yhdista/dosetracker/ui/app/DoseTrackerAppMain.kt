@@ -49,7 +49,15 @@ import com.yhdista.dosetracker.ui.history.HistoryScreen
 import com.yhdista.dosetracker.ui.history.HistoryViewModel
 import com.yhdista.dosetracker.ui.medicationdetail.MedicationDetailScreen
 import com.yhdista.dosetracker.ui.medicationdetail.MedicationDetailViewModel
+import com.yhdista.dosetracker.shared.resources.Res
+import com.yhdista.dosetracker.shared.resources.settings_title
+import com.yhdista.dosetracker.shared.resources.tab_debug
+import com.yhdista.dosetracker.shared.resources.tab_history
+import com.yhdista.dosetracker.shared.resources.tab_meds
+import com.yhdista.dosetracker.shared.resources.tab_report
+import com.yhdista.dosetracker.shared.resources.tab_today
 import com.yhdista.dosetracker.ui.navigation.Destination
+import org.jetbrains.compose.resources.stringResource
 import com.yhdista.dosetracker.ui.report.MedicationReportScreen
 import com.yhdista.dosetracker.ui.report.MedicationReportViewModel
 import com.yhdista.dosetracker.ui.report.ReportScreen
@@ -81,12 +89,12 @@ fun DoseTrackerAppMain(
     var currentTab by rememberSaveable { mutableStateOf(TAB_TODAY) }
 
     val tabs = buildList {
-        add(TabSpec(TAB_TODAY, "Today", Icons.Rounded.Today, todayStack))
-        add(TabSpec(TAB_MEDS, "Meds", Icons.Rounded.Medication, medsStack))
-        add(TabSpec(TAB_HISTORY, "History", Icons.Rounded.History, historyStack))
-        add(TabSpec(TAB_REPORT, "Report", Icons.Rounded.BarChart, reportStack))
-        add(TabSpec(TAB_SETTINGS, "Settings", Icons.Rounded.Settings, settingsStack))
-        if (isDebugBuild) add(TabSpec(TAB_DEBUG, "Debug", Icons.Rounded.BugReport, debugStack))
+        add(TabSpec(TAB_TODAY, stringResource(Res.string.tab_today), Icons.Rounded.Today, todayStack))
+        add(TabSpec(TAB_MEDS, stringResource(Res.string.tab_meds), Icons.Rounded.Medication, medsStack))
+        add(TabSpec(TAB_HISTORY, stringResource(Res.string.tab_history), Icons.Rounded.History, historyStack))
+        add(TabSpec(TAB_REPORT, stringResource(Res.string.tab_report), Icons.Rounded.BarChart, reportStack))
+        add(TabSpec(TAB_SETTINGS, stringResource(Res.string.settings_title), Icons.Rounded.Settings, settingsStack))
+        if (isDebugBuild) add(TabSpec(TAB_DEBUG, stringResource(Res.string.tab_debug), Icons.Rounded.BugReport, debugStack))
     }
     val backstack = (tabs.find { it.key == currentTab } ?: tabs.first()).stack
     val listDetailStrategy = rememberListDetailSceneStrategy<NavKey>()

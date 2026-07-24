@@ -18,7 +18,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.shared.resources.Res
+import com.yhdista.dosetracker.shared.resources.back
+import com.yhdista.dosetracker.shared.resources.error_prefix
+import com.yhdista.dosetracker.shared.resources.medreport_month
+import com.yhdista.dosetracker.shared.resources.medreport_next_period
+import com.yhdista.dosetracker.shared.resources.medreport_previous_period
+import com.yhdista.dosetracker.shared.resources.medreport_title_fallback
+import com.yhdista.dosetracker.shared.resources.medreport_year
 import kotlinx.datetime.LocalDate
+import org.jetbrains.compose.resources.stringResource
 import kotlinx.datetime.format
 import kotlinx.datetime.format.MonthNames
 import kotlinx.datetime.format.char
@@ -39,10 +48,15 @@ fun MedicationReportScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.medicationName.ifEmpty { "Medication" }, fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        state.medicationName.ifEmpty { stringResource(Res.string.medreport_title_fallback) },
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(Res.string.back))
                     }
                 }
             )
@@ -58,14 +72,14 @@ fun MedicationReportScreen(
                         if (state.mode != ReportRangeMode.MONTH) viewModel.onEvent(MedicationReportEvent.ToggleMode)
                     },
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
-                ) { Text("Month") }
+                ) { Text(stringResource(Res.string.medreport_month)) }
                 SegmentedButton(
                     selected = state.mode == ReportRangeMode.YEAR,
                     onClick = {
                         if (state.mode != ReportRangeMode.YEAR) viewModel.onEvent(MedicationReportEvent.ToggleMode)
                     },
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
-                ) { Text("Year") }
+                ) { Text(stringResource(Res.string.medreport_year)) }
             }
 
             Row(
@@ -74,14 +88,14 @@ fun MedicationReportScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = { viewModel.onEvent(MedicationReportEvent.PreviousPeriod) }) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Previous period")
+                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(Res.string.medreport_previous_period))
                 }
                 Text(
                     text = periodLabel(state.mode, state.periodStart),
                     style = MaterialTheme.typography.titleMedium
                 )
                 IconButton(onClick = { viewModel.onEvent(MedicationReportEvent.NextPeriod) }) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = "Next period")
+                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = stringResource(Res.string.medreport_next_period))
                 }
             }
 
@@ -93,7 +107,7 @@ fun MedicationReportScreen(
                 }
                 is Data.Error -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Error: ${result.message}")
+                        Text(stringResource(Res.string.error_prefix, result.message))
                     }
                 }
                 is Data.Success -> {

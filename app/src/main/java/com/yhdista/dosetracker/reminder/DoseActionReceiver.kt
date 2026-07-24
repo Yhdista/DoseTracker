@@ -9,7 +9,7 @@ import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import org.koin.core.context.GlobalContext
 
-class DoseActionReceiver : BroadcastReceiver() {
+internal class DoseActionReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION_TAKEN = "com.yhdista.dosetracker.ACTION_TAKEN"

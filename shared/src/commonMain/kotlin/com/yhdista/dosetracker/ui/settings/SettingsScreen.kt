@@ -13,8 +13,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.DayPeriod
+import com.yhdista.dosetracker.shared.resources.Res
+import com.yhdista.dosetracker.shared.resources.cancel
+import com.yhdista.dosetracker.shared.resources.ok
+import com.yhdista.dosetracker.shared.resources.settings_about
+import com.yhdista.dosetracker.shared.resources.settings_about_desc
+import com.yhdista.dosetracker.shared.resources.settings_app_version
+import com.yhdista.dosetracker.shared.resources.settings_change
+import com.yhdista.dosetracker.shared.resources.settings_day_period
+import com.yhdista.dosetracker.shared.resources.settings_day_period_times
+import com.yhdista.dosetracker.shared.resources.settings_default_time_type
+import com.yhdista.dosetracker.shared.resources.settings_default_time_type_desc
+import com.yhdista.dosetracker.shared.resources.settings_exact_time
+import com.yhdista.dosetracker.shared.resources.settings_reminders
+import com.yhdista.dosetracker.shared.resources.settings_set_time_for
+import com.yhdista.dosetracker.shared.resources.settings_title
 import com.yhdista.dosetracker.ui.common.label
 import com.yhdista.dosetracker.ui.schedule.formatMinutes
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,7 +44,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings", fontWeight = FontWeight.Bold) }
+                title = { Text(stringResource(Res.string.settings_title), fontWeight = FontWeight.Bold) }
             )
         }
     ) { padding ->
@@ -55,7 +71,7 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Day Period Times",
+                text = stringResource(Res.string.settings_day_period_times),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -71,7 +87,7 @@ fun SettingsScreen(
                             supportingContent = { Text(formatMinutes(minutes)) },
                             trailingContent = {
                                 TextButton(onClick = { editingPeriod = key }) {
-                                    Text("Change")
+                                    Text(stringResource(Res.string.settings_change))
                                 }
                             },
                             modifier = Modifier.clickable { editingPeriod = key }
@@ -83,7 +99,7 @@ fun SettingsScreen(
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "Reminder Settings",
+                text = stringResource(Res.string.settings_reminders),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -96,12 +112,12 @@ fun SettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Default Time Type",
+                        text = stringResource(Res.string.settings_default_time_type),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "Select whether new reminders default to exact times or day periods.",
+                        text = stringResource(Res.string.settings_default_time_type_desc),
                         style = MaterialTheme.typography.bodyMedium
                     )
 
@@ -123,7 +139,7 @@ fun SettingsScreen(
                                 }
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text("Exact Time")
+                            Text(stringResource(Res.string.settings_exact_time))
                         }
 
                         Row(
@@ -139,7 +155,7 @@ fun SettingsScreen(
                                 }
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text("Day Period")
+                            Text(stringResource(Res.string.settings_day_period))
                         }
                     }
                 }
@@ -148,7 +164,7 @@ fun SettingsScreen(
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "About",
+                text = stringResource(Res.string.settings_about),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -161,12 +177,12 @@ fun SettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "DoseTracker v1.0.0",
+                        text = stringResource(Res.string.settings_app_version),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "A simple medication reminder app to help you track your doses and stay healthy.",
+                        text = stringResource(Res.string.settings_about_desc),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -190,7 +206,7 @@ private fun PeriodTimePickerDialog(
     )
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Set Time for $periodName") },
+        title = { Text(stringResource(Res.string.settings_set_time_for, periodName)) },
         text = {
             Box(
                 modifier = Modifier.fillMaxWidth(),
@@ -201,11 +217,11 @@ private fun PeriodTimePickerDialog(
         },
         confirmButton = {
             Button(onClick = { onConfirm(timePickerState.hour * 60 + timePickerState.minute) }) {
-                Text("OK")
+                Text(stringResource(Res.string.ok))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
         }
     )
 }

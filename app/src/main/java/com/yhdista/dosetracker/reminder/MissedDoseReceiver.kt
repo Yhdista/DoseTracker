@@ -7,7 +7,7 @@ import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.repository.DoseRepository
 import org.koin.core.context.GlobalContext
 
-class MissedDoseReceiver : BroadcastReceiver() {
+internal class MissedDoseReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val doseId = intent.getLongExtra("doseId", -1L)
         com.yhdista.dosetracker.core.AppLogger.i("MissedDoseReceiver", "onReceive: doseId=$doseId")

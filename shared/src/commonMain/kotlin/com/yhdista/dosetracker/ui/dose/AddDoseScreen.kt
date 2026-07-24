@@ -9,10 +9,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.unit.dp
+import com.yhdista.dosetracker.shared.resources.Res
+import com.yhdista.dosetracker.shared.resources.adddose_amount_label
+import com.yhdista.dosetracker.shared.resources.adddose_medication
+import com.yhdista.dosetracker.shared.resources.adddose_time
+import com.yhdista.dosetracker.shared.resources.adddose_title
+import com.yhdista.dosetracker.shared.resources.back
 import com.yhdista.dosetracker.ui.common.DataContent
 import com.yhdista.dosetracker.ui.common.ObserveAsEvents
 import kotlinx.datetime.format
 import kotlinx.datetime.format.char
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,10 +39,10 @@ fun AddDoseScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Log Dose", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(Res.string.adddose_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(Res.string.back))
                     }
                 }
             )
@@ -50,19 +57,19 @@ fun AddDoseScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Medication: ${medication.name}",
+                    text = stringResource(Res.string.adddose_medication, medication.name),
                     style = MaterialTheme.typography.headlineSmall
                 )
 
                 OutlinedTextField(
                     value = state.amount,
                     onValueChange = { viewModel.onEvent(AddDoseEvent.UpdateAmount(it)) },
-                    label = { Text("Amount (${medication.unit})") },
+                    label = { Text(stringResource(Res.string.adddose_amount_label, medication.unit)) },
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 Text(
-                    text = "Time: ${state.time.format(dateTimeDisplayFormat)}",
+                    text = stringResource(Res.string.adddose_time, state.time.format(dateTimeDisplayFormat)),
                     style = MaterialTheme.typography.bodyLarge
                 )
 
@@ -70,7 +77,7 @@ fun AddDoseScreen(
                     onClick = { viewModel.onEvent(AddDoseEvent.SaveDose) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Log Dose")
+                    Text(stringResource(Res.string.adddose_title))
                 }
 
                 if (state.error != null) {

@@ -12,6 +12,10 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 
+compose.resources {
+    packageOfResClass = "com.yhdista.dosetracker.shared.resources"
+}
+
 kotlin {
     android {
         namespace = "com.yhdista.dosetracker.shared"
