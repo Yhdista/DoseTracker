@@ -6,6 +6,7 @@ import com.yhdista.dosetracker.domain.model.CycleCompleteAction
 import com.yhdista.dosetracker.domain.model.CycleStatus
 import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.repository.CycleRepository
+import com.yhdista.dosetracker.domain.usecase.CreateCycleUseCase
 import com.yhdista.dosetracker.reminder.DoseGenerator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -47,7 +48,7 @@ class CreateCycleViewModelTest {
         whenever(repository.getActiveCycleOnce()).thenReturn(null)
         whenever(repository.createCycle(any())).thenReturn(Data.Success(1L))
 
-        val viewModel = CreateCycleViewModel(repository, doseGenerator)
+        val viewModel = CreateCycleViewModel(repository, CreateCycleUseCase(repository, doseGenerator))
         testDispatcher.scheduler.advanceUntilIdle()
 
         val events = mutableListOf<CreateCycleUiEvent>()
@@ -74,7 +75,7 @@ class CreateCycleViewModelTest {
         whenever(repository.getActiveCycleOnce()).thenReturn(existing)
         whenever(repository.getStandardCycle()).thenReturn(existing)
 
-        val viewModel = CreateCycleViewModel(repository, doseGenerator)
+        val viewModel = CreateCycleViewModel(repository, CreateCycleUseCase(repository, doseGenerator))
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.onEvent(CreateCycleEvent.NameChanged("Novy nazev"))
@@ -95,7 +96,7 @@ class CreateCycleViewModelTest {
         whenever(repository.getActiveCycleOnce()).thenReturn(active)
         whenever(repository.createCycle(any())).thenReturn(Data.Success(5L))
 
-        val viewModel = CreateCycleViewModel(repository, doseGenerator)
+        val viewModel = CreateCycleViewModel(repository, CreateCycleUseCase(repository, doseGenerator))
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.onEvent(CreateCycleEvent.NameChanged("Post-cyklus"))

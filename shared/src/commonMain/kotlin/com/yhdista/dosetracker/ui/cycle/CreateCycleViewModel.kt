@@ -8,7 +8,7 @@ import com.yhdista.dosetracker.domain.model.CycleCompleteAction
 import com.yhdista.dosetracker.domain.model.CycleStatus
 import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.repository.CycleRepository
-import com.yhdista.dosetracker.reminder.DoseGenerator
+import com.yhdista.dosetracker.domain.usecase.CreateCycleUseCase
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -41,7 +41,7 @@ sealed interface CreateCycleEvent {
 
 class CreateCycleViewModel(
     private val cycleRepository: CycleRepository,
-    private val doseGenerator: DoseGenerator
+    private val createCycle: CreateCycleUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CreateCycleState())
@@ -82,60 +82,12 @@ class CreateCycleViewModel(
     private fun save() {
         viewModelScope.launch {
             val current = _state.value
-            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-            val active = cycleRepository.getActiveCycleOnce()
-
-            val result: Data<Long>? = when {
-                active == null -> {
-                    val cycle = Cycle(
-                        name = current.name,
-                        type = current.type,
-                        totalWeeks = if (current.type == CycleType.STANDARD) null else current.totalWeeks,
-                        startDate = today,
-                        status = CycleStatus.ACTIVE,
-                        onCompleteAction = current.onCompleteAction
-                    )
-                    cycleRepository.createCycle(cycle).also {
-                        if (it is Data.Success) doseGenerator.runForToday()
-                    }
-                }
-                current.type == CycleType.STANDARD -> {
-                    val existing = cycleRepository.getStandardCycle()
-                    if (existing != null) {
-                        cycleRepository.updateCycle(existing.copy(name = current.name))
-                        Data.Success(existing.id)
-                    } else {
-                        val cycle = Cycle(
-                            name = current.name,
-                            type = CycleType.STANDARD,
-                            totalWeeks = null,
-                            startDate = today,
-                            status = CycleStatus.DRAFT,
-                            onCompleteAction = CycleCompleteAction.TO_NONE
-                        )
-                        cycleRepository.createCycle(cycle)
-                    }
-                }
-                current.type == CycleType.POST -> {
-                    val cycle = Cycle(
-                        name = current.name,
-                        type = CycleType.POST,
-                        totalWeeks = current.totalWeeks,
-                        startDate = today,
-                        status = CycleStatus.DRAFT,
-                        onCompleteAction = CycleCompleteAction.TO_NONE
-                    )
-                    val created = cycleRepository.createCycle(cycle)
-                    if (created is Data.Success) {
-                        cycleRepository.updateCycle(
-                            active.copy(nextCycleId = created.data, onCompleteAction = CycleCompleteAction.TO_POST)
-                        )
-                    }
-                    created
-                }
-                else -> null // NORMAL type while a cycle is already active is not offered by the UI.
-            }
-
+            val result = createCycle(
+                name = current.name,
+                type = current.type,
+                totalWeeks = current.totalWeeks,
+                onCompleteAction = current.onCompleteAction,
+            )
             if (result is Data.Success) {
                 val weekCount = if (current.type == CycleType.STANDARD) 1 else current.totalWeeks
                 _uiEvents.send(CreateCycleUiEvent.Created(result.data, weekCount))

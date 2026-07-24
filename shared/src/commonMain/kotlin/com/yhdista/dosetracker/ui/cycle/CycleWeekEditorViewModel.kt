@@ -11,7 +11,7 @@ import com.yhdista.dosetracker.domain.model.ReminderSchedule
 import com.yhdista.dosetracker.domain.repository.CycleRepository
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import com.yhdista.dosetracker.domain.repository.ScheduleRepository
-import com.yhdista.dosetracker.reminder.DoseGenerator
+import com.yhdista.dosetracker.domain.usecase.ManageScheduleUseCase
 import com.yhdista.dosetracker.reminder.WeekDays
 import com.yhdista.dosetracker.domain.model.DayPeriod
 import com.yhdista.dosetracker.domain.model.ScheduleType
@@ -54,7 +54,7 @@ class CycleWeekEditorViewModel(
     private val scheduleRepository: ScheduleRepository,
     private val cycleRepository: CycleRepository,
     private val settingsRepository: SettingsRepository,
-    private val doseGenerator: DoseGenerator,
+    private val manageSchedule: ManageScheduleUseCase,
     cycleId: Long,
     weekIndex: Int,
     private val savedStateHandle: SavedStateHandle
@@ -109,7 +109,7 @@ class CycleWeekEditorViewModel(
     private fun addSchedule(event: CycleWeekEditorEvent.AddSchedule) {
         viewModelScope.launch {
             val weekId = uiState.value.weekId ?: return@launch
-            scheduleRepository.insertSchedule(
+            manageSchedule.addSchedule(
                 ReminderSchedule(
                     medicationId = event.medicationId,
                     minutesOfDay = event.minutesOfDay,
@@ -122,21 +122,18 @@ class CycleWeekEditorViewModel(
                     cycleWeekId = weekId
                 )
             )
-            doseGenerator.runForToday()
         }
     }
 
     private fun updateSchedule(schedule: ReminderSchedule) {
         viewModelScope.launch {
-            scheduleRepository.updateSchedule(schedule)
-            doseGenerator.runForToday()
+            manageSchedule.updateSchedule(schedule)
         }
     }
 
     private fun deleteSchedule(schedule: ReminderSchedule) {
         viewModelScope.launch {
-            scheduleRepository.deleteSchedule(schedule)
-            doseGenerator.runForToday()
+            manageSchedule.deleteSchedule(schedule)
         }
     }
 }

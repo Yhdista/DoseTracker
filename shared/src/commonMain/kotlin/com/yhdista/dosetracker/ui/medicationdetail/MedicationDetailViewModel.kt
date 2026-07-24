@@ -9,11 +9,9 @@ import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
-import com.yhdista.dosetracker.domain.repository.DoseRepository
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import com.yhdista.dosetracker.domain.repository.ScheduleRepository
-import com.yhdista.dosetracker.reminder.DoseGenerator
-import com.yhdista.dosetracker.reminder.DoseReminderScheduler
+import com.yhdista.dosetracker.domain.usecase.ManageScheduleUseCase
 import com.yhdista.dosetracker.reminder.WeekDays
 import com.yhdista.dosetracker.domain.model.DayPeriod
 import com.yhdista.dosetracker.domain.model.ScheduleType
@@ -51,11 +49,9 @@ sealed interface MedicationDetailEvent {
 @OptIn(ExperimentalCoroutinesApi::class)
 class MedicationDetailViewModel(
     private val medicationRepository: MedicationRepository,
-    private val doseRepository: DoseRepository,
     private val scheduleRepository: ScheduleRepository,
     private val settingsRepository: SettingsRepository,
-    private val scheduler: DoseReminderScheduler,
-    private val doseGenerator: DoseGenerator,
+    private val manageSchedule: ManageScheduleUseCase,
     medicationId: Long,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -104,7 +100,7 @@ class MedicationDetailViewModel(
     private fun addSchedule(event: MedicationDetailEvent.AddSchedule) {
         val medicationId = savedStateHandle.get<Long>("medicationId") ?: return
         viewModelScope.launch {
-            scheduleRepository.insertSchedule(
+            manageSchedule.addSchedule(
                 ReminderSchedule(
                     medicationId = medicationId,
                     minutesOfDay = event.minutesOfDay,
@@ -116,36 +112,24 @@ class MedicationDetailViewModel(
                     dayPeriod = event.dayPeriod
                 )
             )
-            doseGenerator.runForToday()
         }
     }
 
     private fun updateSchedule(schedule: ReminderSchedule) {
         viewModelScope.launch {
-            scheduleRepository.updateSchedule(schedule)
-            doseGenerator.runForToday()
+            manageSchedule.updateSchedule(schedule)
         }
     }
 
     private fun updatePeriodTime(period: DayPeriod, minutesOfDay: Int) {
         viewModelScope.launch {
-            scheduleRepository.updatePeriodTime(period, minutesOfDay)
-            doseGenerator.runForToday()
+            manageSchedule.updatePeriodTime(period, minutesOfDay)
         }
     }
 
     private fun deleteSchedule(schedule: ReminderSchedule) {
         viewModelScope.launch {
-            val doses = doseRepository.getDosesForMedication(schedule.medicationId).first { it !is Data.Loading }
-            if (doses is Data.Success) {
-                doses.data
-                    .filter { it.scheduleId == schedule.id && it.status == DoseStatus.PENDING }
-                    .forEach {
-                        scheduler.cancelReminder(it.id)
-                        scheduler.cancelMissedTimeout(it.id)
-                    }
-            }
-            scheduleRepository.deleteSchedule(schedule)
+            manageSchedule.deleteSchedule(schedule)
         }
     }
 }

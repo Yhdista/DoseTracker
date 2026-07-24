@@ -24,7 +24,7 @@ val viewModelModule = module {
     viewModel { HistoryViewModel(get(), get()) }
     viewModel { TodayViewModel(get(), get(), get()) }
     viewModel { (medicationId: Long) ->
-        MedicationDetailViewModel(get(), get(), get(), get(), get(), get(), medicationId, get())
+        MedicationDetailViewModel(get(), get(), get(), get(), medicationId, get())
     }
     viewModel { (doseId: Long) -> ConfirmDoseViewModel(get(), doseId, get()) }
     viewModel { ReportViewModel(get()) }

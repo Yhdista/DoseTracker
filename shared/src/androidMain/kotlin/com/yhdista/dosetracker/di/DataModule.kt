@@ -18,6 +18,8 @@ import com.yhdista.dosetracker.domain.repository.DoseRepository
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import com.yhdista.dosetracker.domain.repository.ScheduleRepository
 import com.yhdista.dosetracker.domain.repository.SettingsRepository
+import com.yhdista.dosetracker.domain.usecase.CreateCycleUseCase
+import com.yhdista.dosetracker.domain.usecase.ManageScheduleUseCase
 import com.yhdista.dosetracker.reminder.CycleLifecycleManager
 import com.yhdista.dosetracker.reminder.DoseGenerator
 import org.koin.dsl.module
@@ -43,5 +45,7 @@ val dataModule = module {
     single<DatabaseMaintenance> { DatabaseMaintenanceImpl(get<AppDatabase>()) }
 
     single { CycleLifecycleManager(get()) }
+    single { CreateCycleUseCase(get(), get()) }
+    single { ManageScheduleUseCase(get(), get(), get(), get()) }
     single { DoseGenerator(get(), get(), get(), get(), get(), get()) }
 }
