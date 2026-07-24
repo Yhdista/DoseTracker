@@ -6,6 +6,7 @@ import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.model.MedicationUnit
+import com.yhdista.dosetracker.domain.repository.DoseRepository
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -36,7 +37,8 @@ import org.mockito.kotlin.whenever
 @OptIn(ExperimentalCoroutinesApi::class)
 class MedicationReportViewModelTest {
 
-    private val repository = mock<MedicationRepository>()
+    private val medicationRepository = mock<MedicationRepository>()
+    private val doseRepository = mock<DoseRepository>()
     private val testDispatcher = StandardTestDispatcher()
     private val zone = TimeZone.currentSystemDefault()
 
@@ -67,10 +69,10 @@ class MedicationReportViewModelTest {
             Dose(id = 2, medicationId = 10, timestamp = expectedWeeks[2].atTime(8, 0).toInstant(zone), amount = 300.0, unit = "mg", status = DoseStatus.TAKEN),
             Dose(id = 3, medicationId = 10, timestamp = expectedWeeks[2].plus(1, DateTimeUnit.DAY).atTime(8, 0).toInstant(zone), amount = 999.0, unit = "mg", status = DoseStatus.MISSED)
         )
-        whenever(repository.getMedicationById(10)).thenReturn(flowOf(Data.Success(Medication(id = 10, name = "Aspirin", dosage = 500.0, unit = MedicationUnit.MG))))
-        whenever(repository.getDosesForMedicationInRange(eq(10L), any(), any())).thenReturn(flowOf(Data.Success(doses)))
+        whenever(medicationRepository.getMedicationById(10)).thenReturn(flowOf(Data.Success(Medication(id = 10, name = "Aspirin", dosage = 500.0, unit = MedicationUnit.MG))))
+        whenever(doseRepository.getDosesForMedicationInRange(eq(10L), any(), any())).thenReturn(flowOf(Data.Success(doses)))
 
-        val viewModel = MedicationReportViewModel(repository, SavedStateHandle())
+        val viewModel = MedicationReportViewModel(medicationRepository, doseRepository, SavedStateHandle())
         val job = launch { viewModel.uiState.collect {} }
         viewModel.setMedicationId(10)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -91,10 +93,10 @@ class MedicationReportViewModelTest {
 
     @Test
     fun `PreviousPeriod and NextPeriod shift by one month, ToggleMode switches to year anchored on the current period`() = runTest {
-        whenever(repository.getMedicationById(any())).thenReturn(flowOf(Data.Success(Medication(id = 10, name = "Aspirin", dosage = 500.0, unit = MedicationUnit.MG))))
-        whenever(repository.getDosesForMedicationInRange(any(), any(), any())).thenReturn(flowOf(Data.Success(emptyList())))
+        whenever(medicationRepository.getMedicationById(any())).thenReturn(flowOf(Data.Success(Medication(id = 10, name = "Aspirin", dosage = 500.0, unit = MedicationUnit.MG))))
+        whenever(doseRepository.getDosesForMedicationInRange(any(), any(), any())).thenReturn(flowOf(Data.Success(emptyList())))
 
-        val viewModel = MedicationReportViewModel(repository, SavedStateHandle())
+        val viewModel = MedicationReportViewModel(medicationRepository, doseRepository, SavedStateHandle())
         val job = launch { viewModel.uiState.collect {} }
         viewModel.setMedicationId(10)
         testDispatcher.scheduler.advanceUntilIdle()

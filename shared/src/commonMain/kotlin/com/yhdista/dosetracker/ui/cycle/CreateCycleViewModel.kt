@@ -7,7 +7,7 @@ import com.yhdista.dosetracker.domain.model.Cycle
 import com.yhdista.dosetracker.domain.model.CycleCompleteAction
 import com.yhdista.dosetracker.domain.model.CycleStatus
 import com.yhdista.dosetracker.domain.model.CycleType
-import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.CycleRepository
 import com.yhdista.dosetracker.reminder.DoseGenerator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,7 +36,7 @@ sealed interface CreateCycleEvent {
 }
 
 class CreateCycleViewModel(
-    private val repository: MedicationRepository,
+    private val cycleRepository: CycleRepository,
     private val doseGenerator: DoseGenerator
 ) : ViewModel() {
 
@@ -45,7 +45,7 @@ class CreateCycleViewModel(
 
     init {
         viewModelScope.launch {
-            val active = repository.getActiveCycleOnce()
+            val active = cycleRepository.getActiveCycleOnce()
             _state.value = _state.value.copy(
                 hasActiveCycle = active != null,
                 type = if (active != null) CycleType.POST else CycleType.NORMAL
@@ -76,7 +76,7 @@ class CreateCycleViewModel(
         viewModelScope.launch {
             val current = _state.value
             val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-            val active = repository.getActiveCycleOnce()
+            val active = cycleRepository.getActiveCycleOnce()
 
             val result: Data<Long>? = when {
                 active == null -> {
@@ -88,14 +88,14 @@ class CreateCycleViewModel(
                         status = CycleStatus.ACTIVE,
                         onCompleteAction = current.onCompleteAction
                     )
-                    repository.createCycle(cycle).also {
+                    cycleRepository.createCycle(cycle).also {
                         if (it is Data.Success) doseGenerator.runForToday()
                     }
                 }
                 current.type == CycleType.STANDARD -> {
-                    val existing = repository.getStandardCycle()
+                    val existing = cycleRepository.getStandardCycle()
                     if (existing != null) {
-                        repository.updateCycle(existing.copy(name = current.name))
+                        cycleRepository.updateCycle(existing.copy(name = current.name))
                         Data.Success(existing.id)
                     } else {
                         val cycle = Cycle(
@@ -106,7 +106,7 @@ class CreateCycleViewModel(
                             status = CycleStatus.DRAFT,
                             onCompleteAction = CycleCompleteAction.TO_NONE
                         )
-                        repository.createCycle(cycle)
+                        cycleRepository.createCycle(cycle)
                     }
                 }
                 current.type == CycleType.POST -> {
@@ -118,9 +118,9 @@ class CreateCycleViewModel(
                         status = CycleStatus.DRAFT,
                         onCompleteAction = CycleCompleteAction.TO_NONE
                     )
-                    val created = repository.createCycle(cycle)
+                    val created = cycleRepository.createCycle(cycle)
                     if (created is Data.Success) {
-                        repository.updateCycle(
+                        cycleRepository.updateCycle(
                             active.copy(nextCycleId = created.data, onCompleteAction = CycleCompleteAction.TO_POST)
                         )
                     }

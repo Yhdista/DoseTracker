@@ -5,7 +5,7 @@ import com.yhdista.dosetracker.domain.model.Cycle
 import com.yhdista.dosetracker.domain.model.CycleCompleteAction
 import com.yhdista.dosetracker.domain.model.CycleStatus
 import com.yhdista.dosetracker.domain.model.CycleType
-import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.CycleRepository
 import com.yhdista.dosetracker.reminder.DoseGenerator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,7 +27,7 @@ import org.mockito.kotlin.whenever
 @OptIn(ExperimentalCoroutinesApi::class)
 class CreateCycleViewModelTest {
 
-    private val repository = mock<MedicationRepository>()
+    private val repository = mock<CycleRepository>()
     private val doseGenerator = mock<DoseGenerator>()
     private val testDispatcher = StandardTestDispatcher()
 

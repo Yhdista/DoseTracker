@@ -9,6 +9,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.Medication
+import com.yhdista.dosetracker.domain.repository.DoseRepository
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import kotlinx.coroutines.flow.*
 
@@ -22,12 +23,13 @@ data class DoseWithMedication(
 )
 
 class HistoryViewModel(
-    private val repository: MedicationRepository
+    private val medicationRepository: MedicationRepository,
+    private val doseRepository: DoseRepository
 ) : ViewModel() {
 
     val uiState: StateFlow<HistoryState> = combine(
-        repository.getAllDoses(),
-        repository.getMedications()
+        doseRepository.getAllDoses(),
+        medicationRepository.getMedications()
     ) { dosesResult, medsResult ->
         if (dosesResult is Data.Success && medsResult is Data.Success) {
             val medsMap = medsResult.data.associateBy { it.id }

@@ -7,6 +7,7 @@ import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.model.MedicationUnit
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.ScheduleRepository
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -29,7 +30,8 @@ sealed interface CatalogEvent {
 }
 
 class MedicationCatalogViewModel(
-    private val repository: MedicationRepository
+    private val medicationRepository: MedicationRepository,
+    private val scheduleRepository: ScheduleRepository
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -42,14 +44,14 @@ class MedicationCatalogViewModel(
     val uiState: StateFlow<CatalogState> = combine(
         _searchQuery.debounce(300),
         _showOnlyActive,
-        repository.getAllSchedules()
+        scheduleRepository.getAllSchedules()
     ) { query, onlyActive, schedulesResult ->
         Triple(query, onlyActive, schedulesResult)
     }.flatMapLatest { (query, onlyActive, schedulesResult) ->
         val medsFlow = if (query.isEmpty()) {
-            repository.getMedications()
+            medicationRepository.getMedications()
         } else {
-            repository.searchMedications(query)
+            medicationRepository.searchMedications(query)
         }
         medsFlow.map { medsResult ->
             val activeMedIds = if (schedulesResult is Data.Success) {
@@ -100,7 +102,7 @@ class MedicationCatalogViewModel(
     private fun addMedication(event: CatalogEvent.AddMedication) {
         viewModelScope.launch {
             val dosageValue = event.dosage.toDoubleOrNull() ?: 0.0
-            repository.insertMedication(
+            medicationRepository.insertMedication(
                 Medication(
                     name = event.name,
                     dosage = dosageValue,

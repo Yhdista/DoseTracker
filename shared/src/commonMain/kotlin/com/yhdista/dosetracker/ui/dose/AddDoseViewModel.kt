@@ -8,6 +8,7 @@ import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.model.Medication
+import com.yhdista.dosetracker.domain.repository.DoseRepository
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -34,7 +35,8 @@ sealed interface AddDoseEvent {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddDoseViewModel(
-    private val repository: MedicationRepository,
+    private val medicationRepository: MedicationRepository,
+    private val doseRepository: DoseRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -46,7 +48,7 @@ class AddDoseViewModel(
     init {
         medicationIdFlow
             .filterNotNull()
-            .flatMapLatest { id -> repository.getMedicationById(id) }
+            .flatMapLatest { id -> medicationRepository.getMedicationById(id) }
             .onEach { result ->
                 _state.update { state ->
                     state.copy(
@@ -95,7 +97,7 @@ class AddDoseViewModel(
                 unit = medication.unit.symbol,
                 status = DoseStatus.TAKEN
             )
-            when (val result = repository.insertDose(dose)) {
+            when (val result = doseRepository.insertDose(dose)) {
                 is Data.Success -> _state.update { it.copy(isSuccess = true) }
                 is Data.Error -> _state.update { it.copy(error = result.message) }
                 else -> Unit

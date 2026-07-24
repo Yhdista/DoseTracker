@@ -8,7 +8,8 @@ import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Cycle
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
-import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.CycleRepository
+import com.yhdista.dosetracker.domain.repository.DoseRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -47,7 +48,8 @@ sealed interface TodayEvent {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TodayViewModel(
-    private val repository: MedicationRepository,
+    private val doseRepository: DoseRepository,
+    private val cycleRepository: CycleRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -56,13 +58,13 @@ class TodayViewModel(
     private val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
 
     /** Resolve the chain of upcoming cycles (nextCycleId) so the timeline can draw them ahead of today. */
-    private val futureCyclesFlow = repository.getActiveCycle().mapLatest { data ->
+    private val futureCyclesFlow = cycleRepository.getActiveCycle().mapLatest { data ->
         val active = (data as? Data.Success)?.data
         val resolved = mutableListOf<Cycle>()
         val guard = mutableSetOf<Long>()
         var nextId = active?.nextCycleId
         while (nextId != null && guard.add(nextId)) {
-            val chained = repository.getCycleById(nextId) ?: break
+            val chained = cycleRepository.getCycleById(nextId) ?: break
             resolved += chained
             nextId = chained.nextCycleId
         }
@@ -70,9 +72,9 @@ class TodayViewModel(
     }
 
     val uiState: StateFlow<TodayState> = combine(
-        repository.getDosesInRange(today, today.plus(AGENDA_WINDOW_DAYS, DateTimeUnit.DAY)),
-        repository.getActiveCycle(),
-        repository.getCompletedCycles(),
+        doseRepository.getDosesInRange(today, today.plus(AGENDA_WINDOW_DAYS, DateTimeUnit.DAY)),
+        cycleRepository.getActiveCycle(),
+        cycleRepository.getCompletedCycles(),
         futureCyclesFlow,
         _selectedDoseId
     ) { doses, activeCycle, completedCycles, futureCycles, selectedId ->
@@ -113,7 +115,7 @@ class TodayViewModel(
     private fun toggleDoseStatus(dose: Dose) {
         viewModelScope.launch {
             val newStatus = if (dose.status == DoseStatus.TAKEN) DoseStatus.PENDING else DoseStatus.TAKEN
-            repository.updateDose(dose.copy(status = newStatus))
+            doseRepository.updateDose(dose.copy(status = newStatus))
         }
     }
 

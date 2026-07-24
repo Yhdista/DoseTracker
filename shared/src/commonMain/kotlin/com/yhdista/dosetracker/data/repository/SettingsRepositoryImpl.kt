@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 
-class SettingsRepositoryImpl(
+internal class SettingsRepositoryImpl(
     private val dataStore: DataStore<Preferences>
 ) : SettingsRepository {
 

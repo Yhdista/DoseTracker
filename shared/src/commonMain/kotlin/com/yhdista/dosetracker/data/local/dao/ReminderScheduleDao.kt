@@ -5,7 +5,7 @@ import com.yhdista.dosetracker.data.local.entity.ReminderScheduleEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface ReminderScheduleDao {
+internal interface ReminderScheduleDao {
     @Query("SELECT * FROM reminder_schedules WHERE medicationId = :medicationId")
     fun getSchedulesForMedication(medicationId: Long): Flow<List<ReminderScheduleEntity>>
 

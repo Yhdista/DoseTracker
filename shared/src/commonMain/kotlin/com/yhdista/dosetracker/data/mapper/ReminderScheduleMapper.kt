@@ -5,7 +5,7 @@ import com.yhdista.dosetracker.domain.model.ReminderSchedule
 
 import kotlinx.datetime.LocalDate
 
-fun ReminderScheduleEntity.toDomain(): ReminderSchedule = ReminderSchedule(
+internal fun ReminderScheduleEntity.toDomain(): ReminderSchedule = ReminderSchedule(
     id = id,
     medicationId = medicationId,
     minutesOfDay = minutesOfDay,
@@ -19,7 +19,7 @@ fun ReminderScheduleEntity.toDomain(): ReminderSchedule = ReminderSchedule(
     cycleWeekId = cycleWeekId
 )
 
-fun ReminderSchedule.toEntity(): ReminderScheduleEntity = ReminderScheduleEntity(
+internal fun ReminderSchedule.toEntity(): ReminderScheduleEntity = ReminderScheduleEntity(
     id = id,
     medicationId = medicationId,
     minutesOfDay = minutesOfDay,

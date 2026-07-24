@@ -3,7 +3,7 @@ package com.yhdista.dosetracker.ui.report
 import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
-import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.DoseRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -27,7 +27,7 @@ import org.mockito.kotlin.whenever
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReportViewModelTest {
 
-    private val repository = mock<MedicationRepository>()
+    private val repository = mock<DoseRepository>()
     private val testDispatcher = StandardTestDispatcher()
 
     @Before

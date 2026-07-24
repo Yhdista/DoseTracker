@@ -3,10 +3,12 @@ package com.yhdista.dosetracker.ui.debug
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
-import com.yhdista.dosetracker.data.local.AppDatabase
+import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
-import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.DatabaseMaintenance
+import com.yhdista.dosetracker.domain.repository.DoseRepository
 import com.yhdista.dosetracker.reminder.DoseGenerator
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
@@ -16,9 +18,9 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.todayIn
 
 class DebugViewModel(
-    private val repository: MedicationRepository,
+    private val doseRepository: DoseRepository,
     private val doseGenerator: DoseGenerator,
-    private val database: AppDatabase
+    private val maintenance: DatabaseMaintenance
 ) : ViewModel() {
 
     fun generateDosesForToday() {
@@ -40,17 +42,18 @@ class DebugViewModel(
             }
 
             // 2. Fetch all doses and randomize status for past ones
-            val result = repository.getAllDoses().first()
-            if (result is Data.Success) {
-                result.data.forEach { dose ->
-                    if (dose.timestamp < now && dose.status == DoseStatus.PENDING) {
-                        val randomStatus = when ((0..2).random()) {
-                            0 -> DoseStatus.TAKEN
-                            1 -> DoseStatus.MISSED
-                            else -> DoseStatus.SKIPPED
-                        }
-                        repository.updateDose(dose.copy(status = randomStatus))
+            // (skip the Loading emission — first() alone would always return it)
+            val result = doseRepository.getAllDoses()
+                .filterIsInstance<Data.Success<List<Dose>>>()
+                .first()
+            result.data.forEach { dose ->
+                if (dose.timestamp < now && dose.status == DoseStatus.PENDING) {
+                    val randomStatus = when ((0..2).random()) {
+                        0 -> DoseStatus.TAKEN
+                        1 -> DoseStatus.MISSED
+                        else -> DoseStatus.SKIPPED
                     }
+                    doseRepository.updateDose(dose.copy(status = randomStatus))
                 }
             }
         }
@@ -58,7 +61,7 @@ class DebugViewModel(
 
     fun resetDatabase() {
         viewModelScope.launch {
-            database.clearAllTables()
+            maintenance.clearAllData()
         }
     }
 }

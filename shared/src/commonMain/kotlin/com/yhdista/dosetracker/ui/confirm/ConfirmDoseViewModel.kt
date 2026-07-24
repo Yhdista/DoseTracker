@@ -7,7 +7,7 @@ import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
-import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.DoseRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -31,7 +31,7 @@ sealed interface ConfirmDoseEvent {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConfirmDoseViewModel(
-    private val repository: MedicationRepository,
+    private val doseRepository: DoseRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -43,7 +43,7 @@ class ConfirmDoseViewModel(
     init {
         doseIdFlow
             .filterNotNull()
-            .flatMapLatest { id -> repository.getDoseById(id) }
+            .flatMapLatest { id -> doseRepository.getDoseById(id) }
             .onEach { result ->
                 _state.update { state ->
                     state.copy(
@@ -94,7 +94,7 @@ class ConfirmDoseViewModel(
         val time = current.time ?: return
 
         viewModelScope.launch {
-            val result = repository.updateDose(
+            val result = doseRepository.updateDose(
                 dose.copy(
                     amount = current.amount.toDoubleOrNull(),
                     timestamp = time.toInstant(TimeZone.currentSystemDefault()),

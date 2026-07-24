@@ -7,7 +7,9 @@ import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
+import com.yhdista.dosetracker.domain.repository.CycleRepository
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.ScheduleRepository
 import com.yhdista.dosetracker.reminder.DoseGenerator
 import com.yhdista.dosetracker.reminder.WeekDays
 import com.yhdista.dosetracker.domain.model.TimeType
@@ -45,7 +47,9 @@ sealed interface CycleWeekEditorEvent {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CycleWeekEditorViewModel(
-    private val repository: MedicationRepository,
+    private val medicationRepository: MedicationRepository,
+    private val scheduleRepository: ScheduleRepository,
+    private val cycleRepository: CycleRepository,
     private val settingsRepository: SettingsRepository,
     private val doseGenerator: DoseGenerator,
     private val savedStateHandle: SavedStateHandle
@@ -59,13 +63,13 @@ class CycleWeekEditorViewModel(
         cycleId to weekIndex
     }
         .filter { (cycleId, weekIndex) -> cycleId != null && weekIndex != null }
-        .map { (cycleId, weekIndex) -> repository.getCycleWeek(cycleId!!, weekIndex!!)?.id }
+        .map { (cycleId, weekIndex) -> cycleRepository.getCycleWeek(cycleId!!, weekIndex!!)?.id }
         .filterNotNull()
         .flatMapLatest { weekId ->
             combine(
-                repository.getSchedulesForCycleWeek(weekId),
-                repository.getMedications(),
-                repository.getPeriodTimes(),
+                scheduleRepository.getSchedulesForCycleWeek(weekId),
+                medicationRepository.getMedications(),
+                scheduleRepository.getPeriodTimes(),
                 settingsRepository.getDefaultTimeType(),
                 _cycle
             ) { schedules, medications, periodTimes, defaultTimeType, cycle ->
@@ -81,7 +85,7 @@ class CycleWeekEditorViewModel(
     init {
         viewModelScope.launch {
             cycleIdFlow.filterNotNull().collect { id ->
-                _cycle.value = repository.getCycleById(id)
+                _cycle.value = cycleRepository.getCycleById(id)
             }
         }
         viewModelScope.launch {
@@ -136,7 +140,7 @@ class CycleWeekEditorViewModel(
     private fun addSchedule(event: CycleWeekEditorEvent.AddSchedule) {
         viewModelScope.launch {
             val weekId = uiState.value.weekId ?: return@launch
-            repository.insertSchedule(
+            scheduleRepository.insertSchedule(
                 ReminderSchedule(
                     medicationId = event.medicationId,
                     minutesOfDay = event.minutesOfDay,
@@ -155,14 +159,14 @@ class CycleWeekEditorViewModel(
 
     private fun updateSchedule(schedule: ReminderSchedule) {
         viewModelScope.launch {
-            repository.updateSchedule(schedule)
+            scheduleRepository.updateSchedule(schedule)
             doseGenerator.runForToday()
         }
     }
 
     private fun deleteSchedule(schedule: ReminderSchedule) {
         viewModelScope.launch {
-            repository.deleteSchedule(schedule)
+            scheduleRepository.deleteSchedule(schedule)
             doseGenerator.runForToday()
         }
     }

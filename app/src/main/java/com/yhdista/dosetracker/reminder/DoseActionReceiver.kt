@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.yhdista.dosetracker.domain.model.DoseStatus
-import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.DoseRepository
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import org.koin.core.context.GlobalContext
@@ -25,7 +25,7 @@ class DoseActionReceiver : BroadcastReceiver() {
 
         runAsync("DoseActionReceiver") {
             val koin = GlobalContext.get()
-            val repository = koin.get<MedicationRepository>()
+            val repository = koin.get<DoseRepository>()
             val scheduler = koin.get<DoseReminderScheduler>()
             val notificationHelper = koin.get<NotificationHelper>()
             val dose = repository.getDoseOnce(doseId) ?: return@runAsync

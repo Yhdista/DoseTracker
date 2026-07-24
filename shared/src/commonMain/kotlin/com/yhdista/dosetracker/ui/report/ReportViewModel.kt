@@ -7,7 +7,7 @@ import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
-import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.DoseRepository
 import kotlin.time.Clock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -52,14 +52,14 @@ private fun currentWeekStart(): LocalDate =
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReportViewModel(
-    private val repository: MedicationRepository
+    private val doseRepository: DoseRepository
 ) : ViewModel() {
 
     private val _weekStart = MutableStateFlow(currentWeekStart())
 
     val uiState: StateFlow<ReportState> = _weekStart
         .flatMapLatest { weekStart ->
-            repository.getDosesInWeek(weekStart).map { result -> weekStart to summarize(result) }
+            doseRepository.getDosesInWeek(weekStart).map { result -> weekStart to summarize(result) }
         }
         .map { (weekStart, summaries) -> ReportState(weekStart = weekStart, summaries = summaries) }
         .stateIn(

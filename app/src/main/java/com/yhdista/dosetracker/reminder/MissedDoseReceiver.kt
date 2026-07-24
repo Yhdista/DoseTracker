@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.yhdista.dosetracker.domain.model.DoseStatus
-import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.DoseRepository
 import org.koin.core.context.GlobalContext
 
 class MissedDoseReceiver : BroadcastReceiver() {
@@ -15,7 +15,7 @@ class MissedDoseReceiver : BroadcastReceiver() {
 
         runAsync("MissedDoseReceiver") {
             val koin = GlobalContext.get()
-            val repository = koin.get<MedicationRepository>()
+            val repository = koin.get<DoseRepository>()
             val dose = repository.getDoseOnce(doseId)
             if (dose != null && dose.status == DoseStatus.PENDING) {
                 repository.updateDose(dose.copy(status = DoseStatus.MISSED))

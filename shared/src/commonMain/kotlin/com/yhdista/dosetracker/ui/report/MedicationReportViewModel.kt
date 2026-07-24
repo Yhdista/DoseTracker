@@ -7,6 +7,7 @@ import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
+import com.yhdista.dosetracker.domain.repository.DoseRepository
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import kotlin.time.Clock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -79,7 +80,8 @@ private fun bucketDosesByWeek(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MedicationReportViewModel(
-    private val repository: MedicationRepository,
+    private val medicationRepository: MedicationRepository,
+    private val doseRepository: DoseRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -95,8 +97,8 @@ class MedicationReportViewModel(
         .flatMapLatest { (medicationId, selection) ->
             val endExclusive = periodEndExclusive(selection.mode, selection.periodStart)
             combine(
-                repository.getMedicationById(medicationId),
-                repository.getDosesForMedicationInRange(medicationId, selection.periodStart, endExclusive)
+                medicationRepository.getMedicationById(medicationId),
+                doseRepository.getDosesForMedicationInRange(medicationId, selection.periodStart, endExclusive)
             ) { medicationResult, dosesResult ->
                 val medication = (medicationResult as? Data.Success)?.data
                 val weeks = when (dosesResult) {

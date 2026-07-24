@@ -6,7 +6,7 @@ import com.yhdista.dosetracker.domain.model.Cycle
 import com.yhdista.dosetracker.domain.model.CycleWeek
 import kotlinx.datetime.LocalDate
 
-fun CycleEntity.toDomain(): Cycle = Cycle(
+internal fun CycleEntity.toDomain(): Cycle = Cycle(
     id = id,
     name = name,
     type = type,
@@ -17,7 +17,7 @@ fun CycleEntity.toDomain(): Cycle = Cycle(
     nextCycleId = nextCycleId
 )
 
-fun Cycle.toEntity(): CycleEntity = CycleEntity(
+internal fun Cycle.toEntity(): CycleEntity = CycleEntity(
     id = id,
     name = name,
     type = type,
@@ -28,6 +28,6 @@ fun Cycle.toEntity(): CycleEntity = CycleEntity(
     nextCycleId = nextCycleId
 )
 
-fun CycleWeekEntity.toDomain(): CycleWeek = CycleWeek(id = id, cycleId = cycleId, weekIndex = weekIndex)
+internal fun CycleWeekEntity.toDomain(): CycleWeek = CycleWeek(id = id, cycleId = cycleId, weekIndex = weekIndex)
 
-fun CycleWeek.toEntity(): CycleWeekEntity = CycleWeekEntity(id = id, cycleId = cycleId, weekIndex = weekIndex)
+internal fun CycleWeek.toEntity(): CycleWeekEntity = CycleWeekEntity(id = id, cycleId = cycleId, weekIndex = weekIndex)

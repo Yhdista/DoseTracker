@@ -4,7 +4,7 @@ import com.yhdista.dosetracker.data.local.dao.DoseWithMedication
 import com.yhdista.dosetracker.data.local.entity.DoseEntity
 import com.yhdista.dosetracker.domain.model.Dose
 
-fun DoseEntity.toDomain(medicationName: String = ""): Dose {
+internal fun DoseEntity.toDomain(medicationName: String = ""): Dose {
     return Dose(
         id = id,
         medicationId = medicationId,
@@ -18,11 +18,11 @@ fun DoseEntity.toDomain(medicationName: String = ""): Dose {
     )
 }
 
-fun DoseWithMedication.toDomain(): Dose {
+internal fun DoseWithMedication.toDomain(): Dose {
     return dose.toDomain(medicationName)
 }
 
-fun Dose.toEntity(): DoseEntity {
+internal fun Dose.toEntity(): DoseEntity {
     return DoseEntity(
         id = id,
         medicationId = medicationId,

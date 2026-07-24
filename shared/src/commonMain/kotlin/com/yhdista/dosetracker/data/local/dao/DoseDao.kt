@@ -5,13 +5,13 @@ import com.yhdista.dosetracker.data.local.entity.DoseEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 
-data class DoseWithMedication(
+internal data class DoseWithMedication(
     @Embedded val dose: DoseEntity,
     @ColumnInfo(name = "medicationName") val medicationName: String
 )
 
 @Dao
-interface DoseDao {
+internal interface DoseDao {
     @Transaction
     @Query("""
         SELECT doses.*, medications.name as medicationName

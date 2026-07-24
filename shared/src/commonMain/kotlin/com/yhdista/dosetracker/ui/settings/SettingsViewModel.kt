@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.TimeType
-import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.ScheduleRepository
 import com.yhdista.dosetracker.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,12 +24,12 @@ sealed interface SettingsEvent {
 }
 
 class SettingsViewModel(
-    private val repository: MedicationRepository,
+    private val scheduleRepository: ScheduleRepository,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     val uiState: StateFlow<SettingsState> = combine(
-        repository.getPeriodTimes(),
+        scheduleRepository.getPeriodTimes(),
         settingsRepository.getDefaultTimeType()
     ) { periodTimesResult, defaultTimeTypeResult ->
         SettingsState(
@@ -60,7 +60,7 @@ class SettingsViewModel(
         when (event) {
             is SettingsEvent.UpdatePeriodTime -> {
                 viewModelScope.launch {
-                    repository.updatePeriodTime(event.period, event.minutesOfDay)
+                    scheduleRepository.updatePeriodTime(event.period, event.minutesOfDay)
                 }
             }
             is SettingsEvent.UpdateDefaultTimeType -> {

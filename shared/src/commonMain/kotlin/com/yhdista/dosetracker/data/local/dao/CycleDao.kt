@@ -6,7 +6,7 @@ import com.yhdista.dosetracker.data.local.entity.CycleWeekEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface CycleDao {
+internal interface CycleDao {
     @Query("SELECT * FROM cycles WHERE status = 'ACTIVE' LIMIT 1")
     fun getActiveCycleFlow(): Flow<CycleEntity?>
 

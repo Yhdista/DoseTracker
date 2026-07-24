@@ -6,7 +6,10 @@ import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
+import com.yhdista.dosetracker.domain.repository.CycleRepository
+import com.yhdista.dosetracker.domain.repository.DoseRepository
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.ScheduleRepository
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.time.Clock
@@ -20,7 +23,10 @@ import kotlinx.datetime.daysUntil
 import kotlin.time.Duration.Companion.minutes
 
 class DoseGenerator(
-    private val repository: MedicationRepository,
+    private val medicationRepository: MedicationRepository,
+    private val doseRepository: DoseRepository,
+    private val scheduleRepository: ScheduleRepository,
+    private val cycleRepository: CycleRepository,
     private val scheduler: DoseReminderScheduler,
     private val cycleLifecycleManager: CycleLifecycleManager,
     private val clock: Clock = Clock.System
@@ -40,17 +46,17 @@ class DoseGenerator(
 
         // Doses whose missed window already closed (lost alarms, delayed generation runs)
         // would otherwise stay PENDING forever — nothing else ever revisits them.
-        repository.markPendingDosesMissedBefore(now - DoseReminderScheduler.MISSED_TIMEOUT_MINUTES.minutes)
+        doseRepository.markPendingDosesMissedBefore(now - DoseReminderScheduler.MISSED_TIMEOUT_MINUTES.minutes)
 
-        val schedulesData = repository.getEnabledSchedules()
+        val schedulesData = scheduleRepository.getEnabledSchedules()
         if (schedulesData !is Data.Success) {
             com.yhdista.dosetracker.core.AppLogger.e("DoseGenerator", "runForDate failed to get enabled schedules: $schedulesData")
             return
         }
         val schedules = schedulesData.data
-        val periodTimes = repository.getPeriodTimesOnce()
+        val periodTimes = scheduleRepository.getPeriodTimesOnce()
         val zone = TimeZone.currentSystemDefault()
-        val activeCycle = repository.getActiveCycleOnce()
+        val activeCycle = cycleRepository.getActiveCycleOnce()
         val activeCycleWeekId = resolveActiveCycleWeekId(activeCycle, date)
 
         com.yhdista.dosetracker.core.AppLogger.d("DoseGenerator", "Running for ${schedules.size} enabled schedules. Active cycle: ${activeCycle?.id}, cycleWeekId: $activeCycleWeekId")
@@ -71,7 +77,7 @@ class DoseGenerator(
             val cycleId = if (schedule.cycleWeekId != null) activeCycle?.id else null
 
             // Look up if there's any dose for this schedule on this date
-            val existingDose = repository.getDoseForScheduleOnDate(schedule.id, date)
+            val existingDose = doseRepository.getDoseForScheduleOnDate(schedule.id, date)
 
             if (existingDose == null) {
                 com.yhdista.dosetracker.core.AppLogger.d("DoseGenerator", "No existing dose for scheduleId=${schedule.id} on date=$date. Creating new dose...")
@@ -93,7 +99,7 @@ class DoseGenerator(
 
                         // Update dose
                         val updatedDose = existingDose.copy(timestamp = scheduledInstant)
-                        repository.updateDose(updatedDose)
+                        doseRepository.updateDose(updatedDose)
 
                         armAlarms(updatedDose, scheduledInstant, now)
                     } else {
@@ -126,7 +132,7 @@ class DoseGenerator(
             }
             else -> {
                 com.yhdista.dosetracker.core.AppLogger.i("DoseGenerator", "Dose id=${dose.id} missed its window; marking MISSED")
-                repository.updateDose(dose.copy(status = DoseStatus.MISSED))
+                doseRepository.updateDose(dose.copy(status = DoseStatus.MISSED))
             }
         }
     }
@@ -138,7 +144,7 @@ class DoseGenerator(
         } else {
             activeCycle.startDate.daysUntil(date) / 7
         }
-        return repository.getCycleWeek(activeCycle.id, weekIndex)?.id
+        return cycleRepository.getCycleWeek(activeCycle.id, weekIndex)?.id
     }
 
     private fun matchesDate(schedule: ReminderSchedule, date: LocalDate, activeCycleWeekId: Long?): Boolean {
@@ -155,7 +161,7 @@ class DoseGenerator(
     }
 
     private suspend fun createDose(medicationId: Long, scheduleId: Long, at: Instant, cycleId: Long?): Dose? {
-        val medication = repository.getMedicationOnce(medicationId) ?: return null
+        val medication = medicationRepository.getMedicationOnce(medicationId) ?: return null
         val dose = Dose(
             medicationId = medicationId,
             scheduleId = scheduleId,
@@ -165,7 +171,7 @@ class DoseGenerator(
             unit = medication.unit.symbol,
             status = DoseStatus.PENDING
         )
-        val id = (repository.insertDose(dose) as? Data.Success)?.data ?: return null
+        val id = (doseRepository.insertDose(dose) as? Data.Success)?.data ?: return null
         return dose.copy(id = id)
     }
 }

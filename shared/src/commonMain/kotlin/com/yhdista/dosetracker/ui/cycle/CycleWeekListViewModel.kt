@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.CycleWeek
-import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.CycleRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +21,7 @@ data class CycleWeekListState(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CycleWeekListViewModel(
-    private val repository: MedicationRepository,
+    private val cycleRepository: CycleRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -30,7 +30,7 @@ class CycleWeekListViewModel(
     val uiState: StateFlow<CycleWeekListState> = cycleIdFlow
         .filterNotNull()
         .flatMapLatest { cycleId ->
-            repository.getWeeksForCycle(cycleId).map { weeks -> CycleWeekListState(cycleId, weeks) }
+            cycleRepository.getWeeksForCycle(cycleId).map { weeks -> CycleWeekListState(cycleId, weeks) }
         }
         .stateIn(
             scope = viewModelScope,

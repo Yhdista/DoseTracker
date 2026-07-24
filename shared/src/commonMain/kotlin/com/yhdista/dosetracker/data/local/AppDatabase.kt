@@ -29,7 +29,7 @@ import com.yhdista.dosetracker.data.local.entity.PeriodTimeEntity
 )
 @TypeConverters(Converters::class)
 @ConstructedBy(AppDatabaseConstructor::class)
-abstract class AppDatabase : RoomDatabase() {
+internal abstract class AppDatabase : RoomDatabase() {
     abstract fun medicationDao(): MedicationDao
     abstract fun doseDao(): DoseDao
     abstract fun reminderScheduleDao(): ReminderScheduleDao
@@ -82,6 +82,6 @@ abstract class AppDatabase : RoomDatabase() {
 }
 
 @Suppress("KotlinNoActualForExpect")
-expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {
+internal expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {
     override fun initialize(): AppDatabase
 }

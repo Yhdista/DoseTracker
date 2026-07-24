@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.yhdista.dosetracker.domain.model.DoseStatus
+import com.yhdista.dosetracker.domain.repository.DoseRepository
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import org.koin.core.context.GlobalContext
 
@@ -16,10 +17,9 @@ class ReminderReceiver : BroadcastReceiver() {
 
         runAsync("ReminderReceiver") {
             val koin = GlobalContext.get()
-            val repository = koin.get<MedicationRepository>()
-            val dose = repository.getDoseOnce(doseId) ?: return@runAsync
+            val dose = koin.get<DoseRepository>().getDoseOnce(doseId) ?: return@runAsync
             if (dose.status != DoseStatus.PENDING) return@runAsync
-            val medication = repository.getMedicationOnce(dose.medicationId) ?: return@runAsync
+            val medication = koin.get<MedicationRepository>().getMedicationOnce(dose.medicationId) ?: return@runAsync
 
             koin.get<NotificationHelper>().showNotification(
                 doseId = doseId,

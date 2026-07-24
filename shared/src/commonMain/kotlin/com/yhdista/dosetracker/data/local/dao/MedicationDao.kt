@@ -5,7 +5,7 @@ import com.yhdista.dosetracker.data.local.entity.MedicationEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface MedicationDao {
+internal interface MedicationDao {
     @Query("SELECT * FROM medications")
     fun getAllMedications(): Flow<List<MedicationEntity>>
 

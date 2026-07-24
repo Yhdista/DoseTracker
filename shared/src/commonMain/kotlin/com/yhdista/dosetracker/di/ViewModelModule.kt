@@ -19,16 +19,16 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val viewModelModule = module {
-    viewModel { MedicationCatalogViewModel(get()) }
-    viewModel { AddDoseViewModel(get(), get()) }
-    viewModel { HistoryViewModel(get()) }
-    viewModel { TodayViewModel(get(), get()) }
-    viewModel { MedicationDetailViewModel(get(), get(), get(), get(), get()) }
+    viewModel { MedicationCatalogViewModel(get(), get()) }
+    viewModel { AddDoseViewModel(get(), get(), get()) }
+    viewModel { HistoryViewModel(get(), get()) }
+    viewModel { TodayViewModel(get(), get(), get()) }
+    viewModel { MedicationDetailViewModel(get(), get(), get(), get(), get(), get(), get()) }
     viewModel { ConfirmDoseViewModel(get(), get()) }
     viewModel { ReportViewModel(get()) }
-    viewModel { MedicationReportViewModel(get(), get()) }
+    viewModel { MedicationReportViewModel(get(), get(), get()) }
     viewModel { CreateCycleViewModel(get(), get()) }
-    viewModel { CycleWeekEditorViewModel(get(), get(), get(), get()) }
+    viewModel { CycleWeekEditorViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { CycleWeekListViewModel(get(), get()) }
     viewModel { CycleHistoryViewModel(get()) }
     viewModel { CycleSettingsViewModel(get()) }

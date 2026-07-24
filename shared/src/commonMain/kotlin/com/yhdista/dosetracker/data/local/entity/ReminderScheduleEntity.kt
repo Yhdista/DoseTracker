@@ -23,7 +23,7 @@ import androidx.room.PrimaryKey
     ],
     indices = [Index(value = ["medicationId"]), Index(value = ["cycleWeekId"])]
 )
-data class ReminderScheduleEntity(
+internal data class ReminderScheduleEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val medicationId: Long,

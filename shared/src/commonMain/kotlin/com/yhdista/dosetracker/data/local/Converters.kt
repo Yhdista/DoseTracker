@@ -7,7 +7,7 @@ import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import kotlinx.datetime.Instant
 
-class Converters {
+internal class Converters {
     @TypeConverter
     fun fromTimestamp(value: Long?): Instant? {
         return value?.let { Instant.fromEpochMilliseconds(it) }

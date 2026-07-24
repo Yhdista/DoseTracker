@@ -19,7 +19,7 @@ import kotlinx.datetime.Instant
     ],
     indices = [Index(value = ["medicationId"]), Index(value = ["scheduleId", "timestamp"], unique = true)]
 )
-data class DoseEntity(
+internal data class DoseEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val medicationId: Long,

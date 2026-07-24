@@ -11,7 +11,10 @@ import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.model.MedicationUnit
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
+import com.yhdista.dosetracker.domain.repository.CycleRepository
+import com.yhdista.dosetracker.domain.repository.DoseRepository
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.ScheduleRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -44,10 +47,13 @@ import org.mockito.kotlin.whenever
 @OptIn(ExperimentalCoroutinesApi::class)
 class DoseGeneratorTest {
 
-    private val repository = mock<MedicationRepository>()
+    private val medicationRepository = mock<MedicationRepository>()
+    private val doseRepository = mock<DoseRepository>()
+    private val scheduleRepository = mock<ScheduleRepository>()
+    private val cycleRepository = mock<CycleRepository>()
     private val scheduler = mock<DoseReminderScheduler>()
     private val cycleLifecycleManager = mock<CycleLifecycleManager>()
-    private val generator = DoseGenerator(repository, scheduler, cycleLifecycleManager)
+    private val generator = DoseGenerator(medicationRepository, doseRepository, scheduleRepository, cycleRepository, scheduler, cycleLifecycleManager)
     private val testDispatcher = StandardTestDispatcher()
 
     private val today = LocalDate(2026, 7, 20)
@@ -70,15 +76,15 @@ class DoseGeneratorTest {
             daysOfWeek = WeekDays.toBitmask(setOf(today.dayOfWeek))
         )
         val expectedInstant = today.atTime(8, 0).toInstant(TimeZone.currentSystemDefault())
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
-        whenever(repository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
-        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
-        whenever(repository.insertDose(any())).thenReturn(Data.Success(99L))
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(doseRepository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
+        whenever(medicationRepository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
+        whenever(doseRepository.insertDose(any())).thenReturn(Data.Success(99L))
 
         generator.runForDate(today)
 
-        verify(repository).insertDose(
+        verify(doseRepository).insertDose(
             Dose(medicationId = 10, scheduleId = 1, timestamp = expectedInstant, amount = 100.0, unit = "mg", status = DoseStatus.PENDING)
         )
     }
@@ -90,12 +96,12 @@ class DoseGeneratorTest {
             id = 1, medicationId = 10, minutesOfDay = 480,
             daysOfWeek = WeekDays.toBitmask(setOf(otherDay))
         )
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(emptyMap())
 
         generator.runForDate(today)
 
-        verify(repository, never()).insertDose(any())
+        verify(doseRepository, never()).insertDose(any())
     }
 
     @Test
@@ -106,13 +112,13 @@ class DoseGeneratorTest {
         )
         val expectedInstant = farFutureDate.atTime(8, 0).toInstant(TimeZone.currentSystemDefault())
         val existing = Dose(id = 5, medicationId = 10, scheduleId = 1, timestamp = expectedInstant, amount = 100.0, unit = "mg", status = DoseStatus.TAKEN)
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
-        whenever(repository.getDoseForScheduleOnDate(1, farFutureDate)).thenReturn(existing)
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(doseRepository.getDoseForScheduleOnDate(1, farFutureDate)).thenReturn(existing)
 
         generator.runForDate(farFutureDate)
 
-        verify(repository, never()).insertDose(any())
+        verify(doseRepository, never()).insertDose(any())
         verify(scheduler, never()).scheduleReminder(any(), any())
     }
 
@@ -124,9 +130,9 @@ class DoseGeneratorTest {
         )
         val expectedInstant = farFutureDate.atTime(8, 0).toInstant(TimeZone.currentSystemDefault())
         val existing = Dose(id = 5, medicationId = 10, scheduleId = 1, timestamp = expectedInstant, amount = 100.0, unit = "mg", status = DoseStatus.PENDING)
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
-        whenever(repository.getDoseForScheduleOnDate(1, farFutureDate)).thenReturn(existing)
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(doseRepository.getDoseForScheduleOnDate(1, farFutureDate)).thenReturn(existing)
 
         generator.runForDate(farFutureDate)
 
@@ -142,9 +148,9 @@ class DoseGeneratorTest {
         )
         val expectedInstant = pastDate.atTime(8, 0).toInstant(TimeZone.currentSystemDefault())
         val existing = Dose(id = 5, medicationId = 10, scheduleId = 1, timestamp = expectedInstant, amount = 100.0, unit = "mg", status = DoseStatus.PENDING)
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
-        whenever(repository.getDoseForScheduleOnDate(1, pastDate)).thenReturn(existing)
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(doseRepository.getDoseForScheduleOnDate(1, pastDate)).thenReturn(existing)
 
         generator.runForDate(pastDate)
 
@@ -162,15 +168,15 @@ class DoseGeneratorTest {
             startDate = startDate
         )
         val expectedInstant = today.atTime(8, 0).toInstant(TimeZone.currentSystemDefault())
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
-        whenever(repository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
-        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
-        whenever(repository.insertDose(any())).thenReturn(Data.Success(99L))
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(doseRepository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
+        whenever(medicationRepository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
+        whenever(doseRepository.insertDose(any())).thenReturn(Data.Success(99L))
 
         generator.runForDate(today)
 
-        verify(repository).insertDose(
+        verify(doseRepository).insertDose(
             Dose(medicationId = 10, scheduleId = 1, timestamp = expectedInstant, amount = 100.0, unit = "mg", status = DoseStatus.PENDING)
         )
     }
@@ -185,12 +191,12 @@ class DoseGeneratorTest {
             intervalDays = 2,
             startDate = startDate
         )
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(emptyMap())
 
         generator.runForDate(today)
 
-        verify(repository, never()).insertDose(any())
+        verify(doseRepository, never()).insertDose(any())
     }
 
     @Test
@@ -205,15 +211,15 @@ class DoseGeneratorTest {
         val periodTimes = mapOf("MORNING" to 510)
         val expectedInstant = today.atTime(8, 30).toInstant(TimeZone.currentSystemDefault())
 
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(periodTimes)
-        whenever(repository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
-        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
-        whenever(repository.insertDose(any())).thenReturn(Data.Success(99L))
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(periodTimes)
+        whenever(doseRepository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
+        whenever(medicationRepository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
+        whenever(doseRepository.insertDose(any())).thenReturn(Data.Success(99L))
 
         generator.runForDate(today)
 
-        verify(repository).insertDose(
+        verify(doseRepository).insertDose(
             Dose(medicationId = 10, scheduleId = 1, timestamp = expectedInstant, amount = 100.0, unit = "mg", status = DoseStatus.PENDING)
         )
     }
@@ -227,13 +233,13 @@ class DoseGeneratorTest {
     @Test
     fun `sweeps overdue PENDING doses to MISSED before generating`() = runTest {
         val now = today.atTime(9, 0).toInstant(zone)
-        val gen = DoseGenerator(repository, scheduler, cycleLifecycleManager, fixedClock(now))
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(emptyList()))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        val gen = DoseGenerator(medicationRepository, doseRepository, scheduleRepository, cycleRepository, scheduler, cycleLifecycleManager, fixedClock(now))
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(emptyList()))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(emptyMap())
 
         gen.runForDate(today)
 
-        verify(repository).markPendingDosesMissedBefore(now - DoseReminderScheduler.MISSED_TIMEOUT_MINUTES.minutes)
+        verify(doseRepository).markPendingDosesMissedBefore(now - DoseReminderScheduler.MISSED_TIMEOUT_MINUTES.minutes)
     }
 
     @Test
@@ -244,12 +250,12 @@ class DoseGeneratorTest {
         )
         val scheduledInstant = today.atTime(8, 0).toInstant(zone)
         val now = today.atTime(9, 0).toInstant(zone)
-        val gen = DoseGenerator(repository, scheduler, cycleLifecycleManager, fixedClock(now))
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
-        whenever(repository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
-        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
-        whenever(repository.insertDose(any())).thenReturn(Data.Success(99L))
+        val gen = DoseGenerator(medicationRepository, doseRepository, scheduleRepository, cycleRepository, scheduler, cycleLifecycleManager, fixedClock(now))
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(doseRepository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
+        whenever(medicationRepository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
+        whenever(doseRepository.insertDose(any())).thenReturn(Data.Success(99L))
 
         gen.runForDate(today)
 
@@ -264,16 +270,16 @@ class DoseGeneratorTest {
             daysOfWeek = WeekDays.toBitmask(setOf(today.dayOfWeek))
         )
         val now = today.atTime(11, 0).toInstant(zone) // 8:00 dose + 120 min window ended 10:00
-        val gen = DoseGenerator(repository, scheduler, cycleLifecycleManager, fixedClock(now))
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
-        whenever(repository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
-        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
-        whenever(repository.insertDose(any())).thenReturn(Data.Success(99L))
+        val gen = DoseGenerator(medicationRepository, doseRepository, scheduleRepository, cycleRepository, scheduler, cycleLifecycleManager, fixedClock(now))
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(doseRepository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
+        whenever(medicationRepository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
+        whenever(doseRepository.insertDose(any())).thenReturn(Data.Success(99L))
 
         gen.runForDate(today)
 
-        verify(repository).updateDose(argThat { id == 99L && status == DoseStatus.MISSED })
+        verify(doseRepository).updateDose(argThat { id == 99L && status == DoseStatus.MISSED })
         verify(scheduler, never()).scheduleReminder(any(), any())
         verify(scheduler, never()).scheduleMissedTimeout(any(), any())
     }
@@ -287,10 +293,10 @@ class DoseGeneratorTest {
         val scheduledInstant = today.atTime(8, 0).toInstant(zone)
         val now = today.atTime(9, 0).toInstant(zone)
         val existing = Dose(id = 5, medicationId = 10, scheduleId = 1, timestamp = scheduledInstant, amount = 100.0, unit = "mg", status = DoseStatus.PENDING)
-        val gen = DoseGenerator(repository, scheduler, cycleLifecycleManager, fixedClock(now))
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
-        whenever(repository.getDoseForScheduleOnDate(1, today)).thenReturn(existing)
+        val gen = DoseGenerator(medicationRepository, doseRepository, scheduleRepository, cycleRepository, scheduler, cycleLifecycleManager, fixedClock(now))
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(doseRepository.getDoseForScheduleOnDate(1, today)).thenReturn(existing)
 
         gen.runForDate(today)
 
@@ -305,17 +311,17 @@ class DoseGeneratorTest {
             daysOfWeek = WeekDays.toBitmask(setOf(today.dayOfWeek))
         )
         var insertedDose: Dose? = null
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(emptyMap())
         // Models the real DB race: the existence check reads its result, then suspends
         // before returning, so two unsynchronized runs both observe "no dose yet".
-        whenever(repository.getDoseForScheduleOnDate(eq(1L), eq(today))).doSuspendableAnswer {
+        whenever(doseRepository.getDoseForScheduleOnDate(eq(1L), eq(today))).doSuspendableAnswer {
             val current = insertedDose
             delay(10)
             current
         }
-        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
-        whenever(repository.insertDose(any())).doSuspendableAnswer { invocation ->
+        whenever(medicationRepository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
+        whenever(doseRepository.insertDose(any())).doSuspendableAnswer { invocation ->
             insertedDose = (invocation.arguments[0] as Dose).copy(id = 99L)
             Data.Success(99L)
         }
@@ -325,13 +331,13 @@ class DoseGeneratorTest {
         first.join()
         second.join()
 
-        verify(repository, times(1)).insertDose(any())
+        verify(doseRepository, times(1)).insertDose(any())
     }
 
     @Test
     fun `advances the cycle lifecycle before generating doses`() = runTest {
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(emptyList()))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(emptyList()))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(emptyMap())
 
         generator.runForDate(today)
 
@@ -351,17 +357,17 @@ class DoseGeneratorTest {
             cycleWeekId = 100
         )
         val expectedInstant = today.atTime(8, 0).toInstant(TimeZone.currentSystemDefault())
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
-        whenever(repository.getActiveCycleOnce()).thenReturn(cycle)
-        whenever(repository.getCycleWeek(1, 0)).thenReturn(week0)
-        whenever(repository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
-        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
-        whenever(repository.insertDose(any())).thenReturn(Data.Success(99L))
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(cycleRepository.getActiveCycleOnce()).thenReturn(cycle)
+        whenever(cycleRepository.getCycleWeek(1, 0)).thenReturn(week0)
+        whenever(doseRepository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
+        whenever(medicationRepository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
+        whenever(doseRepository.insertDose(any())).thenReturn(Data.Success(99L))
 
         generator.runForDate(today)
 
-        verify(repository).insertDose(
+        verify(doseRepository).insertDose(
             Dose(medicationId = 10, scheduleId = 1, cycleId = 1, timestamp = expectedInstant, amount = 100.0, unit = "mg", status = DoseStatus.PENDING)
         )
     }
@@ -378,14 +384,14 @@ class DoseGeneratorTest {
             daysOfWeek = WeekDays.toBitmask(setOf(today.dayOfWeek)),
             cycleWeekId = 200
         )
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
-        whenever(repository.getActiveCycleOnce()).thenReturn(cycle)
-        whenever(repository.getCycleWeek(1, 0)).thenReturn(week0)
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(cycleRepository.getActiveCycleOnce()).thenReturn(cycle)
+        whenever(cycleRepository.getCycleWeek(1, 0)).thenReturn(week0)
 
         generator.runForDate(today)
 
-        verify(repository, never()).insertDose(any())
+        verify(doseRepository, never()).insertDose(any())
     }
 
     @Test
@@ -400,17 +406,17 @@ class DoseGeneratorTest {
             daysOfWeek = WeekDays.toBitmask(setOf(today.dayOfWeek))
         )
         val expectedInstant = today.atTime(8, 0).toInstant(TimeZone.currentSystemDefault())
-        whenever(repository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
-        whenever(repository.getPeriodTimesOnce()).thenReturn(emptyMap())
-        whenever(repository.getActiveCycleOnce()).thenReturn(cycle)
-        whenever(repository.getCycleWeek(1, 0)).thenReturn(week0)
-        whenever(repository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
-        whenever(repository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
-        whenever(repository.insertDose(any())).thenReturn(Data.Success(99L))
+        whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))
+        whenever(scheduleRepository.getPeriodTimesOnce()).thenReturn(emptyMap())
+        whenever(cycleRepository.getActiveCycleOnce()).thenReturn(cycle)
+        whenever(cycleRepository.getCycleWeek(1, 0)).thenReturn(week0)
+        whenever(doseRepository.getDoseForScheduleOnDate(1, today)).thenReturn(null)
+        whenever(medicationRepository.getMedicationOnce(10)).thenReturn(Medication(id = 10, name = "Aspirin", dosage = 100.0, unit = MedicationUnit.MG))
+        whenever(doseRepository.insertDose(any())).thenReturn(Data.Success(99L))
 
         generator.runForDate(today)
 
-        verify(repository).insertDose(
+        verify(doseRepository).insertDose(
             Dose(medicationId = 10, scheduleId = 1, cycleId = null, timestamp = expectedInstant, amount = 100.0, unit = "mg", status = DoseStatus.PENDING)
         )
     }

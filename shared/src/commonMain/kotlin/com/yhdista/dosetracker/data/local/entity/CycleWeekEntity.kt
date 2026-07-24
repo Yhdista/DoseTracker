@@ -17,7 +17,7 @@ import androidx.room.PrimaryKey
     ],
     indices = [Index(value = ["cycleId"]), Index(value = ["cycleId", "weekIndex"], unique = true)]
 )
-data class CycleWeekEntity(
+internal data class CycleWeekEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val cycleId: Long,

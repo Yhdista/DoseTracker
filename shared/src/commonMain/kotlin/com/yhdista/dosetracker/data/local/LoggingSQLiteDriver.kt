@@ -5,14 +5,14 @@ import androidx.sqlite.SQLiteDriver
 import androidx.sqlite.SQLiteStatement
 import com.yhdista.dosetracker.core.AppLogger
 
-class LoggingSQLiteDriver(private val delegate: SQLiteDriver) : SQLiteDriver {
+internal class LoggingSQLiteDriver(private val delegate: SQLiteDriver) : SQLiteDriver {
     override fun open(fileName: String): SQLiteConnection {
         val conn = delegate.open(fileName)
         return LoggingSQLiteConnection(conn)
     }
 }
 
-class LoggingSQLiteConnection(private val delegate: SQLiteConnection) : SQLiteConnection {
+internal class LoggingSQLiteConnection(private val delegate: SQLiteConnection) : SQLiteConnection {
     override fun prepare(sql: String): SQLiteStatement {
         val stmt = delegate.prepare(sql)
         return LoggingSQLiteStatement(sql, stmt)
@@ -27,7 +27,7 @@ class LoggingSQLiteConnection(private val delegate: SQLiteConnection) : SQLiteCo
     }
 }
 
-class LoggingSQLiteStatement(
+internal class LoggingSQLiteStatement(
     private val sql: String,
     private val delegate: SQLiteStatement
 ) : SQLiteStatement {

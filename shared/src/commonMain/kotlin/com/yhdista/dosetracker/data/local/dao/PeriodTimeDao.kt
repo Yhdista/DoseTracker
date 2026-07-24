@@ -8,7 +8,7 @@ import com.yhdista.dosetracker.data.local.entity.PeriodTimeEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface PeriodTimeDao {
+internal interface PeriodTimeDao {
     @Query("SELECT * FROM period_times")
     fun getAllPeriodTimesFlow(): Flow<List<PeriodTimeEntity>>
 

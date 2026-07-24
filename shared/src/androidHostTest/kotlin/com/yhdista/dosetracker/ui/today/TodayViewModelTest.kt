@@ -8,7 +8,8 @@ import com.yhdista.dosetracker.domain.model.CycleStatus
 import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
-import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.CycleRepository
+import com.yhdista.dosetracker.domain.repository.DoseRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -29,7 +30,8 @@ import org.mockito.kotlin.whenever
 @OptIn(ExperimentalCoroutinesApi::class)
 class TodayViewModelTest {
 
-    private val repository = mock<MedicationRepository>()
+    private val doseRepository = mock<DoseRepository>()
+    private val cycleRepository = mock<CycleRepository>()
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
@@ -43,7 +45,7 @@ class TodayViewModelTest {
     }
 
     private fun stubCyclesEmpty() {
-        whenever(repository.getCompletedCycles()).thenReturn(flowOf(Data.Success(emptyList())))
+        whenever(cycleRepository.getCompletedCycles()).thenReturn(flowOf(Data.Success(emptyList())))
     }
 
     @Test
@@ -51,12 +53,12 @@ class TodayViewModelTest {
         val doses = listOf(
             Dose(id = 1, medicationId = 1, timestamp = Clock.System.now(), status = DoseStatus.PENDING)
         )
-        whenever(repository.getDosesInRange(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
+        whenever(doseRepository.getDosesInRange(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
             .thenReturn(flowOf(Data.Success(doses)))
-        whenever(repository.getActiveCycle()).thenReturn(flowOf(Data.Success(null)))
+        whenever(cycleRepository.getActiveCycle()).thenReturn(flowOf(Data.Success(null)))
         stubCyclesEmpty()
 
-        val viewModel = TodayViewModel(repository, SavedStateHandle())
+        val viewModel = TodayViewModel(doseRepository, cycleRepository, SavedStateHandle())
 
         val job = launch { viewModel.uiState.collect {} }
 
@@ -75,12 +77,12 @@ class TodayViewModelTest {
             id = 1, name = "Cyklus", type = CycleType.NORMAL, totalWeeks = 4,
             startDate = LocalDate(2026, 7, 1), status = CycleStatus.ACTIVE, onCompleteAction = CycleCompleteAction.TO_STANDARD
         )
-        whenever(repository.getDosesInRange(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
+        whenever(doseRepository.getDosesInRange(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
             .thenReturn(flowOf(Data.Success(emptyList())))
-        whenever(repository.getActiveCycle()).thenReturn(flowOf(Data.Success(cycle)))
+        whenever(cycleRepository.getActiveCycle()).thenReturn(flowOf(Data.Success(cycle)))
         stubCyclesEmpty()
 
-        val viewModel = TodayViewModel(repository, SavedStateHandle())
+        val viewModel = TodayViewModel(doseRepository, cycleRepository, SavedStateHandle())
         val job = launch { viewModel.uiState.collect {} }
         testDispatcher.scheduler.advanceUntilIdle()
 

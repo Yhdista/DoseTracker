@@ -3,12 +3,12 @@ package com.yhdista.dosetracker.reminder
 import com.yhdista.dosetracker.domain.model.CycleCompleteAction
 import com.yhdista.dosetracker.domain.model.CycleStatus
 import com.yhdista.dosetracker.domain.model.CycleType
-import com.yhdista.dosetracker.domain.repository.MedicationRepository
+import com.yhdista.dosetracker.domain.repository.CycleRepository
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.daysUntil
 
 class CycleLifecycleManager(
-    private val repository: MedicationRepository
+    private val repository: CycleRepository
 ) {
     suspend fun advance(today: LocalDate) {
         val cycle = repository.getActiveCycleOnce() ?: return

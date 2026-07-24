@@ -4,7 +4,7 @@ import com.yhdista.dosetracker.data.local.entity.MedicationEntity
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.model.MedicationUnit
 
-fun MedicationEntity.toDomain(): Medication {
+internal fun MedicationEntity.toDomain(): Medication {
     return Medication(
         id = id,
         name = name,
@@ -13,7 +13,7 @@ fun MedicationEntity.toDomain(): Medication {
     )
 }
 
-fun Medication.toEntity(): MedicationEntity {
+internal fun Medication.toEntity(): MedicationEntity {
     return MedicationEntity(
         id = id,
         name = name,

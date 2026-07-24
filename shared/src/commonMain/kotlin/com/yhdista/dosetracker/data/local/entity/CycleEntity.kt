@@ -7,7 +7,7 @@ import com.yhdista.dosetracker.domain.model.CycleStatus
 import com.yhdista.dosetracker.domain.model.CycleType
 
 @Entity(tableName = "cycles")
-data class CycleEntity(
+internal data class CycleEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val name: String,
