@@ -9,7 +9,9 @@ import com.yhdista.dosetracker.domain.model.CycleStatus
 import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.repository.CycleRepository
 import com.yhdista.dosetracker.reminder.DoseGenerator
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -23,9 +25,11 @@ data class CreateCycleState(
     val type: CycleType = CycleType.NORMAL,
     val totalWeeks: Int = 4,
     val onCompleteAction: CycleCompleteAction = CycleCompleteAction.TO_STANDARD,
-    val createdCycleId: Long? = null,
-    val createdWeekCount: Int = 0
 )
+
+sealed interface CreateCycleUiEvent {
+    data class Created(val cycleId: Long, val weekCount: Int) : CreateCycleUiEvent
+}
 
 sealed interface CreateCycleEvent {
     data class NameChanged(val name: String) : CreateCycleEvent
@@ -43,6 +47,9 @@ class CreateCycleViewModel(
     private val _state = MutableStateFlow(CreateCycleState())
     val uiState: StateFlow<CreateCycleState> = _state.asStateFlow()
 
+    private val _uiEvents = Channel<CreateCycleUiEvent>()
+    val uiEvents = _uiEvents.receiveAsFlow()
+
     init {
         viewModelScope.launch {
             val active = cycleRepository.getActiveCycleOnce()
@@ -55,7 +62,7 @@ class CreateCycleViewModel(
             uiState.collect { state ->
                 com.yhdista.dosetracker.core.AppLogger.d(
                     "CreateCycleViewModel",
-                    "State updated: hasActiveCycle=${state.hasActiveCycle}, name='${state.name}', type=${state.type}, totalWeeks=${state.totalWeeks}, onCompleteAction=${state.onCompleteAction}, createdCycleId=${state.createdCycleId}, createdWeekCount=${state.createdWeekCount}"
+                    "State updated: hasActiveCycle=${state.hasActiveCycle}, name='${state.name}', type=${state.type}, totalWeeks=${state.totalWeeks}, onCompleteAction=${state.onCompleteAction}"
                 )
             }
         }
@@ -131,7 +138,7 @@ class CreateCycleViewModel(
 
             if (result is Data.Success) {
                 val weekCount = if (current.type == CycleType.STANDARD) 1 else current.totalWeeks
-                _state.value = _state.value.copy(createdCycleId = result.data, createdWeekCount = weekCount)
+                _uiEvents.send(CreateCycleUiEvent.Created(result.data, weekCount))
             }
         }
     }

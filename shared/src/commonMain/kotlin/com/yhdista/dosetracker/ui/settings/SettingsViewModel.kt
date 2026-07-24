@@ -3,6 +3,7 @@ package com.yhdista.dosetracker.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.core.logEach
 import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.DayPeriod
 import com.yhdista.dosetracker.domain.model.TimeType
@@ -38,23 +39,15 @@ class SettingsViewModel(
             defaultTimeType = defaultTimeTypeResult
         )
     }
-    .stateIn(
+    .logEach("SettingsViewModel") { state ->
+        val periodTimesDesc = state.periodTimes.describe { it.toString() }
+        "State updated: periodTimes=$periodTimesDesc, defaultTimeType=${state.defaultTimeType}"
+    }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = SettingsState()
     )
 
-    init {
-        viewModelScope.launch {
-            uiState.collect { state ->
-                val periodTimesDesc = state.periodTimes.describe { it.toString() }
-                com.yhdista.dosetracker.core.AppLogger.d(
-                    "SettingsViewModel",
-                    "State updated: periodTimes=$periodTimesDesc, defaultTimeType=${state.defaultTimeType}"
-                )
-            }
-        }
-    }
 
     fun onEvent(event: SettingsEvent) {
         com.yhdista.dosetracker.core.AppLogger.d("SettingsViewModel", "onEvent: $event")

@@ -18,6 +18,10 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
@@ -66,85 +70,56 @@ fun DoseTrackerAppMain(
 ) {
     RequestNotificationPermissionEffect()
 
-    val backstack = rememberNavBackStack(Destination.Today)
+    // One back stack per top-level tab: switching tabs preserves each tab's detail
+    // stack and scroll state instead of clearing everything.
+    val todayStack = rememberNavBackStack(Destination.Today)
+    val medsStack = rememberNavBackStack(Destination.Medications)
+    val historyStack = rememberNavBackStack(Destination.History)
+    val reportStack = rememberNavBackStack(Destination.Report)
+    val settingsStack = rememberNavBackStack(Destination.Settings)
+    val debugStack = rememberNavBackStack(Destination.Debug)
+    var currentTab by rememberSaveable { mutableStateOf(TAB_TODAY) }
+
+    val tabs = buildList {
+        add(TabSpec(TAB_TODAY, "Today", Icons.Rounded.Today, todayStack))
+        add(TabSpec(TAB_MEDS, "Meds", Icons.Rounded.Medication, medsStack))
+        add(TabSpec(TAB_HISTORY, "History", Icons.Rounded.History, historyStack))
+        add(TabSpec(TAB_REPORT, "Report", Icons.Rounded.BarChart, reportStack))
+        add(TabSpec(TAB_SETTINGS, "Settings", Icons.Rounded.Settings, settingsStack))
+        if (isDebugBuild) add(TabSpec(TAB_DEBUG, "Debug", Icons.Rounded.BugReport, debugStack))
+    }
+    val backstack = (tabs.find { it.key == currentTab } ?: tabs.first()).stack
     val listDetailStrategy = rememberListDetailSceneStrategy<NavKey>()
 
     LaunchedEffect(backstack.last()) {
         com.yhdista.dosetracker.core.AppLogger.i("Navigation", "Screen Transition: ${backstack.last()::class.simpleName ?: "Unknown"} (Route: ${backstack.last()})")
     }
 
+    // Track the handled id so a restored back stack doesn't get the entry re-added.
+    var handledConfirmDoseId by rememberSaveable { mutableStateOf<Long?>(null) }
     LaunchedEffect(initialConfirmDoseId) {
-        initialConfirmDoseId?.let { backstack.add(Destination.ConfirmDose(it)) }
+        if (initialConfirmDoseId != null && initialConfirmDoseId != handledConfirmDoseId) {
+            handledConfirmDoseId = initialConfirmDoseId
+            currentTab = TAB_TODAY
+            todayStack.add(Destination.ConfirmDose(initialConfirmDoseId))
+        }
     }
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
-            item(
-                selected = backstack.last() is Destination.Today,
-                onClick = {
-                    if (backstack.last() !is Destination.Today) {
-                        backstack.clear()
-                        backstack.add(Destination.Today)
-                    }
-                },
-                icon = { Icon(Icons.Rounded.Today, contentDescription = "Today") },
-                label = { Text("Today") }
-            )
-            item(
-                selected = backstack.last() is Destination.Medications,
-                onClick = {
-                    if (backstack.last() !is Destination.Medications) {
-                        backstack.clear()
-                        backstack.add(Destination.Medications)
-                    }
-                },
-                icon = { Icon(Icons.Rounded.Medication, contentDescription = "Medications") },
-                label = { Text("Meds") }
-            )
-            item(
-                selected = backstack.last() is Destination.History,
-                onClick = {
-                    if (backstack.last() !is Destination.History) {
-                        backstack.clear()
-                        backstack.add(Destination.History)
-                    }
-                },
-                icon = { Icon(Icons.Rounded.History, contentDescription = "History") },
-                label = { Text("History") }
-            )
-            item(
-                selected = backstack.last() is Destination.Report,
-                onClick = {
-                    if (backstack.last() !is Destination.Report) {
-                        backstack.clear()
-                        backstack.add(Destination.Report)
-                    }
-                },
-                icon = { Icon(Icons.Rounded.BarChart, contentDescription = "Report") },
-                label = { Text("Report") }
-            )
-            item(
-                selected = backstack.last() is Destination.Settings,
-                onClick = {
-                    if (backstack.last() !is Destination.Settings) {
-                        backstack.clear()
-                        backstack.add(Destination.Settings)
-                    }
-                },
-                icon = { Icon(Icons.Rounded.Settings, contentDescription = "Settings") },
-                label = { Text("Settings") }
-            )
-            if (isDebugBuild) {
+            tabs.forEach { tab ->
                 item(
-                    selected = backstack.last() is Destination.Debug,
+                    selected = currentTab == tab.key,
                     onClick = {
-                        if (backstack.last() !is Destination.Debug) {
-                            backstack.clear()
-                            backstack.add(Destination.Debug)
+                        if (currentTab == tab.key) {
+                            // Reselecting the active tab pops it back to its root.
+                            while (tab.stack.size > 1) tab.stack.removeLastOrNull()
+                        } else {
+                            currentTab = tab.key
                         }
                     },
-                    icon = { Icon(Icons.Rounded.BugReport, contentDescription = "Debug") },
-                    label = { Text("Debug") }
+                    icon = { Icon(tab.icon, contentDescription = tab.label) },
+                    label = { Text(tab.label) }
                 )
             }
         }
@@ -436,3 +411,17 @@ fun DoseTrackerAppMain(
         }
     }
 }
+
+private const val TAB_TODAY = "today"
+private const val TAB_MEDS = "meds"
+private const val TAB_HISTORY = "history"
+private const val TAB_REPORT = "report"
+private const val TAB_SETTINGS = "settings"
+private const val TAB_DEBUG = "debug"
+
+private data class TabSpec(
+    val key: String,
+    val label: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val stack: androidx.navigation3.runtime.NavBackStack<NavKey>,
+)

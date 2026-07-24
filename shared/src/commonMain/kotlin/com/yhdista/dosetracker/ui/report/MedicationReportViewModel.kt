@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.core.logEach
 import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
@@ -120,25 +121,17 @@ class MedicationReportViewModel(
                 )
             }
         }
-        .stateIn(
+        .logEach("MedicationReportViewModel") { state ->
+        val weeksDesc = state.weeks.describe { weeks ->
+            weeks.joinToString(prefix = "[", postfix = "]") { "${it.weekStart}=${it.totalTaken}" }
+        }
+        "State updated: medicationName='${state.medicationName}', mode=${state.mode}, periodStart=${state.periodStart}, weeks=$weeksDesc"
+    }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = MedicationReportState()
         )
 
-    init {
-        viewModelScope.launch {
-            uiState.collect { state ->
-                val weeksDesc = state.weeks.describe { weeks ->
-                    weeks.joinToString(prefix = "[", postfix = "]") { "${it.weekStart}=${it.totalTaken}" }
-                }
-                com.yhdista.dosetracker.core.AppLogger.d(
-                    "MedicationReportViewModel",
-                    "State updated: medicationName='${state.medicationName}', unit='${state.unit}', mode=${state.mode}, periodStart=${state.periodStart}, weeks=$weeksDesc"
-                )
-            }
-        }
-    }
 
     fun onEvent(event: MedicationReportEvent) {
         com.yhdista.dosetracker.core.AppLogger.d("MedicationReportViewModel", "onEvent: $event")

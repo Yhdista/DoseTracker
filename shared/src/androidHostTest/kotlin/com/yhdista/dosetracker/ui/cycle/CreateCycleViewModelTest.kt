@@ -9,6 +9,7 @@ import com.yhdista.dosetracker.domain.repository.CycleRepository
 import com.yhdista.dosetracker.reminder.DoseGenerator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -49,6 +50,9 @@ class CreateCycleViewModelTest {
         val viewModel = CreateCycleViewModel(repository, doseGenerator)
         testDispatcher.scheduler.advanceUntilIdle()
 
+        val events = mutableListOf<CreateCycleUiEvent>()
+        val eventJob = launch { viewModel.uiEvents.collect { events.add(it) } }
+
         viewModel.onEvent(CreateCycleEvent.NameChanged("Cyklus"))
         viewModel.onEvent(CreateCycleEvent.TotalWeeksChanged(4))
         viewModel.onEvent(CreateCycleEvent.Save)
@@ -57,7 +61,8 @@ class CreateCycleViewModelTest {
         verify(repository).createCycle(
             argThat { name == "Cyklus" && type == CycleType.NORMAL && totalWeeks == 4 && status == CycleStatus.ACTIVE }
         )
-        assert(viewModel.uiState.value.createdCycleId == 1L)
+        assert(events.single() == CreateCycleUiEvent.Created(cycleId = 1L, weekCount = 4))
+        eventJob.cancel()
     }
 
     @Test

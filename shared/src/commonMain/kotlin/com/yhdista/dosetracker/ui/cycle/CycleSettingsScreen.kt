@@ -19,6 +19,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.Cycle
 import com.yhdista.dosetracker.ui.common.DataContent
+import com.yhdista.dosetracker.ui.common.ObserveAsEvents
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,10 +33,9 @@ fun CycleSettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(state) {
-        val result = state
-        if (result is Data.Success && result.data == null) {
-            onEnded()
+    ObserveAsEvents(viewModel.uiEvents) { event ->
+        when (event) {
+            CycleSettingsUiEvent.CycleEnded -> onEnded()
         }
     }
 
@@ -54,7 +54,7 @@ fun CycleSettingsScreen(
         DataContent(state, Modifier.padding(padding)) { cycle ->
             if (cycle == null) {
                 Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    Text("Žádný aktivní cyklus")
                 }
             } else {
                 CycleSettingsList(

@@ -9,6 +9,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.yhdista.dosetracker.ui.common.ObserveAsEvents
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yhdista.dosetracker.domain.model.CycleCompleteAction
@@ -21,15 +23,11 @@ fun CreateCycleScreen(
     onBack: () -> Unit,
     onCreated: (cycleId: Long, weekCount: Int) -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(state.createdCycleId) {
-        state.createdCycleId?.let {
-            com.yhdista.dosetracker.core.AppLogger.d(
-                "CreateCycleScreen",
-                "Navigating away after create: cycleId=$it, weekCount=${state.createdWeekCount}"
-            )
-            onCreated(it, state.createdWeekCount)
+    ObserveAsEvents(viewModel.uiEvents) { event ->
+        when (event) {
+            is CreateCycleUiEvent.Created -> onCreated(event.cycleId, event.weekCount)
         }
     }
 

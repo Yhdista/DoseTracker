@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.core.logEach
 import com.yhdista.dosetracker.core.describe
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -44,27 +45,13 @@ class HistoryViewModel(
         } else {
             HistoryState(Data.Loading)
         }
+    }.logEach("HistoryViewModel") { state ->
+        val dosesDesc = state.dosesWithMeds.describe { items -> "count=${items.size}" }
+        "State updated: dosesWithMeds=$dosesDesc"
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = HistoryState()
     )
 
-    init {
-        viewModelScope.launch {
-            uiState.collect { state ->
-                val dosesDesc = state.dosesWithMeds.describe { items ->
-                    items.joinToString(prefix = "[", postfix = "]") { item ->
-                        val timeStr = try {
-                            item.dose.timestamp.toLocalDateTime(TimeZone.currentSystemDefault()).toString().replace("T", " ").substring(0, 16)
-                        } catch (e: Exception) {
-                            "????-??-?? ??:??"
-                        }
-                        "${item.dose.medicationName} ${item.dose.amount ?: ""}${item.dose.unit ?: ""} @ $timeStr (${item.dose.status})"
-                    }
-                }
-                com.yhdista.dosetracker.core.AppLogger.d("HistoryViewModel", "State updated: dosesWithMeds=$dosesDesc")
-            }
-        }
-    }
 }

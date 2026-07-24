@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.core.logEach
 import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
@@ -85,50 +86,16 @@ class CycleWeekEditorViewModel(
                 CycleWeekEditorState(weekId, schedules, medications, periodTimes, defaultTimeType, cycle)
             }
         }
-        .stateIn(
+        .logEach("CycleWeekEditorViewModel") { state ->
+        val cycleDesc = state.cycle?.let { "Cycle(id=${it.id}, name='${it.name}')" } ?: "null"
+        val schedulesDesc = state.schedules.describe { list -> "count=${list.size}" }
+        "State updated: weekId=${state.weekId}, cycle=$cycleDesc, schedules=$schedulesDesc, defaultTimeType=${state.defaultTimeType}"
+    }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = CycleWeekEditorState()
         )
 
-    init {
-        viewModelScope.launch {
-            cycleIdFlow.filterNotNull().collect { id ->
-                _cycle.value = cycleRepository.getCycleById(id)
-            }
-        }
-        viewModelScope.launch {
-            uiState.collect { state ->
-                val cycleDesc = state.cycle?.let { "Cycle(id=${it.id}, name='${it.name}', type=${it.type}, totalWeeks=${it.totalWeeks})" } ?: "null"
-                val schedulesDesc = when (val s = state.schedules) {
-                    is Data.Success -> {
-                        val listStr = s.data.joinToString(prefix = "[", postfix = "]") { sch ->
-                            val timeStr = if (sch.timeType == TimeType.PERIOD) sch.dayPeriod.toString() else "${sch.minutesOfDay / 60}:${(sch.minutesOfDay % 60).toString().padStart(2, '0')}"
-                            "Schedule(id=${sch.id}, medId=${sch.medicationId}, type=${sch.scheduleType}, time=$timeStr, enabled=${sch.enabled})"
-                        }
-                        "Success($listStr)"
-                    }
-                    is Data.Error -> "Error('${s.message}')"
-                    Data.Loading -> "Loading"
-                }
-                val medicationsDesc = when (val m = state.medications) {
-                    is Data.Success -> {
-                        val listStr = m.data.joinToString(prefix = "[", postfix = "]") { med ->
-                            "${med.name} (${med.dosage} ${med.unit.symbol})"
-                        }
-                        "Success($listStr)"
-                    }
-                    is Data.Error -> "Error('${m.message}')"
-                    Data.Loading -> "Loading"
-                }
-                val periodTimesDesc = state.periodTimes.describe { it.toString() }
-                com.yhdista.dosetracker.core.AppLogger.d(
-                    "CycleWeekEditorViewModel",
-                    "State updated: weekId=${state.weekId}, weekIndex=${weekIndexFlow.value}, cycle=$cycleDesc, schedules=$schedulesDesc, medications=$medicationsDesc, periodTimes=$periodTimesDesc, defaultTimeType=${state.defaultTimeType}"
-                )
-            }
-        }
-    }
 
     fun onEvent(event: CycleWeekEditorEvent) {
         com.yhdista.dosetracker.core.AppLogger.d("CycleWeekEditorViewModel", "onEvent: $event")

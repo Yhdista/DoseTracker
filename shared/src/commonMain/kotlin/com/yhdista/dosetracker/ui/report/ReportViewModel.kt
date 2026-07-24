@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.core.logEach
 import com.yhdista.dosetracker.core.describe
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
@@ -62,24 +63,19 @@ class ReportViewModel(
             doseRepository.getDosesInWeek(weekStart).map { result -> weekStart to summarize(result) }
         }
         .map { (weekStart, summaries) -> ReportState(weekStart = weekStart, summaries = summaries) }
-        .stateIn(
+        .logEach("ReportViewModel") { state ->
+        val summariesDesc = state.summaries.describe { summaries ->
+            summaries.joinToString(prefix = "[", postfix = "]") { sum ->
+                "${sum.medicationName}: TAKEN=${sum.taken}, MISSED=${sum.missed}, SKIPPED=${sum.skipped}, UPCOMING=${sum.upcoming}"
+            }
+        }
+        "State updated: weekStart=${state.weekStart}, summaries=$summariesDesc"
+    }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = ReportState()
         )
 
-    init {
-        viewModelScope.launch {
-            uiState.collect { state ->
-                val summariesDesc = state.summaries.describe { summaries ->
-                    summaries.joinToString(prefix = "[", postfix = "]") { sum ->
-                        "${sum.medicationName}: TAKEN=${sum.taken}, MISSED=${sum.missed}, SKIPPED=${sum.skipped}, UPCOMING=${sum.upcoming} (${sum.totalAmountTaken}/${sum.totalAmountScheduled} ${sum.unit})"
-                    }
-                }
-                com.yhdista.dosetracker.core.AppLogger.d("ReportViewModel", "State updated: weekStart=${state.weekStart}, summaries=$summariesDesc")
-            }
-        }
-    }
 
     fun onEvent(event: ReportEvent) {
         com.yhdista.dosetracker.core.AppLogger.d("ReportViewModel", "onEvent: $event")

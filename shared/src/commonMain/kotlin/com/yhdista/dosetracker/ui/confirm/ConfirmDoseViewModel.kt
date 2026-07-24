@@ -9,6 +9,7 @@ import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.repository.DoseRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
@@ -20,9 +21,12 @@ data class ConfirmDoseState(
     val dose: Data<Dose> = Data.Loading,
     val amount: String = "",
     val time: LocalDateTime? = null,
-    val isSuccess: Boolean = false,
     val error: String? = null
 )
+
+sealed interface ConfirmDoseUiEvent {
+    data object Saved : ConfirmDoseUiEvent
+}
 
 sealed interface ConfirmDoseEvent {
     data class UpdateAmount(val amount: String) : ConfirmDoseEvent
@@ -44,6 +48,9 @@ class ConfirmDoseViewModel(
 
     private val _state = MutableStateFlow(ConfirmDoseState())
     val state = _state.asStateFlow()
+
+    private val _uiEvents = Channel<ConfirmDoseUiEvent>()
+    val uiEvents = _uiEvents.receiveAsFlow()
 
     init {
         doseIdFlow
@@ -74,7 +81,7 @@ class ConfirmDoseViewModel(
                     }
                     "${dose.medicationName} ${dose.amount ?: ""}${dose.unit ?: ""} scheduled @ $timeStr, status=${dose.status}"
                 }
-                com.yhdista.dosetracker.core.AppLogger.d("ConfirmDoseViewModel", "State updated: dose=$doseDesc, amount=${s.amount}, time=${s.time}, isSuccess=${s.isSuccess}, error=${s.error}")
+                com.yhdista.dosetracker.core.AppLogger.d("ConfirmDoseViewModel", "State updated: dose=$doseDesc, amount=${s.amount}, time=${s.time}, error=${s.error}")
             }
         }
     }
@@ -101,7 +108,7 @@ class ConfirmDoseViewModel(
                 )
             )
             when (result) {
-                is Data.Success -> _state.update { it.copy(isSuccess = true) }
+                is Data.Success -> _uiEvents.send(ConfirmDoseUiEvent.Saved)
                 is Data.Error -> _state.update { it.copy(error = result.message) }
                 else -> Unit
             }

@@ -7,8 +7,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.unit.dp
 import com.yhdista.dosetracker.ui.common.DataContent
+import com.yhdista.dosetracker.ui.common.ObserveAsEvents
 import kotlinx.datetime.format
 import kotlinx.datetime.format.char
 
@@ -19,11 +21,11 @@ fun AddDoseScreen(
     viewModel: AddDoseViewModel,
     onBack: () -> Unit
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
-    LaunchedEffect(state.isSuccess) {
-        if (state.isSuccess) {
-            onBack()
+    ObserveAsEvents(viewModel.uiEvents) { event ->
+        when (event) {
+            AddDoseUiEvent.Saved -> onBack()
         }
     }
 

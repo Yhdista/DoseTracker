@@ -11,6 +11,7 @@ import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.repository.DoseRepository
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
@@ -23,9 +24,12 @@ data class AddDoseState(
     val medication: Data<Medication> = Data.Loading,
     val amount: String = "",
     val time: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
-    val isSuccess: Boolean = false,
     val error: String? = null
 )
+
+sealed interface AddDoseUiEvent {
+    data object Saved : AddDoseUiEvent
+}
 
 sealed interface AddDoseEvent {
     data class UpdateAmount(val amount: String) : AddDoseEvent
@@ -50,6 +54,9 @@ class AddDoseViewModel(
     private val _state = MutableStateFlow(AddDoseState())
     val state = _state.asStateFlow()
 
+    private val _uiEvents = Channel<AddDoseUiEvent>()
+    val uiEvents = _uiEvents.receiveAsFlow()
+
     init {
         medicationIdFlow
             .filterNotNull()
@@ -69,7 +76,7 @@ class AddDoseViewModel(
                 val medDesc = s.medication.describe { med -> "name='${med.name}', dosage=${med.dosage} ${med.unit.symbol}" }
                 com.yhdista.dosetracker.core.AppLogger.d(
                     "AddDoseViewModel",
-                    "State updated: medication=$medDesc, amount=${s.amount}, time=${s.time}, isSuccess=${s.isSuccess}, error=${s.error}"
+                    "State updated: medication=$medDesc, amount=${s.amount}, time=${s.time}, error=${s.error}"
                 )
             }
         }
@@ -97,7 +104,7 @@ class AddDoseViewModel(
                 status = DoseStatus.TAKEN
             )
             when (val result = doseRepository.insertDose(dose)) {
-                is Data.Success -> _state.update { it.copy(isSuccess = true) }
+                is Data.Success -> _uiEvents.send(AddDoseUiEvent.Saved)
                 is Data.Error -> _state.update { it.copy(error = result.message) }
                 else -> Unit
             }

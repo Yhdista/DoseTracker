@@ -15,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yhdista.dosetracker.core.Data
@@ -43,7 +44,7 @@ fun MedicationDetailScreen(
     viewModel: MedicationDetailViewModel,
     onBack: () -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
     var editingSchedule by remember { mutableStateOf<ReminderSchedule?>(null) }
     var showPeriodSettings by remember { mutableStateOf(false) }

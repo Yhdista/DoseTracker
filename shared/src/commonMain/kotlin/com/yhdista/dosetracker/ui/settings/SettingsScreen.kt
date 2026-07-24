@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yhdista.dosetracker.core.Data
@@ -20,7 +21,7 @@ import com.yhdista.dosetracker.ui.schedule.formatMinutes
 fun SettingsScreen(
     viewModel: SettingsViewModel
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val periodTimes = (state.periodTimes as? Data.Success)?.data ?: emptyMap()
     var editingPeriod by remember { mutableStateOf<DayPeriod?>(null) }
 

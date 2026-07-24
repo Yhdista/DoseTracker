@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+   Pre-API-31 Auto Backup rules. The medication database and settings ARE backed up
+   (encrypted with the device lockscreen secret since API 28) so users keep their dose
+   history on a new device. Debug log files contain the same medication data in plain
+   text and must never leave the device.
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <exclude domain="external" path="debug_log" />
 </full-backup-content>

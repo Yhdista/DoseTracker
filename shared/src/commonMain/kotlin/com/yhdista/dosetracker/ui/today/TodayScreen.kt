@@ -68,7 +68,9 @@ fun TodayContent(
     onNavigateToCycleSettings: () -> Unit = {}
 ) {
     val zone = TimeZone.currentSystemDefault()
-    val today = Clock.System.todayIn(zone)
+    // The ViewModel's date flow re-emits after midnight; fall back to the wall clock
+    // only for the first frame before the state arrives.
+    val today = state.today ?: Clock.System.todayIn(zone)
 
     val activeCycle = (state.activeCycle as? Data.Success)?.data
     val completedCycles = (state.completedCycles as? Data.Success)?.data ?: emptyList()

@@ -62,7 +62,7 @@ class TodayViewModelTest {
 
         val job = launch { viewModel.uiState.collect {} }
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.runCurrent()
 
         val finalState = viewModel.uiState.value
         assert(finalState.dosesInWindow is Data.Success)
@@ -84,7 +84,7 @@ class TodayViewModelTest {
 
         val viewModel = TodayViewModel(doseRepository, cycleRepository, SavedStateHandle())
         val job = launch { viewModel.uiState.collect {} }
-        testDispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.runCurrent()
 
         val finalState = viewModel.uiState.value
         assert(finalState.activeCycle is Data.Success)
