@@ -2,6 +2,7 @@ package com.yhdista.dosetracker
 
 import android.app.Application
 import android.content.Context
+import androidx.work.BackoffPolicy
 import androidx.work.Configuration
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -57,6 +58,7 @@ class DoseTrackerApp : Application(), Configuration.Provider {
 private fun scheduleDailyDoseGeneration(context: Context) {
     val request = PeriodicWorkRequestBuilder<RescheduleWorker>(1, TimeUnit.DAYS)
         .setInitialDelay(millisUntilNextMidnight(), TimeUnit.MILLISECONDS)
+        .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
         .build()
     WorkManager.getInstance(context).enqueueUniquePeriodicWork(
         "daily-dose-generation",

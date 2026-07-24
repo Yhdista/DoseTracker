@@ -19,7 +19,9 @@ class RescheduleWorker(
             Result.success()
         } catch (e: Exception) {
             com.yhdista.dosetracker.core.AppLogger.e("RescheduleWorker", "Failed daily dose generation and alarm rescheduling", e)
-            Result.failure()
+            // Retry, never fail: a transient boot-time error (DB not ready, Koin racing
+            // startup) would otherwise leave the user without any alarms until midnight.
+            Result.retry()
         }
     }
 }
