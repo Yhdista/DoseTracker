@@ -2,6 +2,7 @@ package com.yhdista.dosetracker.reminder
 
 import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.Cycle
+import com.yhdista.dosetracker.domain.model.DayPeriod
 import com.yhdista.dosetracker.domain.model.CycleCompleteAction
 import com.yhdista.dosetracker.domain.model.CycleStatus
 import com.yhdista.dosetracker.domain.model.CycleType
@@ -11,6 +12,8 @@ import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.model.Medication
 import com.yhdista.dosetracker.domain.model.MedicationUnit
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
+import com.yhdista.dosetracker.domain.model.ScheduleType
+import com.yhdista.dosetracker.domain.model.TimeType
 import com.yhdista.dosetracker.domain.repository.CycleRepository
 import com.yhdista.dosetracker.domain.repository.DoseRepository
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
@@ -163,7 +166,7 @@ class DoseGeneratorTest {
         val schedule = ReminderSchedule(
             id = 1, medicationId = 10, minutesOfDay = 480,
             daysOfWeek = 0,
-            scheduleType = "INTERVAL",
+            scheduleType = ScheduleType.INTERVAL,
             intervalDays = 2,
             startDate = startDate
         )
@@ -187,7 +190,7 @@ class DoseGeneratorTest {
         val schedule = ReminderSchedule(
             id = 1, medicationId = 10, minutesOfDay = 480,
             daysOfWeek = 0,
-            scheduleType = "INTERVAL",
+            scheduleType = ScheduleType.INTERVAL,
             intervalDays = 2,
             startDate = startDate
         )
@@ -204,11 +207,11 @@ class DoseGeneratorTest {
         val schedule = ReminderSchedule(
             id = 1, medicationId = 10, minutesOfDay = 0,
             daysOfWeek = WeekDays.toBitmask(setOf(today.dayOfWeek)),
-            timeType = "PERIOD",
-            dayPeriod = "MORNING"
+            timeType = TimeType.PERIOD,
+            dayPeriod = DayPeriod.MORNING
         )
         // Configure morning time to 8:30 (510 minutes)
-        val periodTimes = mapOf("MORNING" to 510)
+        val periodTimes = mapOf(DayPeriod.MORNING to 510)
         val expectedInstant = today.atTime(8, 30).toInstant(TimeZone.currentSystemDefault())
 
         whenever(scheduleRepository.getEnabledSchedules()).thenReturn(Data.Success(listOf(schedule)))

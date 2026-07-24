@@ -18,7 +18,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.domain.model.DayPeriod
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
+import com.yhdista.dosetracker.domain.model.ScheduleType
+import com.yhdista.dosetracker.domain.model.TimeType
+import com.yhdista.dosetracker.ui.common.label
 import com.yhdista.dosetracker.reminder.WeekDays
 import com.yhdista.dosetracker.ui.common.DataContent
 import com.yhdista.dosetracker.ui.schedule.ScheduleDialog
@@ -80,7 +84,7 @@ fun MedicationDetailScreen(
 
         if (showAddDialog) {
             ScheduleDialog(
-                defaultTimeType = state.defaultTimeType.value,
+                defaultTimeType = state.defaultTimeType,
                 periodTimes = periodTimes,
                 onDismiss = { showAddDialog = false },
                 onConfirm = { minutes, days, schedType, interval, start, tType, period ->
@@ -103,7 +107,7 @@ fun MedicationDetailScreen(
         editingSchedule?.let { schedule ->
             ScheduleDialog(
                 schedule = schedule,
-                defaultTimeType = state.defaultTimeType.value,
+                defaultTimeType = state.defaultTimeType,
                 periodTimes = periodTimes,
                 onDismiss = { editingSchedule = null },
                 onConfirm = { minutes, days, schedType, interval, start, tType, period ->
@@ -155,19 +159,19 @@ fun MedicationDetailScreen(
 @Composable
 private fun ScheduleRow(
     schedule: ReminderSchedule,
-    periodTimes: Map<String, Int>,
+    periodTimes: Map<DayPeriod, Int>,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val timeLabel = if (schedule.timeType == "PERIOD") {
-        val periodName = schedule.dayPeriod?.lowercase()?.replaceFirstChar { it.uppercase() } ?: ""
-        val minutes = periodTimes[schedule.dayPeriod] ?: schedule.minutesOfDay
+    val timeLabel = if (schedule.timeType == TimeType.PERIOD) {
+        val periodName = schedule.dayPeriod?.label ?: ""
+        val minutes = schedule.dayPeriod?.let { periodTimes[it] } ?: schedule.minutesOfDay
         "$periodName (${formatMinutes(minutes)})"
     } else {
         formatMinutes(schedule.minutesOfDay)
     }
 
-    val freqLabel = if (schedule.scheduleType == "INTERVAL") {
+    val freqLabel = if (schedule.scheduleType == ScheduleType.INTERVAL) {
         "Every ${schedule.intervalDays} days (from ${schedule.startDate})"
     } else {
         val days = WeekDays.fromBitmask(schedule.daysOfWeek)
@@ -189,17 +193,17 @@ private fun ScheduleRow(
 
 @Composable
 fun PeriodSettingsDialog(
-    currentTimes: Map<String, Int>,
+    currentTimes: Map<DayPeriod, Int>,
     onDismiss: () -> Unit,
-    onSavePeriod: (String, Int) -> Unit
+    onSavePeriod: (DayPeriod, Int) -> Unit
 ) {
-    var editingPeriod by remember { mutableStateOf<String?>(null) }
+    var editingPeriod by remember { mutableStateOf<DayPeriod?>(null) }
     
     if (editingPeriod != null) {
         val period = editingPeriod!!
         val minutes = currentTimes[period] ?: 480
         PeriodTimePickerDialog(
-            periodName = period,
+            periodName = period.label,
             initialMinutes = minutes,
             onDismiss = { editingPeriod = null },
             onConfirm = { newMinutes ->
@@ -214,15 +218,10 @@ fun PeriodSettingsDialog(
         title = { Text("Period Notification Times") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(
-                    "MORNING" to "Morning (Ráno)",
-                    "NOON" to "Noon (Poledne)",
-                    "EVENING" to "Evening (Večer)",
-                    "NIGHT" to "Night (Noc)"
-                ).forEach { (key, label) ->
+                DayPeriod.entries.forEach { key ->
                     val minutes = currentTimes[key] ?: 0
                     ListItem(
-                        headlineContent = { Text(label) },
+                        headlineContent = { Text(key.label) },
                         supportingContent = { Text(formatMinutes(minutes)) },
                         trailingContent = {
                             TextButton(onClick = { editingPeriod = key }) {

@@ -14,6 +14,8 @@ import com.yhdista.dosetracker.domain.repository.ScheduleRepository
 import com.yhdista.dosetracker.reminder.DoseGenerator
 import com.yhdista.dosetracker.reminder.DoseReminderScheduler
 import com.yhdista.dosetracker.reminder.WeekDays
+import com.yhdista.dosetracker.domain.model.DayPeriod
+import com.yhdista.dosetracker.domain.model.ScheduleType
 import com.yhdista.dosetracker.domain.model.TimeType
 import com.yhdista.dosetracker.domain.repository.SettingsRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,7 +27,7 @@ import kotlinx.datetime.LocalDate
 data class MedicationDetailState(
     val medication: Data<Medication> = Data.Loading,
     val schedules: Data<List<ReminderSchedule>> = Data.Loading,
-    val periodTimes: Data<Map<String, Int>> = Data.Loading,
+    val periodTimes: Data<Map<DayPeriod, Int>> = Data.Loading,
     val defaultTimeType: TimeType = TimeType.PERIOD
 )
 
@@ -33,16 +35,16 @@ sealed interface MedicationDetailEvent {
     data class AddSchedule(
         val minutesOfDay: Int,
         val daysOfWeek: Set<DayOfWeek>,
-        val scheduleType: String,
+        val scheduleType: ScheduleType,
         val intervalDays: Int,
         val startDate: LocalDate?,
-        val timeType: String,
-        val dayPeriod: String?
+        val timeType: TimeType,
+        val dayPeriod: DayPeriod?
     ) : MedicationDetailEvent
 
     data class UpdateSchedule(val schedule: ReminderSchedule) : MedicationDetailEvent
     data class DeleteSchedule(val schedule: ReminderSchedule) : MedicationDetailEvent
-    data class UpdatePeriodTime(val period: String, val minutesOfDay: Int) : MedicationDetailEvent
+    data class UpdatePeriodTime(val period: DayPeriod, val minutesOfDay: Int) : MedicationDetailEvent
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -87,7 +89,7 @@ class MedicationDetailViewModel(
                 val medDesc = state.medication.describe { med -> "name='${med.name}', dosage=${med.dosage} ${med.unit.symbol}" }
                 val schedulesDesc = state.schedules.describe { schedules ->
                     schedules.joinToString(prefix = "[", postfix = "]") { sch ->
-                        val timeStr = if (sch.timeType == "PERIOD") sch.dayPeriod else "${sch.minutesOfDay / 60}:${(sch.minutesOfDay % 60).toString().padStart(2, '0')}"
+                        val timeStr = if (sch.timeType == TimeType.PERIOD) sch.dayPeriod.toString() else "${sch.minutesOfDay / 60}:${(sch.minutesOfDay % 60).toString().padStart(2, '0')}"
                         "Schedule(id=${sch.id}, type=${sch.scheduleType}, time=$timeStr, enabled=${sch.enabled})"
                     }
                 }
@@ -132,7 +134,7 @@ class MedicationDetailViewModel(
         }
     }
 
-    private fun updatePeriodTime(period: String, minutesOfDay: Int) {
+    private fun updatePeriodTime(period: DayPeriod, minutesOfDay: Int) {
         viewModelScope.launch {
             scheduleRepository.updatePeriodTime(period, minutesOfDay)
             doseGenerator.runForToday()

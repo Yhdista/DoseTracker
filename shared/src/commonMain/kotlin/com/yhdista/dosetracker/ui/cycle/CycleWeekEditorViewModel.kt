@@ -12,6 +12,8 @@ import com.yhdista.dosetracker.domain.repository.MedicationRepository
 import com.yhdista.dosetracker.domain.repository.ScheduleRepository
 import com.yhdista.dosetracker.reminder.DoseGenerator
 import com.yhdista.dosetracker.reminder.WeekDays
+import com.yhdista.dosetracker.domain.model.DayPeriod
+import com.yhdista.dosetracker.domain.model.ScheduleType
 import com.yhdista.dosetracker.domain.model.TimeType
 import com.yhdista.dosetracker.domain.repository.SettingsRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -24,7 +26,7 @@ data class CycleWeekEditorState(
     val weekId: Long? = null,
     val schedules: Data<List<ReminderSchedule>> = Data.Loading,
     val medications: Data<List<Medication>> = Data.Loading,
-    val periodTimes: Data<Map<String, Int>> = Data.Loading,
+    val periodTimes: Data<Map<DayPeriod, Int>> = Data.Loading,
     val defaultTimeType: TimeType = TimeType.PERIOD,
     val cycle: com.yhdista.dosetracker.domain.model.Cycle? = null
 )
@@ -34,11 +36,11 @@ sealed interface CycleWeekEditorEvent {
         val medicationId: Long,
         val minutesOfDay: Int,
         val daysOfWeek: Set<DayOfWeek>,
-        val scheduleType: String,
+        val scheduleType: ScheduleType,
         val intervalDays: Int,
         val startDate: LocalDate?,
-        val timeType: String,
-        val dayPeriod: String?
+        val timeType: TimeType,
+        val dayPeriod: DayPeriod?
     ) : CycleWeekEditorEvent
 
     data class UpdateSchedule(val schedule: ReminderSchedule) : CycleWeekEditorEvent
@@ -101,7 +103,7 @@ class CycleWeekEditorViewModel(
                 val schedulesDesc = when (val s = state.schedules) {
                     is Data.Success -> {
                         val listStr = s.data.joinToString(prefix = "[", postfix = "]") { sch ->
-                            val timeStr = if (sch.timeType == "PERIOD") sch.dayPeriod else "${sch.minutesOfDay / 60}:${(sch.minutesOfDay % 60).toString().padStart(2, '0')}"
+                            val timeStr = if (sch.timeType == TimeType.PERIOD) sch.dayPeriod.toString() else "${sch.minutesOfDay / 60}:${(sch.minutesOfDay % 60).toString().padStart(2, '0')}"
                             "Schedule(id=${sch.id}, medId=${sch.medicationId}, type=${sch.scheduleType}, time=$timeStr, enabled=${sch.enabled})"
                         }
                         "Success($listStr)"

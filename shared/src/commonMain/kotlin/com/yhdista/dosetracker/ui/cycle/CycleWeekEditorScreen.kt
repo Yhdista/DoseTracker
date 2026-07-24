@@ -17,6 +17,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.domain.model.Medication
+import com.yhdista.dosetracker.domain.model.ScheduleType
+import com.yhdista.dosetracker.domain.model.TimeType
+import com.yhdista.dosetracker.ui.common.label
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
 import com.yhdista.dosetracker.reminder.WeekDays
 import com.yhdista.dosetracker.ui.schedule.ScheduleDialog
@@ -69,7 +72,7 @@ fun CycleWeekEditorScreen(
 
         pendingMedicationId?.let { medicationId ->
             ScheduleDialog(
-                defaultTimeType = state.defaultTimeType.value,
+                defaultTimeType = state.defaultTimeType,
                 periodTimes = periodTimes,
                 onDismiss = { pendingMedicationId = null },
                 onConfirm = { minutes, days, schedType, interval, start, tType, period ->
@@ -93,7 +96,7 @@ fun CycleWeekEditorScreen(
         editingSchedule?.let { schedule ->
             ScheduleDialog(
                 schedule = schedule,
-                defaultTimeType = state.defaultTimeType.value,
+                defaultTimeType = state.defaultTimeType,
                 periodTimes = periodTimes,
                 onDismiss = { editingSchedule = null },
                 onConfirm = { minutes, days, schedType, interval, start, tType, period ->
@@ -157,18 +160,18 @@ fun CycleWeekEditorScreen(
 private fun CycleScheduleRow(
     schedule: ReminderSchedule,
     medicationName: String,
-    periodTimes: Map<String, Int>,
+    periodTimes: Map<com.yhdista.dosetracker.domain.model.DayPeriod, Int>,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val timeLabel = if (schedule.timeType == "PERIOD") {
-        val periodName = schedule.dayPeriod?.lowercase()?.replaceFirstChar { it.uppercase() } ?: ""
-        val minutes = periodTimes[schedule.dayPeriod] ?: schedule.minutesOfDay
+    val timeLabel = if (schedule.timeType == TimeType.PERIOD) {
+        val periodName = schedule.dayPeriod?.label ?: ""
+        val minutes = schedule.dayPeriod?.let { periodTimes[it] } ?: schedule.minutesOfDay
         "$periodName (${formatMinutes(minutes)})"
     } else {
         formatMinutes(schedule.minutesOfDay)
     }
-    val freqLabel = if (schedule.scheduleType == "INTERVAL") {
+    val freqLabel = if (schedule.scheduleType == ScheduleType.INTERVAL) {
         "Každých ${schedule.intervalDays} dní (od ${schedule.startDate})"
     } else {
         val days = WeekDays.fromBitmask(schedule.daysOfWeek)

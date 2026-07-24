@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.core.describe
+import com.yhdista.dosetracker.domain.model.DayPeriod
 import com.yhdista.dosetracker.domain.model.TimeType
 import com.yhdista.dosetracker.domain.repository.ScheduleRepository
 import com.yhdista.dosetracker.domain.repository.SettingsRepository
@@ -14,12 +15,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class SettingsState(
-    val periodTimes: Data<Map<String, Int>> = Data.Loading,
+    val periodTimes: Data<Map<DayPeriod, Int>> = Data.Loading,
     val defaultTimeType: TimeType = TimeType.PERIOD
 )
 
 sealed interface SettingsEvent {
-    data class UpdatePeriodTime(val period: String, val minutesOfDay: Int) : SettingsEvent
+    data class UpdatePeriodTime(val period: DayPeriod, val minutesOfDay: Int) : SettingsEvent
     data class UpdateDefaultTimeType(val timeType: TimeType) : SettingsEvent
 }
 

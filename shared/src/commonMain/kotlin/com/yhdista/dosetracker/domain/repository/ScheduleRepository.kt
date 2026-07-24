@@ -1,6 +1,7 @@
 package com.yhdista.dosetracker.domain.repository
 
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.domain.model.DayPeriod
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
 import kotlinx.coroutines.flow.Flow
 
@@ -13,7 +14,7 @@ interface ScheduleRepository {
     suspend fun updateSchedule(schedule: ReminderSchedule): Data<Unit>
     suspend fun deleteSchedule(schedule: ReminderSchedule): Data<Unit>
 
-    fun getPeriodTimes(): Flow<Data<Map<String, Int>>>
-    suspend fun getPeriodTimesOnce(): Map<String, Int>
-    suspend fun updatePeriodTime(period: String, minutesOfDay: Int): Data<Unit>
+    fun getPeriodTimes(): Flow<Data<Map<DayPeriod, Int>>>
+    suspend fun getPeriodTimesOnce(): Map<DayPeriod, Int>
+    suspend fun updatePeriodTime(period: DayPeriod, minutesOfDay: Int): Data<Unit>
 }

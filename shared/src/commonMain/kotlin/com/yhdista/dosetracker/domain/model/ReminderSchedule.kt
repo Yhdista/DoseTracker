@@ -8,10 +8,10 @@ data class ReminderSchedule(
     val minutesOfDay: Int, // 0..1439, local time of day
     val daysOfWeek: Int,   // bitmask, see WeekDays
     val enabled: Boolean = true,
-    val scheduleType: String = "WEEKDAYS",
+    val scheduleType: ScheduleType = ScheduleType.WEEKDAYS,
     val intervalDays: Int = 1,
     val startDate: LocalDate? = null,
-    val timeType: String = "EXACT",
-    val dayPeriod: String? = null,
+    val timeType: TimeType = TimeType.EXACT,
+    val dayPeriod: DayPeriod? = null,
     val cycleWeekId: Long? = null
 )

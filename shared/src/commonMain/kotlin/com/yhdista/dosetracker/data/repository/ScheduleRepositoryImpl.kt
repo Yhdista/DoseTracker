@@ -5,8 +5,11 @@ import com.yhdista.dosetracker.core.Data
 import com.yhdista.dosetracker.data.local.dao.PeriodTimeDao
 import com.yhdista.dosetracker.data.local.dao.ReminderScheduleDao
 import com.yhdista.dosetracker.data.local.entity.PeriodTimeEntity
+import com.yhdista.dosetracker.data.mapper.dayPeriodFromDb
+import com.yhdista.dosetracker.data.mapper.toDbValue
 import com.yhdista.dosetracker.data.mapper.toDomain
 import com.yhdista.dosetracker.data.mapper.toEntity
+import com.yhdista.dosetracker.domain.model.DayPeriod
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
 import com.yhdista.dosetracker.domain.repository.ScheduleRepository
 import kotlinx.coroutines.flow.Flow
@@ -77,22 +80,22 @@ internal class ScheduleRepositoryImpl(
         }
     }
 
-    override fun getPeriodTimes(): Flow<Data<Map<String, Int>>> {
+    override fun getPeriodTimes(): Flow<Data<Map<DayPeriod, Int>>> {
         return periodTimeDao.getAllPeriodTimesFlow()
-            .map { entities ->
-                val map = entities.associate { it.period to it.minutesOfDay }
-                Data.Success(map)
-            }
+            .map { entities -> Data.Success(entities.toPeriodMap()) }
             .withLoadingAndErrors("Failed to fetch period times")
     }
 
-    override suspend fun getPeriodTimesOnce(): Map<String, Int> {
-        return periodTimeDao.getAllPeriodTimes().associate { it.period to it.minutesOfDay }
+    override suspend fun getPeriodTimesOnce(): Map<DayPeriod, Int> {
+        return periodTimeDao.getAllPeriodTimes().toPeriodMap()
     }
 
-    override suspend fun updatePeriodTime(period: String, minutesOfDay: Int): Data<Unit> {
+    private fun List<PeriodTimeEntity>.toPeriodMap(): Map<DayPeriod, Int> =
+        mapNotNull { entity -> dayPeriodFromDb(entity.period)?.let { it to entity.minutesOfDay } }.toMap()
+
+    override suspend fun updatePeriodTime(period: DayPeriod, minutesOfDay: Int): Data<Unit> {
         return try {
-            periodTimeDao.insertPeriodTime(PeriodTimeEntity(period, minutesOfDay))
+            periodTimeDao.insertPeriodTime(PeriodTimeEntity(period.toDbValue(), minutesOfDay))
             AppLogger.i("Database", "Updated period time: period=$period, minutesOfDay=$minutesOfDay")
             Data.Success(Unit)
         } catch (e: Exception) {

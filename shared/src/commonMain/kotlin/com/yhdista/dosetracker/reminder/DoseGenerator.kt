@@ -6,6 +6,8 @@ import com.yhdista.dosetracker.domain.model.CycleType
 import com.yhdista.dosetracker.domain.model.Dose
 import com.yhdista.dosetracker.domain.model.DoseStatus
 import com.yhdista.dosetracker.domain.model.ReminderSchedule
+import com.yhdista.dosetracker.domain.model.ScheduleType
+import com.yhdista.dosetracker.domain.model.TimeType
 import com.yhdista.dosetracker.domain.repository.CycleRepository
 import com.yhdista.dosetracker.domain.repository.DoseRepository
 import com.yhdista.dosetracker.domain.repository.MedicationRepository
@@ -65,8 +67,8 @@ class DoseGenerator(
             val matches = matchesDate(schedule, date, activeCycleWeekId)
             if (!matches) continue
 
-            val minutes = if (schedule.timeType == "PERIOD") {
-                periodTimes[schedule.dayPeriod] ?: schedule.minutesOfDay
+            val minutes = if (schedule.timeType == TimeType.PERIOD) {
+                schedule.dayPeriod?.let { periodTimes[it] } ?: schedule.minutesOfDay
             } else {
                 schedule.minutesOfDay
             }
@@ -150,13 +152,12 @@ class DoseGenerator(
     private fun matchesDate(schedule: ReminderSchedule, date: LocalDate, activeCycleWeekId: Long?): Boolean {
         if (schedule.cycleWeekId != null && schedule.cycleWeekId != activeCycleWeekId) return false
         return when (schedule.scheduleType) {
-            "WEEKDAYS" -> WeekDays.contains(schedule.daysOfWeek, date.dayOfWeek)
-            "INTERVAL" -> {
+            ScheduleType.WEEKDAYS -> WeekDays.contains(schedule.daysOfWeek, date.dayOfWeek)
+            ScheduleType.INTERVAL -> {
                 val start = schedule.startDate ?: return false
                 val days = start.daysUntil(date)
                 days >= 0 && days % schedule.intervalDays == 0
             }
-            else -> false
         }
     }
 

@@ -11,6 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yhdista.dosetracker.core.Data
+import com.yhdista.dosetracker.domain.model.DayPeriod
+import com.yhdista.dosetracker.ui.common.label
+import com.yhdista.dosetracker.ui.schedule.formatMinutes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -19,7 +22,7 @@ fun SettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val periodTimes = (state.periodTimes as? Data.Success)?.data ?: emptyMap()
-    var editingPeriod by remember { mutableStateOf<String?>(null) }
+    var editingPeriod by remember { mutableStateOf<DayPeriod?>(null) }
 
     Scaffold(
         topBar = {
@@ -32,7 +35,7 @@ fun SettingsScreen(
             val period = editingPeriod!!
             val minutes = periodTimes[period] ?: 480
             PeriodTimePickerDialog(
-                periodName = period,
+                periodName = period.label,
                 initialMinutes = minutes,
                 onDismiss = { editingPeriod = null },
                 onConfirm = { newMinutes ->
@@ -60,15 +63,10 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column {
-                    listOf(
-                        "MORNING" to "Morning (Ráno)",
-                        "NOON" to "Noon (Poledne)",
-                        "EVENING" to "Evening (Večer)",
-                        "NIGHT" to "Night (Noc)"
-                    ).forEach { (key, label) ->
+                    DayPeriod.entries.forEach { key ->
                         val minutes = periodTimes[key] ?: 0
                         ListItem(
-                            headlineContent = { Text(label) },
+                            headlineContent = { Text(key.label) },
                             supportingContent = { Text(formatMinutes(minutes)) },
                             trailingContent = {
                                 TextButton(onClick = { editingPeriod = key }) {
@@ -191,7 +189,7 @@ private fun PeriodTimePickerDialog(
     )
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Set Time for ${periodName.lowercase().replaceFirstChar { it.uppercase() }}") },
+        title = { Text("Set Time for $periodName") },
         text = {
             Box(
                 modifier = Modifier.fillMaxWidth(),
@@ -209,12 +207,4 @@ private fun PeriodTimePickerDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
-}
-
-private fun formatMinutes(minutes: Int): String {
-    val h = minutes / 60
-    val m = minutes % 60
-    val hStr = if (h < 10) "0$h" else "$h"
-    val mStr = if (m < 10) "0$m" else "$m"
-    return "$hStr:$mStr"
 }
